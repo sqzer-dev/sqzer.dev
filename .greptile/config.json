@@ -1,0 +1,101 @@
+{
+  "strictness": 2,
+  "commentTypes": [
+    "logic",
+    "syntax"
+  ],
+  "autoReview": [
+    "open",
+    "push"
+  ],
+  "statusCheck": true,
+  "excludeAuthors": [
+    "dependabot[bot]"
+  ],
+  "ignorePatterns": "site/selftest/fixtures/*\nLICENSE-*\nCODE_OF_CONDUCT.md",
+  "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser: plain HTML, one ES module, one worker script, no framework, no bundler, no build step. CLAUDE.md is the rule book and docs/adr holds the decisions; review against them. The page depends on the published package by exact version from jsDelivr and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
+  "rules": [
+    {
+      "id": "no-third-party",
+      "rule": "The page talks to its own origin and `cdn.jsdelivr.net` and nothing else: no analytics, no error reporting, no font, script, stylesheet or image from another host, no `data:` URI. The `Content-Security-Policy` in `site/index.html` says so and is not widened for convenience. Flag any new origin, any inline `style` attribute or `<style>` block, and any removal or loosening of a CSP directive.",
+      "scope": [
+        "site/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "package-by-version",
+      "rule": "`sqzer` reaches the page from jsDelivr at the exact version written in `site/package.json`, which `site/worker.js` reads at run time. Flag a second place the version is written, a range instead of an exact version, a checkout or vendored copy of the package, a bundler or build step, and any runtime dependency other than `sqzer`.",
+      "scope": [
+        "site/**",
+        ".github/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "work-in-the-worker",
+      "rule": "Every call into the package happens in `site/worker.js`; `site/main.js` never imports it. The package is synchronous and a search cannot be interrupted, so cancelling means ending the worker and starting another, and that stays the only way. Flag an import of the package on the main thread and any attempt to interrupt an encode otherwise.",
+      "scope": [
+        "site/main.js",
+        "site/worker.js"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "no-codecs-here",
+      "rule": "No decoder, encoder, resampler, colour transform or metric is written in this repository. The package's decoder comes first; the browser's canvas decodes only what the package cannot (SVG, HEIC where the browser can), never inside the search. An SVG is drawn on the page from an `<img>`, because `createImageBitmap` refuses an SVG blob inside a worker in every browser. A missing capability is a pull request to `sqzer-dev/sqzer`, followed by a version bump here.",
+      "scope": [
+        "site/**"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "codecs-drive-the-controls",
+      "rule": "What the page offers as formats, backends and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats or backends. The controls start at the package's defaults and the page never changes a default of the package on its own.",
+      "scope": [
+        "site/main.js",
+        "site/index.html"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "licence",
+      "rule": "The repository is `MIT OR Apache-2.0` until the page switches to the AGPL build of `sqzer`, which is a deliberate change with its own ADR. Flag any AGPL or GPL code or dependency before that, and any new dependency whose licence the pull request does not state.",
+      "severity": "high"
+    },
+    {
+      "id": "browser-check",
+      "rule": "`.github/check.mjs` runs on every pull request: `/selftest/` and one JPEG through the page in headless Chromium. A change to `site/main.js`, `site/worker.js` or `site/selftest/**` keeps it passing, and a change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a line to `/selftest/` so the next browser run shows it. The Playwright version in `check.yml` and the local instructions change together and on purpose.",
+      "scope": [
+        "site/**",
+        ".github/check.mjs",
+        ".github/workflows/check.yml"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "accepted-adrs",
+      "rule": "An accepted ADR is never rewritten; ticking or annotating its own action items and adding a `Superseded by` line at the top are fine. A change of design or behaviour that an ADR decided gets a new numbered file, a row in `docs/adr/README.md`, an entry in `.greptile/files.json` scoped to what it governs, and an update to any rule in `.greptile/config.json` it changes, all in the same PR.",
+      "scope": [
+        "docs/adr/**",
+        ".greptile/**"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "user-facing-prose",
+      "rule": "User-facing text (the page's copy, README, contributor docs, issue forms, PR template, docs): sentence-case headings, backticks on every identifier, flag and path, no em dashes, no emoji, no tables, explanation in `#` comments above a command rather than prose around it, uncertainty stated flatly with the next step named. The page never says \"music\" and never shows a waveform.",
+      "scope": [
+        "site/index.html",
+        "site/main.js",
+        "README.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+        ".github/ISSUE_TEMPLATE/**",
+        ".github/pull_request_template.md",
+        "docs/**"
+      ],
+      "severity": "low"
+    }
+  ]
+}

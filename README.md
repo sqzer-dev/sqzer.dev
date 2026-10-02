@@ -56,6 +56,10 @@ https://sqzer.dev/selftest/
 
 It prints one line per check. `ok` is as documented, `note` differs between browsers and may, `FAIL` is a defect: open an issue with the text.
 
+## Contributing
+
+Issues and pull requests are welcome; [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rules the page follows and how a change is checked. A bug in the output itself belongs to [`sqzer`](https://github.com/sqzer-dev/sqzer), the package the page runs. Security reports go through [private vulnerability reporting](https://github.com/sqzer-dev/sqzer.dev/security/advisories/new), see [`SECURITY.md`](SECURITY.md).
+
 ## Licence
 
 MIT or Apache-2.0, at your option.

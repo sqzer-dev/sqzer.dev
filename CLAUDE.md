@@ -8,6 +8,8 @@ The page at `sqzer.dev`: a static page that runs the `sqzer` npm package in the 
 
 Solo-maintained. Plain HTML, one ES module (`site/main.js`) and one worker script (`site/worker.js`). No framework, no bundler, no build step, no dependency other than `sqzer`.
 
+The page moves on its own cadence, apart from `sqzer`: the look, the controls, quality-of-life features and anything else on top of the package's public API happen here, in pull requests that deploy on merge. What the package cannot do, a format, an option, a decoder, is a change to `sqzer` first and a version bump here after its release. Never work around a gap in the package on the page.
+
 ## Layout
 
 ```
@@ -17,8 +19,12 @@ site/main.js        the file, the controls, the worker's lifetime, what is shown
 site/worker.js      every call into `sqzer`. The message protocol is at its top
 site/package.json   the version of `sqzer`, read by `worker.js` at run time, bumped by Dependabot
 site/selftest/      `decodeAny` checked in the browser that opens it
+.github/check.mjs   the one automated check, run by `check.yml` on every pull request
+.greptile/          what the reviewer reads and the rules it checks against
 docs/adr            decisions. Add a new numbered file, never edit an accepted one
 ```
+
+`CONTRIBUTING.md`, `SECURITY.md`, the issue forms and the PR template mirror `sqzer`'s, adapted to a page: questions go to `sqzer`'s Discussions, bugs in the output go to `sqzer`, security reports come here. `CODE_OF_CONDUCT.md` and `LICENSE-*` are verbatim third-party texts: never edit them for style.
 
 ## Rules
 
@@ -50,8 +56,9 @@ node .github/check.mjs
 
 ## Workflow
 
-- `main` deploys. Work on a branch, open a PR, squash-merge.
-- Conventional commit prefixes: `feat: ...`, `fix: ...`, `chore: ...`.
+- `main` deploys. Work on a branch, open a PR, squash-merge. A ruleset on `main` requires a pull request, the `browser` check green, every review thread resolved, linear history and squash merges only; there is no bypass, so nothing is pushed to `main` directly.
+- Conventional commit prefixes: `feat: ...`, `fix: ...`, `ci: ...`, `docs: ...`, `chore: ...`.
+- Greptile reviews every PR (`.greptile/config.json`); Dependabot's are excluded. A new ADR gets an entry in `.greptile/files.json` and an update to any rule it changes, same PR.
 - After a release of `sqzer`: bump `site/package.json`, or merge the Dependabot PR once its check is green.
 
 ## Writing style for anything user-facing

@@ -1,0 +1,28 @@
+{
+  "files": [
+    {
+      "path": "CLAUDE.md",
+      "description": "The rules of the repository: what the page is, its layout, the rules it follows, how it is checked, the workflow, the writing style, how it moves independently of sqzer-dev/sqzer"
+    },
+    {
+      "path": "README.md",
+      "description": "What the page is, how to run it, how the version of sqzer is bumped, how a browser is checked"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "description": "The index of design and behaviour decisions, and which decisions taken in sqzer-dev/sqzer govern this page",
+      "scope": [
+        "docs/adr/**",
+        "site/**"
+      ]
+    },
+    {
+      "path": "site/worker.js",
+      "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
+      "scope": [
+        "site/main.js",
+        "site/worker.js"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/sqzer-dev/sqzer/discussions/categories/q-a
+    about: How to do something with sqzer, on the page or off it. Ask in the Discussions of sqzer, not in issues.
+  - name: Wrong or poor output, a crash on a file
+    url: https://github.com/sqzer-dev/sqzer/issues/new/choose
+    about: The encoder is the sqzer package. If the command line does the same with the file, the bug is there.
+  - name: Security vulnerability
+    url: https://github.com/sqzer-dev/sqzer.dev/security/advisories/new
+    about: Report privately. See SECURITY.md.

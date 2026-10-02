@@ -1,0 +1,47 @@
+name: Bug report
+description: The page did not take a file, did not finish, showed the wrong thing or broke in your browser.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English is preferred; if you can, add an English version next to the original. Machine translation is fine.
+
+        If the output itself is wrong or poor and `sqzer` on the command line does the same with the file, report it to [`sqzer-dev/sqzer`](https://github.com/sqzer-dev/sqzer/issues/new/choose) instead: the page only runs that package.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you got instead. Paste the status line and the result block as text, not screenshots.
+      placeholder: |
+        dropped photo.heic, chose jpeg
+        expected a download, got: error: ...
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Firefox 156 on Windows 11, Safari on iOS 18.7, Chrome 139 on Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: selftest
+    attributes:
+      label: Self-test
+      description: Open https://sqzer.dev/selftest/ in the same browser and paste what it prints. It names the package version and what the browser can decode.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Input file
+      description: Attach the image, or a smaller one that shows the same problem. If you cannot share it, describe it (format, dimensions, bit depth, colour profile, where it came from).
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
