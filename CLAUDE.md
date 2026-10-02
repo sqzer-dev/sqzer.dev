@@ -31,6 +31,18 @@ docs/adr            decisions. Add a new numbered file, never edit an accepted o
 - Never write a decoder, encoder, resampler or metric here. If the package lacks something, that is a change to `sqzer`.
 - Licence: MIT or Apache-2.0. When the page switches to the AGPL build of `sqzer`, the repository becomes AGPL-3.0 (ADR-0011 D6). Do not import AGPL code before that switch is made deliberately.
 
+## Design
+
+`docs/adr/0001-page-design.md` decides the look; `0002` settles what it left open. Read both before touching `style.css` or the markup. The rules that are easy to break:
+
+- Monochrome, dark first. No hue anywhere: a larger file, an error and a selected control are told by the sign, the word and the weight.
+- Two registers. 1 px lines in `--line` are for the chart, the ring of the wordmark and the rules of the empty drop zone, nothing else. Everything read or pressed is plain type on plain surfaces with `--border`.
+- The chart is the progress display, and every mark on it is a number the worker reported. Nothing decorative, no spinner, never a raster.
+- The result block is the command line's own lines, in monospace. No stat tiles, no table.
+- The target slider is the one control. Format and width stay small, the fixed quality stays subordinate, codec options stay in the CLI.
+- No imagery of the page's own. An image added later goes through `sqzer` and shows its size.
+- The word "music" and waveform imagery never appear.
+
 ## Commands
 
 ```sh

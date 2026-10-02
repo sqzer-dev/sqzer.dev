@@ -3,59 +3,120 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
 <!-- The page talks to its own origin and to jsDelivr, where the package is. Nothing else. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' blob:; style-src 'self'; base-uri 'none'; form-action 'none'">
-<title>sqzer</title>
-<meta name="description" content="Drop an image, get a smaller one that looks the same. Runs in the browser, nothing is uploaded.">
+<title>sqzer: smaller images that look the same</title>
+<meta name="description" content="Drop an image, get a smaller one that looks the same. Encoded in your browser, nothing is uploaded.">
+<meta property="og:title" content="sqzer">
+<meta property="og:description" content="Drop an image, get a smaller one that looks the same. Encoded in your browser, nothing is uploaded.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 <script type="module" src="main.js"></script>
 </head>
 <body>
-<header>
-  <h1>sqzer</h1>
-  <p>Drop an image, get a smaller one that looks the same. It is encoded in this tab: nothing is uploaded.</p>
+<header class="top">
+  <!-- The wordmark: the name on a disc, inside a band of fine lines that `main.js`
+       draws as far round as the target is high. -->
+  <h1 class="mark">
+    <svg id="ring" viewBox="0 0 120 120" aria-hidden="true">
+      <clipPath id="band"><path clip-rule="evenodd" d="M60 3a57 57 0 1 0 0 114a57 57 0 1 0 0-114zM60 24a36 36 0 1 0 0 72a36 36 0 1 0 0-72z"/></clipPath>
+      <circle class="body" cx="60" cy="60" r="59"/>
+      <g id="ring-lines" clip-path="url(#band)"></g>
+      <circle class="disc" cx="60" cy="60" r="34"/>
+      <circle class="disc" cx="60" cy="60" r="27"/>
+      <text x="60" y="64.5" text-anchor="middle">sqzer</text>
+    </svg>
+    <span class="unseen">sqzer</span>
+  </h1>
+  <nav aria-label="Elsewhere">
+    <a href="https://github.com/sqzer-dev/sqzer">GitHub</a>
+    <a href="https://www.npmjs.com/package/sqzer">npm</a>
+  </nav>
 </header>
 
 <main>
-  <label id="drop" for="file">
-    <span>Drop an image here, paste one, or choose a file.</span>
-    <input id="file" type="file">
-  </label>
+  <div class="intro">
+    <p class="lead">Drop an image, get a smaller one that looks the same.</p>
+    <p>It is encoded in this tab. Nothing is uploaded.</p>
+  </div>
 
-  <form id="options">
-    <label>Format
-      <select id="format" name="format">
-        <option value="auto">chosen per image</option>
-      </select>
-    </label>
-    <fieldset id="how">
-      <legend>Quality</legend>
-      <label><input type="radio" name="mode" value="target" checked> score
-        <input id="target" name="target" type="number" min="0" max="100" step="1" value="70" aria-label="SSIMULACRA2 score to search for"></label>
-      <label><input type="radio" name="mode" value="quality"> fixed
-        <input id="quality" name="quality" type="number" min="0" max="100" step="1" value="80" aria-label="Encoder quality, no search"></label>
-    </fieldset>
-    <label>Width
-      <input id="width" name="width" type="number" min="1" step="1" placeholder="original" inputmode="numeric">
-    </label>
-  </form>
+  <div class="bench">
+    <section id="stage" aria-label="Image">
+      <label id="drop" for="file">
+        <input id="file" type="file">
+        <span class="empty">
+          <strong>Drop an image here</strong>
+          <span>or paste one, or <span class="button">choose a file</span></span>
+          <small id="reads"></small>
+        </span>
+        <span class="loaded">
+          <code id="name"></code>
+          <span class="button">choose another</span>
+        </span>
+      </label>
 
-  <p id="status" role="status" aria-live="polite">Loading the encoder.</p>
+      <div id="compare" hidden>
+        <img id="before" alt="The image as it was dropped">
+        <img id="after" alt="The image as sqzer encoded it" hidden>
+        <input id="split" type="range" min="0" max="100" value="50" aria-label="Where before ends and after begins">
+        <span class="divider"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg></span>
+        <span class="chip" id="chip-before"></span>
+        <span class="chip" id="chip-after"></span>
+      </div>
+    </section>
 
-  <section id="result" hidden aria-label="Result">
-    <div id="compare">
-      <img id="before" alt="The image as it was dropped">
-      <img id="after" alt="The image as sqzer encoded it" hidden>
-      <input id="split" type="range" min="0" max="100" value="50" aria-label="Before on the left, after on the right">
+    <div class="panel">
+      <!-- The search, drawn as it happens: a point per trial on one rule per five steps of quality. -->
+      <svg id="chart" aria-hidden="true"></svg>
+
+      <form id="options">
+        <fieldset id="how">
+          <legend class="unseen">Quality</legend>
+          <div class="level">
+            <label for="level" id="level-name">target</label>
+            <output id="level-value" for="level">70</output>
+            <input id="level" name="level" type="range" min="0" max="100" step="1" value="70">
+          </div>
+          <p class="hint" id="how-hint"></p>
+          <label class="check"><input id="fixed" name="fixed" type="checkbox"> a fixed quality, no search</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>format</legend>
+          <div class="segments" id="formats">
+            <label><input type="radio" name="format" value="auto" checked><span>auto</span></label>
+          </div>
+          <p class="hint" id="format-hint"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend><label for="width">width</label></legend>
+          <div class="unit">
+            <input id="width" name="width" type="number" min="1" step="1" placeholder="original" inputmode="numeric">
+            <span>px</span>
+          </div>
+          <p class="hint">Scales down to fit, never up. Empty keeps the size.</p>
+        </fieldset>
+      </form>
+
+      <a id="download" class="button primary" hidden></a>
     </div>
-    <pre id="summary"></pre>
-    <a id="download" hidden>Download</a>
-  </section>
+
+    <section id="log" aria-label="What happened">
+      <p class="status"><span id="status" role="status" aria-live="polite">Loading the encoder.</span> <span id="elapsed" aria-hidden="true"></span></p>
+      <pre id="summary"></pre>
+      <div id="cli" hidden>
+        <p>The same settings with <a href="https://github.com/sqzer-dev/sqzer#install">the command line</a>:</p>
+        <pre id="command"></pre>
+      </div>
+    </section>
+  </div>
 </main>
 
 <footer>
-  <p><a href="https://github.com/sqzer-dev/sqzer">sqzer</a> as a command line and a Rust library, <a href="https://www.npmjs.com/package/sqzer"><code>sqzer</code> on npm</a><span id="version"></span>, <a href="https://github.com/sqzer-dev/sqzer.dev">this page</a>. No analytics, no error reporting.</p>
+  <p><code>sqzer</code><span id="version"></span> from <a href="https://www.npmjs.com/package/sqzer">npm</a>, also a <a href="https://github.com/sqzer-dev/sqzer">command line and a Rust library</a>. <a href="https://github.com/sqzer-dev/sqzer.dev">Source of this page</a>.</p>
+  <p>No analytics, no error reporting.</p>
 </footer>
 </body>
 </html>

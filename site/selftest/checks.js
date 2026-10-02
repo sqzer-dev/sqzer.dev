@@ -81,6 +81,16 @@ export async function run(say) {
   const svg = await fixture("pattern-rgb.svg");
   const heic = await fixture("pattern-rgb.heic");
 
+  // 0. the page's defaults are the package's, which are the command line's
+  // (docs/adr/0001-page-design.md, D5): what `main.js` sends before a
+  // control is touched gives the bytes that no options at all give
+  {
+    const same = (a, b) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+    const plain = sqzer.optimize(jpeg).bytes;
+    const page = sqzer.optimize(jpeg, { target: 70 }).bytes;
+    line(same(plain, page) ? "ok" : "FAIL", "defaults", `${plain.length} bytes with no options, ${page.length} with the page's`);
+  }
+
   // 1. the package's own decoder comes first: no bitmap for a JPEG
   {
     const { image, kind, message } = await decode(jpeg);

@@ -10,6 +10,7 @@ site/main.js        the file, the controls, what is shown
 site/worker.js      every call into `sqzer`, off the main thread
 site/package.json   the version of `sqzer` the page imports
 site/selftest/      what `decodeAny` does in the browser that opens it
+docs/adr/           why it looks and behaves the way it does
 ```
 
 ## Run it

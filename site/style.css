@@ -1,68 +1,539 @@
-/* A placeholder look: system colours and the system font, light and dark
-   from `color-scheme`. The design record replaces it. */
+/* The look of docs/adr/0001-page-design.md: matte black, monochrome, fine
+   line-art. Two registers, kept apart by hand: 1 px lines in `--line` for
+   the chart, the ring and the rules of the empty drop zone, and plain type
+   on plain surfaces for everything that is read or pressed. */
 
 :root {
-  color-scheme: light dark;
-  font: 1rem/1.5 system-ui, sans-serif;
+  color-scheme: dark light;
+
+  --bg: #0c0c0c;
+  --surface: #161616;
+  --text: #e9e9e6;
+  --muted: #9b9b97;
+  --border: #2e2e2e;
+  /* the line-art, and how faint a rule is next to a line of data */
+  --line: #fff;
+  --rule: 0.2;
+
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --small: 0.8125rem;
+  --radius: 0.25rem;
+  --target-size: 1.75rem;
+
+  accent-color: var(--text);
+}
+
+/* Dark is the design. Light is the same drawing on paper. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f3ef;
+    --surface: #e9e8e3;
+    --text: #151515;
+    --muted: #5c5c58;
+    --border: #cbcac4;
+    --line: #000;
+    --rule: 0.22;
+  }
+}
+
+@media (pointer: coarse) {
+  :root { --target-size: 2.75rem; }
 }
 
 body {
-  max-width: 60rem;
+  max-width: 80rem;
   margin: 0 auto;
-  padding: 1rem;
-  background: Canvas;
-  color: CanvasText;
+  padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 3rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 1rem/1.5 var(--sans);
 }
 
-h1 { margin: 0; }
-code, pre, #status { font-family: ui-monospace, monospace; }
+a { color: inherit; text-underline-offset: 0.2em; }
+a:hover { text-decoration-thickness: 2px; }
+p { margin: 0; }
+code, pre { font-family: var(--mono); }
+pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* For a screen reader only. */
+.unseen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- header ---------------------------------------------------------- */
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mark { margin: 0; line-height: 0; }
+#ring { width: 6rem; height: 6rem; }
+/* The body and the discs are the object: tone on tone, edges only. */
+#ring circle {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+/* The lines are the art, and the gauge: they run from twelve o'clock as far as the target. */
+#ring-lines path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+#ring text {
+  fill: var(--text);
+  font: 0.8125rem var(--mono);
+  letter-spacing: -0.02em;
+}
+
+.top nav {
+  display: flex;
+  gap: 1.25rem;
+  font-size: var(--small);
+}
+
+.intro { margin: 1.5rem 0; }
+.intro p { color: var(--muted); }
+.intro .lead {
+  max-width: 24ch;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+  font-size: clamp(1.5rem, 1rem + 2.2vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+body.has-file .intro { display: none; }
+
+/* --- layout ---------------------------------------------------------- */
+
+.bench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "stage" "panel" "log";
+  gap: 1.5rem;
+  align-items: start;
+}
+#stage { grid-area: stage; }
+.panel { grid-area: panel; }
+#log { grid-area: log; }
+
+@media (min-width: 60rem) {
+  body.has-file .bench {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas: "stage panel" "log panel";
+  }
+}
+
+/* Before a file, the drop zone is the page. */
+body:not(.has-file) .panel,
+body:not(.has-file) #summary { display: none; }
+
+/* --- buttons --------------------------------------------------------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-size);
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: var(--small) var(--mono);
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:hover { border-color: var(--muted); }
+.button.primary {
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+/* An anchor without `href` is the busy state: the file it led to is stale. */
+.button.primary:not([href]) {
+  border-color: var(--border);
+  background: none;
+  color: var(--muted);
+  cursor: default;
+}
+
+/* --- drop zone ------------------------------------------------------- */
 
 #drop {
-  display: block;
-  padding: 2rem 1rem;
-  border: 2px dashed GrayText;
-  border-radius: 0.5rem;
+  display: grid;
+  place-items: center;
+  min-height: min(60dvh, 34rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* a matte plate with evenly spaced rules, the chart's own, before there is anything to plot */
+  background: var(--surface) repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(3rem - 1px),
+    rgb(from var(--line) r g b / var(--rule)) calc(3rem - 1px) 3rem
+  );
   text-align: center;
   cursor: pointer;
 }
-#drop span { display: block; margin-bottom: 0.5rem; }
-body.dragging #drop { border-color: Highlight; }
+/* `rgb(from ...)` is recent. Without it the rules are the border colour. */
+@supports not (color: rgb(from white r g b / 0.5)) {
+  #drop {
+    background: var(--surface) repeating-linear-gradient(to bottom, transparent 0 calc(3rem - 1px), var(--border) calc(3rem - 1px) 3rem);
+  }
+}
+#file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+#file:focus-visible ~ span .button {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+#drop .empty {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  padding: 1.5rem 2rem;
+  /* the rules stop at the words, they do not run through them */
+  background: var(--surface);
+}
+#drop strong { font-size: 1.25rem; font-weight: 600; }
+#drop small {
+  max-width: 44ch;
+  color: var(--muted);
+  font: var(--small) / 1.5 var(--mono);
+}
+#drop .loaded { display: none; }
 
-#options {
+body.dragging #drop {
+  --rule: 0.6;
+  border-color: var(--text);
+}
+
+body.has-file #drop {
+  display: block;
+  place-items: normal;
+  min-height: 0;
+  margin-bottom: 0.75rem;
+  border: 0;
+  background: none;
+  text-align: start;
+}
+body.has-file #drop .empty { display: none; }
+body.has-file #drop .loaded {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem 2rem;
-  align-items: end;
-  margin: 1rem 0;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
 }
-#options fieldset {
-  display: flex;
-  gap: 1rem;
+body.has-file.dragging #stage {
+  outline: 1px solid var(--text);
+  outline-offset: 0.5rem;
+}
+#name { overflow-wrap: anywhere; }
+
+/* --- comparison ------------------------------------------------------ */
+
+/* Two pictures in one cell, the second clipped at the handle. `--w` and
+   `--ratio` come from the picture: never wider than its own pixels, never
+   taller than most of the window. */
+#compare {
+  display: grid;
+  width: min(100%, var(--w, 100%), 72dvh * var(--ratio, 1));
+  aspect-ratio: var(--ratio, auto);
+  background: repeating-conic-gradient(var(--border) 0 25%, var(--surface) 0 50%) 0 0 / 1rem 1rem;
+  overflow: hidden;
+}
+#compare[hidden] { display: none; }
+#compare > * { grid-area: 1 / 1; }
+#compare img { width: 100%; height: 100%; }
+#after { clip-path: inset(0 0 0 var(--split, 50%)); }
+/* `clip-path` lifts the second picture above what is not positioned */
+#split, .divider, .chip { position: relative; }
+
+/* The range is the whole picture and has no look of its own: the divider shows where it is. */
+#split {
+  width: 100%;
+  height: 100%;
   margin: 0;
+  appearance: none;
+  background: none;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+#split::-webkit-slider-runnable-track { height: 100%; }
+#split::-webkit-slider-thumb { appearance: none; width: 1px; height: 100%; }
+#split::-moz-range-track { height: 100%; background: none; }
+#split::-moz-range-thumb { width: 1px; height: 100%; border: 0; background: none; }
+#split:focus-visible { outline: none; }
+
+.divider {
+  justify-self: start;
+  display: grid;
+  place-items: center;
+  width: 2px;
+  margin-left: calc(var(--split, 50%) - 1px);
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+}
+.divider svg {
+  width: 2rem;
+  height: 2rem;
+  box-sizing: border-box;
+  padding: 0.25rem;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.75);
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#split:focus-visible ~ .divider svg {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.chip {
+  align-self: start;
+  margin: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.75);
+  color: #fff;
+  font: var(--small) var(--mono);
+  pointer-events: none;
+}
+#chip-before { justify-self: start; }
+#chip-after { justify-self: end; }
+.chip:empty,
+#compare:not(.done) :is(#split, .divider, #chip-after) { display: none; }
+
+/* --- the chart ------------------------------------------------------- */
+
+#chart {
+  display: block;
+  width: 100%;
+  height: 13rem;
+  margin-bottom: 1.25rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+#chart line,
+#chart path,
+#chart circle {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+#chart .rule { stroke-opacity: var(--rule); shape-rendering: crispEdges; }
+#chart .target { shape-rendering: crispEdges; }
+#chart .trial { fill: var(--line); stroke: none; }
+#chart .chosen { fill: none; }
+#chart text {
+  fill: var(--text);
+  font: 0.6875rem var(--mono);
+  /* a label sits on the rules: the page colour around the letters keeps it readable */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* The newest trial is drawn in: the segment first, then its point and score. */
+#chart .fresh.segment {
+  stroke-dasharray: 1;
+  animation: draw 0.4s ease-out both;
+}
+#chart .fresh:not(.segment) { animation: appear 0.2s 0.3s both; }
+@keyframes draw { from { stroke-dashoffset: 1; } }
+@keyframes appear { from { opacity: 0; } }
+
+/* Reduced motion: each trial still appears as it lands, all at once. */
+@media (prefers-reduced-motion: reduce) {
+  #chart .fresh { animation: none !important; }
+}
+
+/* --- controls -------------------------------------------------------- */
+
+fieldset {
+  min-width: 0;
+  margin: 0 0 1.25rem;
   padding: 0;
   border: 0;
 }
-#options legend { padding: 0; }
-#options input[type="number"] { width: 5rem; }
-#options fieldset:disabled { color: GrayText; }
+legend,
+.level label {
+  padding: 0;
+  color: var(--muted);
+  font: var(--small) var(--mono);
+}
+legend { margin-bottom: 0.375rem; }
+.hint {
+  margin-top: 0.375rem;
+  color: var(--muted);
+  font-size: var(--small);
+}
 
-#status { min-height: 1.5em; }
-#status.failed { color: #b00020; color: light-dark(#b00020, #ff8a80); }
-
-/* Two pictures in one cell, the second clipped at the handle. */
-#compare {
+/* The one control: its name, its number, and the slider under both. */
+.level {
   display: grid;
-  max-width: 100%;
-  margin: 0 auto;
-  background: repeating-conic-gradient(GrayText 0 25%, Canvas 0 50%) 0 0 / 1rem 1rem;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
 }
-#compare > * { grid-area: 1 / 1; width: 100%; }
-#compare img { height: 100%; }
-#after { clip-path: inset(0 0 0 var(--split, 50%)); }
-#split {
-  align-self: end;
+.level output {
+  font: 2.5rem/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.level input {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: var(--target-size);
+  margin: 0.25rem 0 0;
+}
+fieldset:disabled .level output { color: var(--muted); }
+
+.check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: var(--target-size);
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: var(--small);
+}
+.check input { margin: 0; }
+
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.segments label { position: relative; }
+.segments input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
-  opacity: 0.85;
+  opacity: 0;
+  cursor: pointer;
+}
+.segments span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-size);
+  padding: 0 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: var(--small) var(--mono);
+}
+.segments input:hover + span { border-color: var(--muted); }
+.segments input:checked + span {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+.segments input:focus-visible + span {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
-#summary { white-space: pre-wrap; }
+.unit {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--muted);
+  font: var(--small) var(--mono);
+}
+.unit input {
+  width: 7rem;
+  min-height: var(--target-size);
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+/* --- the log --------------------------------------------------------- */
+
+.status {
+  min-height: 1.5em;
+  font: var(--small) / 1.5 var(--mono);
+}
+#elapsed { color: var(--muted); }
+/* No hue to spend on an error: the word and the weight carry it. */
+#status.failed { font-weight: 700; }
+
+#summary {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: var(--small);
+  line-height: 1.6;
+}
+/* The sizes, before and after: the one line read at a glance. */
+#summary .first {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+#cli {
+  margin-top: 1.25rem;
+  color: var(--muted);
+  font-size: var(--small);
+}
+#command {
+  margin-top: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* A search is running over an old result: what belongs to the old one steps back. */
+body.busy :is(#summary, #cli) { opacity: 0.45; }
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--small);
+}
+
+/* Forced colours drop backgrounds: state goes to the border, which stays. */
+@media (forced-colors: active) {
+  .segments input:checked + span { border: 2px solid Highlight; }
+  .divider { border-inline: 1px solid CanvasText; }
+}
