@@ -1,0 +1,36 @@
+name: Feature request
+description: Something the page should do, or do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English is preferred; if you can, add an English version next to the original. Machine translation is fine.
+
+        A format, an option or a decoder the page lacks is a request to [`sqzer-dev/sqzer`](https://github.com/sqzer-dev/sqzer/issues/new/choose), the package the page runs. This form is for the page itself: what it shows, how it is used, what it does with a file once the package has done its part.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to do on the page and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would like the page to do. Where it would sit and what it would say helps most.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use now, or how another tool does it.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
