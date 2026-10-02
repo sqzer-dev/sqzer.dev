@@ -1,0 +1,23 @@
+name: Check
+
+# The page in headless Chromium against the version of `sqzer` that
+# `site/package.json` names, so a Dependabot bump is tested before it merges.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - run: npm install --no-save --no-package-lock playwright@1.63.0
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server -d site 8000 &
+      - run: node .github/check.mjs

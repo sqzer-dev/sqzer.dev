@@ -36,6 +36,16 @@ python3 -m http.server -d site 8000
 
 Every merge to `main` is a deploy: `.github/workflows/pages.yml` publishes `site/` to GitHub Pages as it is.
 
+Every pull request runs `.github/workflows/check.yml` first: the page and `/selftest/` in headless Chromium, against the version of `sqzer` the branch names. A Dependabot bump that breaks the page fails there instead of on the site.
+
+```sh
+# the same check, locally. needs the network: the package comes from jsDelivr
+npm install --no-save --no-package-lock playwright@1.63.0
+npx playwright install --with-deps chromium
+python3 -m http.server -d site 8000 &
+node .github/check.mjs
+```
+
 ## Checking a browser
 
 `sqzer`'s own tests run in Node, which has no canvas. What `decodeAny` does with an SVG or a HEIC file depends on the browser, so that part is checked by opening a page in it:

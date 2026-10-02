@@ -38,13 +38,21 @@ python3 -m http.server -d site 8000   # the page, at http://localhost:8000
 # http://localhost:8000/selftest/     # the browser checks, one line each
 ```
 
-There is no test suite and no linter. A change is checked by loading the page in Chrome and Firefox: a JPEG, an SVG, a TIFF (shown through the worker's preview), a file that is no image, and a change of format while a search runs. Safari needs Apple hardware; ask.
+`.github/check.mjs` is the one automated check, run by `check.yml` on every pull request: `/selftest/` and one JPEG through the page, in headless Chromium, against the package version the branch names. There is no linter. Beyond that, a change is checked by loading the page in Chrome and Firefox: a JPEG, an SVG, a TIFF (shown through the worker's preview), a file that is no image, and a change of format while a search runs. Safari needs Apple hardware; ask.
+
+```sh
+# the check as CI runs it. playwright is installed per run, it is not a dependency of the page
+npm install --no-save --no-package-lock playwright@1.63.0
+npx playwright install --with-deps chromium
+python3 -m http.server -d site 8000 &
+node .github/check.mjs
+```
 
 ## Workflow
 
 - `main` deploys. Work on a branch, open a PR, squash-merge.
 - Conventional commit prefixes: `feat: ...`, `fix: ...`, `chore: ...`.
-- After a release of `sqzer`: bump `site/package.json`, or merge the Dependabot PR, then load the page once.
+- After a release of `sqzer`: bump `site/package.json`, or merge the Dependabot PR once its check is green.
 
 ## Writing style for anything user-facing
 
