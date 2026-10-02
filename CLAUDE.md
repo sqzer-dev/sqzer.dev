@@ -42,7 +42,7 @@ python3 -m http.server -d site 8000   # the page, at http://localhost:8000
 
 ```sh
 # the check as CI runs it. playwright is installed per run, it is not a dependency of the page
-npm install --no-save --no-package-lock playwright
+npm install --no-save --no-package-lock playwright@1.63.0
 npx playwright install --with-deps chromium
 python3 -m http.server -d site 8000 &
 node .github/check.mjs

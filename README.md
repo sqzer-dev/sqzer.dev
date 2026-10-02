@@ -40,7 +40,7 @@ Every pull request runs `.github/workflows/check.yml` first: the page and `/self
 
 ```sh
 # the same check, locally. needs the network: the package comes from jsDelivr
-npm install --no-save --no-package-lock playwright
+npm install --no-save --no-package-lock playwright@1.63.0
 npx playwright install --with-deps chromium
 python3 -m http.server -d site 8000 &
 node .github/check.mjs
