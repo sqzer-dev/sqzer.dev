@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # The version of `sqzer` the page imports, which `site/worker.js` reads
+  # from `site/package.json`. Merging the pull request is the whole bump.
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: daily

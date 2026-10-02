@@ -1,0 +1,9 @@
+{
+  "name": "sqzer.dev",
+  "private": true,
+  "description": "The page at sqzer.dev. `worker.js` reads the version of `sqzer` from here and imports it from jsDelivr.",
+  "license": "MIT OR Apache-2.0",
+  "dependencies": {
+    "sqzer": "0.3.0"
+  }
+}

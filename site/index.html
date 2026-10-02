@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<!-- The page talks to its own origin and to jsDelivr, where the package is. Nothing else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' blob:; style-src 'self'; base-uri 'none'; form-action 'none'">
+<title>sqzer</title>
+<meta name="description" content="Drop an image, get a smaller one that looks the same. Runs in the browser, nothing is uploaded.">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="main.js"></script>
+</head>
+<body>
+<header>
+  <h1>sqzer</h1>
+  <p>Drop an image, get a smaller one that looks the same. It is encoded in this tab: nothing is uploaded.</p>
+</header>
+
+<main>
+  <label id="drop" for="file">
+    <span>Drop an image here, paste one, or choose a file.</span>
+    <input id="file" type="file">
+  </label>
+
+  <form id="options">
+    <label>Format
+      <select id="format" name="format">
+        <option value="auto">chosen per image</option>
+      </select>
+    </label>
+    <fieldset id="how">
+      <legend>Quality</legend>
+      <label><input type="radio" name="mode" value="target" checked> score
+        <input id="target" name="target" type="number" min="0" max="100" step="1" value="70" aria-label="SSIMULACRA2 score to search for"></label>
+      <label><input type="radio" name="mode" value="quality"> fixed
+        <input id="quality" name="quality" type="number" min="0" max="100" step="1" value="80" aria-label="Encoder quality, no search"></label>
+    </fieldset>
+    <label>Width
+      <input id="width" name="width" type="number" min="1" step="1" placeholder="original" inputmode="numeric">
+    </label>
+  </form>
+
+  <p id="status" role="status" aria-live="polite">Loading the encoder.</p>
+
+  <section id="result" hidden aria-label="Result">
+    <div id="compare">
+      <img id="before" alt="The image as it was dropped">
+      <img id="after" alt="The image as sqzer encoded it" hidden>
+      <input id="split" type="range" min="0" max="100" value="50" aria-label="Before on the left, after on the right">
+    </div>
+    <pre id="summary"></pre>
+    <a id="download" hidden>Download</a>
+  </section>
+</main>
+
+<footer>
+  <p><a href="https://github.com/sqzer-dev/sqzer">sqzer</a> as a command line and a Rust library, <a href="https://www.npmjs.com/package/sqzer"><code>sqzer</code> on npm</a><span id="version"></span>, <a href="https://github.com/sqzer-dev/sqzer.dev">this page</a>. No analytics, no error reporting.</p>
+</footer>
+</body>
+</html>
