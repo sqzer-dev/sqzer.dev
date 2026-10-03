@@ -121,7 +121,7 @@ Light and dark follow `prefers-color-scheme`, as ADR-0002 D3 has it, with no scr
 
 ### D5. One glass, with its fallbacks
 
-Glass is one Tailwind utility, `glass`, used by every floating panel, the bottom expander, the corner labels and the chips. Nothing else is glass. Its rules, taken from Apple's and Fluent's guidance:
+Glass is one Tailwind utility, `glass`, for the surfaces that float over the image on their own: the panels, the bottom expander and the corner labels. Nothing inside them is glass. The chips, the fields and the alert sit on the panel's surface with a plain 1 px border at gray 7 and no fill of their own. Its rules, taken from Apple's and Fluent's guidance:
 
 ```text
 where        controls only, never content. one level deep: no glass inside glass
@@ -132,16 +132,19 @@ edge         a 1 px border at gray 6 in alpha. no shadow
 popovers     rendered through Base UI's portal, outside the panel
 ```
 
-Each fallback makes the panel opaque at `gray 2` with its border at `gray 8`:
+Each fallback makes every glass surface opaque at `gray 2` with its border at `gray 8`:
 
 ```css
 @supports not (backdrop-filter: blur(1px)) { /* opaque */ }
 @media (prefers-contrast: more) { /* opaque, border at gray 8, after Primer's high-contrast themes */ }
-@media (prefers-reduced-transparency: reduce) { /* opaque. Chromium only, not Baseline: an extra */ }
+@media (prefers-reduced-transparency: reduce) { /* opaque. Chromium only, not Baseline */ }
 @media (forced-colors: active) { /* `Canvas` and `CanvasText`, a real border */ }
+:root[data-panels="solid"] { /* opaque, from the switch below */ }
 ```
 
-The tint is not chosen by eye. A test renders a panel with body text, a chip and a slider over fixture images that are pure white, pure black and high-frequency noise, in light and dark. It samples the screenshot and requires 4.5:1 for text and 3:1 for the slider track, chip borders and focus ring, as WCAG 1.4.3 and 1.4.11 ask. The tint goes up until it passes.
+`prefers-reduced-transparency` reaches the page only in Chromium. Firefox and Safari have no way to tell it the reader asked for less transparency, so ADR-0001 D9's fallback cannot rest on the media query alone. The control panel ends with a "Solid panels" switch that sets `data-panels="solid"` on `<html>`, in every browser. Where the media query matches, the switch starts on. The choice is kept in `localStorage`, on that device only, as a reader's convenience, and the page works the same if storage is unavailable. Glass appears only once an image is on the page, after the script has run, so the switch never has to act before first paint.
+
+The tint is not chosen by eye. A test renders every glass surface (a panel with body text, a chip and a slider, the bottom expander, a corner label) over fixture images that are pure white, pure black and high-frequency noise, in light and dark. It samples the screenshot and requires 4.5:1 for text and 3:1 for the slider track, chip borders and focus ring, as WCAG 1.4.3 and 1.4.11 ask. The tint goes up until it passes.
 
 ### D6. Lucide icons
 
@@ -191,7 +194,7 @@ The build ships a `licenses.txt`, linked from the footer, with the text of every
 
 What becomes easier: the redesign of ADR-0001 builds on shadcn's components and gets their upgrades. The look comes from tokens with a named source, and every licence is known. A style the policy blocks fails a test instead of disappearing quietly.
 
-What becomes harder: shadcn's components assume Radix's scroll lock and Vaul in places where the Base UI flavour has its own parts, so recipes from outside the Base UI docs need checking against D2. The glass utility and its fallbacks are ours to keep correct across four media conditions.
+What becomes harder: shadcn's components assume Radix's scroll lock and Vaul in places where the Base UI flavour has its own parts, so recipes from outside the Base UI docs need checking against D2. The glass utility and its fallbacks are ours to keep correct across four media conditions and a switch.
 
 What changes elsewhere: ADR-0002 D3's policy gains `font-src 'self'`. ADR-0002's Open item on prerendering is limited by D2. The Greptile rules gain the policy rules for libraries and a rule for the one styling system.
 
@@ -202,7 +205,7 @@ What changes elsewhere: ADR-0002 D3's policy gains `font-src 'self'`. ADR-0002's
 1. [ ] `shadcn init` with the Base UI base on Tailwind 4 and Lucide, after ADR-0002's port, with the components into `src/shared/ui/`. The shadcn style is chosen then (Open).
 2. [ ] `<CSPProvider disableStyleElements>` at the root, the scrollbar rules of D2, `font-src 'self'` in the policy, and the Playwright check for `securitypolicyviolation`.
 3. [ ] The Geist fonts of D3 and the token mapping of D4, light and dark.
-4. [ ] The `glass` utility of D5, its four fallbacks, and the contrast test over the white, black and noise fixtures.
+4. [ ] The `glass` utility of D5, its fallbacks, the "Solid panels" switch, and the contrast test of every glass surface over the white, black and noise fixtures.
 5. [ ] `licenses.txt` of D7, linked from the footer.
 
 ---
