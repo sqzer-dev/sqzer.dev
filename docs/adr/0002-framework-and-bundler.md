@@ -158,7 +158,7 @@ playwright test      end to end, against `vite build` served by `vite preview`, 
                      and Firefox
 ```
 
-`/selftest/` and `.github/check.mjs` become the Playwright suite, as ADR-0001 asked. The `decodeAny` checks run on the page and in a worker, as they do today, from a test-only entry that is not part of the deployed build. The suite also checks that every request the page makes stays on its own origin, which is the proof behind ADR-0001 D7. Firefox joins Chromium because it is the main development browser and the canvas fallback differs between them. Safari is still checked by hand, on Apple hardware.
+`/selftest/` and `.github/check.mjs` become the Playwright suite, as ADR-0001 asked. The `decodeAny` checks run on the page and in a worker, as they do today, from a test-only entry that is not part of the deployed build. The suite also checks that every request the page makes stays on its own origin, which is the proof behind ADR-0001 D7. Firefox joins Chromium because it is the main development browser and the canvas fallback differs between them. Safari is checked by hand, on Apple hardware, and nowhere else: the public `/selftest/` page goes with the move, and so does the README section that asks readers to open it and paste its lines into an issue.
 
 ### D7. The layout, the deploy and the updates
 
@@ -199,6 +199,8 @@ The design system, the component library and the styling system are chosen toget
 
 **Move hosting to a host with brotli and real headers**, such as Cloudflare Pages or Netlify. That would win back the 8 %, put the policy in a header, and allow the cross-origin isolation threads would need. Deferred: hosting stays GitHub Pages until threads are on the table, which ADR-0011 rules out for now.
 
+**Keep a public browser check** as a second Vite entry, so anyone can open it in Safari and paste its lines into an issue, as `/selftest/` allows today. Rejected: it is a second page to build and keep in step with the suite for one browser. Safari is checked by hand.
+
 **The Rust React Compiler.** Faster builds, marked experimental by the plugin that ships it. Deferred.
 
 ---
@@ -235,7 +237,7 @@ What changes elsewhere:
 2. [ ] The checks of D6 in `check.yml`, in the `browser` job, and `/selftest/` and `.github/check.mjs` moved into the Playwright suite. The suite's first green run in CI is the browser check this record could not make.
 3. [ ] `pages.yml` builds and uploads `dist/`.
 4. [ ] `dependabot.yml`: `npm` at the root, `sqzer` alone, the tooling grouped.
-5. [ ] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port.
+5. [ ] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
 6. [ ] `sqzer-dev/sqzer`: a note under ADR-0011 action item 5 pointing here.
 7. [ ] ADR-0003: the design system, the component library and the styling system.
 
@@ -243,7 +245,6 @@ What changes elsewhere:
 
 ## Open
 
-- Whether a public browser check survives for Safari, which the Playwright suite cannot run. Today anyone can open `/selftest/` and paste its lines into an issue.
 - Prerendering the empty state, so ADR-0001 D1 paints before the script runs.
 
 ---
