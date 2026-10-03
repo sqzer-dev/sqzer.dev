@@ -24,6 +24,19 @@
       ]
     },
     {
+      "path": "docs/adr/0002-stack.md",
+      "description": "The stack: React 19 and TypeScript under Vite with the Rust React Compiler, `<ViewTransition>` and `<Activity>`, the search as an XState machine with the worker as an actor, `sqzer` from npm served from the page's own origin, the Content-Security-Policy injected at build, Feature-Sliced Design, oxlint, Vitest browser mode, Playwright, the layout, the deploy and Dependabot",
+      "scope": [
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "tests/**",
+        ".github/**"
+      ]
+    },
+    {
       "path": "site/worker.js",
       "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
       "scope": [
