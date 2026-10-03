@@ -112,16 +112,25 @@ The policy gains one directive, `font-src 'self'`. It is the only change to ADR-
 The palette is Radix Colors `gray`, light and dark, with `blackA` and `whiteA` for everything translucent. It is imported from `@radix-ui/colors` as CSS and mapped onto shadcn's semantic tokens in `@theme inline`:
 
 ```text
-background   gray 1          muted        gray 3          border      gray 6
-card         gray 2          muted text   gray 11         ring        gray 8
-foreground   gray 12         input        gray 7          glass tint  blackA / whiteA, D5
+background   gray 1          muted        gray 3          border      gray 6, dividers only
+card         gray 2          muted text   gray 11         ring        gray 10
+foreground   gray 12         input        gray 10         glass tint  blackA / whiteA, D5
 ```
+
+A line that marks where a control is (a field, a chip, a slider track, the focus ring) is `gray 10`, because WCAG 1.4.11 asks 3:1 of it. A line that only divides is `gray 6`. Against `gray 2`, the opaque surface of D5, the steps measure:
+
+```text
+light   gray 7  1.49   gray 8  1.82   gray 9  3.15   gray 10  3.60
+dark    gray 7  1.92   gray 8  2.80   gray 9  3.45   gray 10  4.15
+```
+
+`gray 9` passes in light by a hair, so the floor is `gray 10`.
 
 Light and dark follow `prefers-color-scheme`, as ADR-0002 D3 has it, with no script. There is no hue: the page is monochrome, as ADR-0001 wants. Whether alerts take one is under Open.
 
 ### D5. One glass, with its fallbacks
 
-Glass is one Tailwind utility, `glass`, for the surfaces that float over the image on their own: the panels, the bottom expander and the corner labels. Nothing inside them is glass. The chips, the fields and the alert sit on the panel's surface with a plain 1 px border at gray 7 and no fill of their own. Its rules, taken from Apple's and Fluent's guidance:
+Glass is one Tailwind utility, `glass`, for the surfaces that float over the image on their own: the panels, the bottom expander and the corner labels. Nothing inside them is glass. The chips, the fields and the alert sit on the panel's surface with a plain 1 px border at `gray 10` (D4) and no fill of their own. Its rules, taken from Apple's and Fluent's guidance:
 
 ```text
 where        controls only, never content. one level deep: no glass inside glass
@@ -132,11 +141,11 @@ edge         a 1 px border at gray 6 in alpha. no shadow
 popovers     rendered through Base UI's portal, outside the panel
 ```
 
-Each fallback makes every glass surface opaque at `gray 2` with its border at `gray 8`:
+Each fallback makes every glass surface opaque at `gray 2`, its outer edge at `gray 8`:
 
 ```css
 @supports not (backdrop-filter: blur(1px)) { /* opaque */ }
-@media (prefers-contrast: more) { /* opaque, border at gray 8, after Primer's high-contrast themes */ }
+@media (prefers-contrast: more) { /* opaque, control borders at gray 11, after Primer's high-contrast themes */ }
 @media (prefers-reduced-transparency: reduce) { /* opaque. Chromium only, not Baseline */ }
 @media (forced-colors: active) { /* `Canvas` and `CanvasText`, a real border */ }
 :root[data-panels="solid"] { /* opaque, from the switch below */ }
