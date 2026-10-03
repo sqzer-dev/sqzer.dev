@@ -18,7 +18,7 @@
     },
     {
       "path": "docs/adr/0001-page-design.md",
-      "description": "The design of the page: the empty state, the full-screen comparison, the target as the one control in words, the search shown as it runs, the result in plain words, errors, the privacy claim, the wordmark, the accessibility floor",
+      "description": "The design of the page: the drop zone as the empty state, the image on the whole screen under glass panels, the target first and every package option behind Advanced, untouched controls sending nothing, the search shown as it runs, the result as size, difference and chips, errors as alerts, the privacy claim, the wordmark, the accessibility floor",
       "scope": [
         "site/**"
       ]

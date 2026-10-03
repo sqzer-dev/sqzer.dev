@@ -84,7 +84,7 @@
     },
     {
       "id": "user-facing-prose",
-      "rule": "User-facing text (the page's copy, README, contributor docs, issue forms, PR template, docs): sentence-case headings, backticks on every identifier, flag and path, no em dashes, no emoji, no tables, explanation in `#` comments above a command rather than prose around it, uncertainty stated flatly with the next step named. The page never says \"music\" and never shows a waveform.",
+      "rule": "User-facing text (the page's copy, README, contributor docs, issue forms, PR template, docs): sentence-case headings, backticks on every identifier, flag and path, no em dashes, no emoji, no tables, explanation in `#` comments above a command rather than prose around it, uncertainty stated flatly with the next step named.",
       "scope": [
         "site/index.html",
         "site/main.js",
