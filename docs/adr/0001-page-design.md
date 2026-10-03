@@ -1,6 +1,6 @@
 # ADR-0001: The design of the page
 
-**Status:** Proposed   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
 **Scope:** The look and behaviour of the page at `sqzer.dev`: the empty state, the page with an image on it, the controls, the search while it runs, the result, errors, the privacy claim and the wordmark. What the page is built with is ADR-0002, and the design system and component library it borrows are a record after that (D10). Anything not settled here is listed under Open.
 
 ---
