@@ -37,6 +37,18 @@
       ]
     },
     {
+      "path": "docs/adr/0003-design-system.md",
+      "description": "The components and the look: shadcn/ui on Base UI under `<CSPProvider disableStyleElements>`, Tailwind 4 as the one styling system, Geist Sans and Mono self-hosted, Radix Colors grey mapped onto shadcn's tokens, one `glass` utility with its fallbacks and contrast test, Lucide icons, the licence notices",
+      "scope": [
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "package.json",
+        "public/**",
+        "tests/**"
+      ]
+    },
+    {
       "path": "site/worker.js",
       "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
       "scope": [
