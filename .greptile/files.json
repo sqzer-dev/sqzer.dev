@@ -17,6 +17,13 @@
       ]
     },
     {
+      "path": "docs/adr/0001-page-design.md",
+      "description": "The design of the page: the empty state, the full-screen comparison, the target as the one control in words, the search shown as it runs, the result in plain words, errors, the privacy claim, the wordmark, the accessibility floor",
+      "scope": [
+        "site/**"
+      ]
+    },
+    {
       "path": "site/worker.js",
       "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
       "scope": [
