@@ -24,8 +24,8 @@
       ]
     },
     {
-      "path": "docs/adr/0002-framework-and-bundler.md",
-      "description": "What the page is built with: React 19 and TypeScript under Vite, React Compiler, `sqzer` from npm served from the page's own origin, the Content-Security-Policy injected at build, one worker behind one adapter, Feature-Sliced Design, the checks, the layout, the deploy and Dependabot",
+      "path": "docs/adr/0002-stack.md",
+      "description": "The stack: React 19 and TypeScript under Vite with the Rust React Compiler, `<ViewTransition>` and `<Activity>`, the search as an XState machine with the worker as an actor, `sqzer` from npm served from the page's own origin, the Content-Security-Policy injected at build, Feature-Sliced Design, oxlint, Vitest browser mode, Playwright, the layout, the deploy and Dependabot",
       "scope": [
         "src/**",
         "index.html",

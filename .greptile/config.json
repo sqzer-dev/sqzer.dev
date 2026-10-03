@@ -40,7 +40,7 @@
     },
     {
       "id": "work-in-the-worker",
-      "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`, and the rest of the page reaches it only through that slice's client. The package is synchronous and a search cannot be interrupted, so cancelling means ending the worker and starting another, and that stays the only way. Flag an import of `sqzer` outside the worker, a second worker that calls it, and any attempt to interrupt an encode otherwise.",
+      "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`. Only that slice's client starts or ends the worker, and only the search machine in `src/features/encode-image/model/` uses the client, as an invoked callback actor whose cleanup terminates the worker. A search cannot be interrupted, so cancelling means stopping the actor, which ends the worker; that stays the only way. Flag an import of `sqzer` outside the worker, a `new Worker` outside the client, the client used outside the machine, and any attempt to interrupt an encode otherwise.",
       "scope": [
         "src/**"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "id": "browser-check",
-      "rule": "The `browser` job of `check.yml` runs on every pull request: `tsc --noEmit`, ESLint with `eslint-plugin-react-hooks`, Steiger, Vitest, and the Playwright suite in `tests/e2e/` against the built page in Chromium and Firefox. A change keeps it green, and a change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a Playwright test for it. The suite checks that no request leaves the page's origin. Tool versions change through `package.json` and Dependabot, on purpose.",
+      "rule": "The `browser` job of `check.yml` runs on every pull request: `tsc --noEmit`, oxlint with `eslint-plugin-react-hooks` as the JS plugin `react-hooks-js`, Steiger, Vitest in browser mode in Chromium and Firefox, and the Playwright suite in `tests/e2e/` against the built page in Chromium and Firefox. A change keeps it green. A change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a Vitest browser test for it, and the Playwright suite checks that no request leaves the page's origin. Tool versions change through `package.json` and Dependabot, on purpose.",
       "scope": [
         "src/**",
         "tests/**",

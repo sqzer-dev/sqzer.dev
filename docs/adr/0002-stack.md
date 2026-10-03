@@ -1,7 +1,7 @@
-# ADR-0002: A framework and a bundler
+# ADR-0002: The stack
 
 **Status:** Proposed   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
-**Scope:** What the page is built with: the framework, the language, the bundler, how `sqzer` reaches the page, the Content-Security-Policy under a build, the source layout, the checks, the deploy and the dependency updates. The design system, the component library and the styling system are ADR-0003 (ADR-0001 D10). What the page looks like and does is ADR-0001, and nothing here changes it.
+**Scope:** What the page is built with: the framework, the language, the bundler, the React APIs the page leans on, how the search's state is held, how `sqzer` reaches the page, the Content-Security-Policy under a build, the source layout, the checks, the deploy and the dependency updates. The design system, the component library and the styling system are ADR-0003 (ADR-0001 D10). What the page looks like and does is ADR-0001, and nothing here changes it.
 
 ---
 
@@ -10,6 +10,8 @@
 The page is plain HTML: `site/index.html`, one ES module (`site/main.js`, 372 lines), one worker script (`site/worker.js`, 77 lines), one stylesheet, no build step. That was decided in `sqzer` by ADR-0011 D6, and this repository's `CLAUDE.md` repeats it, along with "no dependency other than `sqzer`". It fit a placeholder page that had to exist on the day the package shipped.
 
 ADR-0001 asks for more than that page can comfortably hold: glass panels, synced zoom and pan, a bottom expander, an Advanced panel built from `codecs()`, a live chart, chips that collapse, alerts, and a borrowed design system with headless components. Its review set the direction. The "one dependency" rule goes, and this record proposes a framework and a bundler.
+
+The page is also where the maintainer wants to work with something new. The review of the first draft of this record asked for three things on top of the familiar stack: bleeding-edge tooling, React's newest APIs, and a state machine for the search. Each is checked below and decided in D1, D6, D9 and D10, with the stable tool named as the fallback wherever the new one is not stable yet.
 
 ### The maintainer's standards
 
@@ -39,13 +41,38 @@ vite                          8.3.2      MIT    builds with Rolldown
 @vitejs/plugin-react          6.1.1      MIT
 babel-plugin-react-compiler   1.0.0      MIT
 @rolldown/plugin-babel        0.2.4      MIT
+oxc-transform-react           0.145.x    MIT    0.152.0 is out; the plugin's peer range is ^0.145.0
 typescript                    7.0.2
-vitest                        5.0.3
+oxlint                        1.86.0     MIT
+eslint-plugin-react-hooks     7.1.1      MIT
+vitest                        5.0.3      MIT
+@vitest/browser-playwright    5.0.3      MIT
+vitest-browser-react          2.3.0      MIT
 @playwright/test              1.63.0
+xstate                        5.33.2     MIT
+@xstate/react                 6.1.0      MIT
 sqzer                         0.3.0      MIT OR Apache-2.0
 ```
 
-`@vitejs/plugin-react` 6 runs React Compiler two ways. `react({ compiler: true })` uses `oxc-transform-react`, a Rust port, which its README marks experimental. `reactCompilerPreset()` runs the Babel compiler through `@rolldown/plugin-babel`, and that is the stable path.
+`@vitejs/plugin-react` 6 runs React Compiler two ways. `react({ compiler: true })` uses `oxc-transform-react`, a Rust port, which its README marks experimental. `reactCompilerPreset()` runs the Babel compiler through `@rolldown/plugin-babel`, and that is the stable path. In the prototype below, both compiled the component, memo cache and all, into byte-identical bundles.
+
+The newer pieces, as they stood on 2026-10-03:
+
+```text
+oxlint           native `react`, `react-hooks` and `typescript` rules, `set-state-in-effect`
+                 among them. `eslint-plugin-react-hooks` runs inside it as a JS plugin under an
+                 alias, `react-hooks-js`, for the React Compiler rules. JS plugins are alpha. In
+                 the prototype, a planted `setState` in an effect and a missing dependency were
+                 caught by both the native rules and the JS plugin
+vitest browser   tests run in real Chromium and Firefox through `@vitest/browser-playwright`, not
+                 in jsdom. no longer marked experimental in the Vitest docs. `vitest-browser-react`
+                 renders components and queries by role and text, as Testing Library does
+react 19.3       exports `ViewTransition`, `addTransitionType`, `Activity` and `useEffectEvent`
+                 without an `unstable_` prefix
+view transitions Baseline newly available since 2025-10-14: Chrome 111, Firefox 144, Safari 18
+xstate 5         a machine with the worker as a callback actor, typed by `setup()`: `tsc` clean,
+                 and 14 kB gzip on top of React (68.94 kB to 82.96 kB)
+```
 
 The published `sqzer@0.3.0` is `sqzer.js`, `sqzer.d.ts`, `snippets/` and an 8.1 MB `sqzer_bg.wasm`, which `sqzer.js` finds through `new URL('sqzer_bg.wasm', import.meta.url)`. A bundler that understands that pattern emits the wasm as a file of its own next to the code.
 
@@ -78,7 +105,7 @@ Not checked: the prototype running in a browser. Headless Chromium and Firefox d
 
 ### D1. React 19 and TypeScript, built by Vite
 
-The page is a React 19 application in TypeScript, built by Vite 8 with `@vitejs/plugin-react`. React Compiler is on through `reactCompilerPreset()` and `@rolldown/plugin-babel`, the stable path; the Rust compiler is used once its README drops the experimental warning. TypeScript runs under `strict`, `verbatimModuleSyntax` and `erasableSyntaxOnly`, and `tsc --noEmit` runs in CI.
+The page is a React 19 application in TypeScript, built by Vite 8 with `@vitejs/plugin-react`. React Compiler is on through the Rust compiler, `react({ compiler: true })` with `oxc-transform-react`, pinned to the `0.145.x` that the plugin's peer range accepts. It is experimental, so the Babel compiler is the fallback: `reactCompilerPreset()` through `@rolldown/plugin-babel` is a two-line change in `vite.config.ts`, and the page goes back to it the first time the Rust one compiles something differently or breaks a build. TypeScript runs under `strict`, `verbatimModuleSyntax` and `erasableSyntaxOnly`, and `tsc --noEmit` runs in CI.
 
 It is a single-page application with one route and no server: the build is static files, and there is no router until there is a second page.
 
@@ -101,8 +128,8 @@ const csp = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-sr
 
 export default defineConfig({
   plugins: [
-    react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    // React Compiler in Rust. the fallback: `react()` plus `babel({ presets: [reactCompilerPreset()] })`
+    react({ compiler: true }),
     { name: 'csp', apply: 'build', transformIndexHtml: () => [
       { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: csp }, injectTo: 'head-prepend' },
     ] },
@@ -124,7 +151,7 @@ Three rules keep the policy as strict as it is today:
 
 ### D4. One worker, behind one adapter
 
-Every call into `sqzer` still runs in one worker, `src/shared/api/sqzer/worker.ts`, started with `new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })`. The message protocol is a set of TypeScript types in the same slice, shared by the worker and by its client. The client is the only thing that starts, ends or talks to the worker, and the rest of the page goes through it. Cancelling is still ending the worker and starting another, the only way an encode stops.
+Every call into `sqzer` still runs in one worker, `src/shared/api/sqzer/worker.ts`, started with `new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })`. The message protocol is a set of TypeScript types in the same slice, shared by the worker and by its client. The client is the only thing that starts, ends or talks to the worker, and the search machine of D10 is the only thing that uses the client. Cancelling is still ending the worker and starting another, the only way an encode stops.
 
 The canvas fallback stays where `CLAUDE.md` puts it: the package's decoder first, the browser's canvas for what it cannot read, and an SVG drawn on the page from an `<img>`.
 
@@ -151,14 +178,19 @@ On every pull request, in the job still named `browser` so the ruleset on `main`
 
 ```text
 tsc --noEmit         the types
-eslint               `eslint-plugin-react-hooks` with its React Compiler rules
+oxlint               native React, hooks and TypeScript rules, and `eslint-plugin-react-hooks`
+                     as the JS plugin `react-hooks-js` for the React Compiler rules
 steiger              the FSD boundaries of D5
-vitest               units and components, React Testing Library by role and text
+vitest               browser mode, in Chromium and Firefox: units, components through
+                     `vitest-browser-react` by role and text, the search machine of D10, and the
+                     `decodeAny` checks of `/selftest/`, on the page and in a worker
 playwright test      end to end, against `vite build` served by `vite preview`, in Chromium
-                     and Firefox
+                     and Firefox: one image through the page, a cancel, and the origin check
 ```
 
-`/selftest/` and `.github/check.mjs` become the Playwright suite, as ADR-0001 asked. The `decodeAny` checks run on the page and in a worker, as they do today, from a test-only entry that is not part of the deployed build. The suite also checks that every request the page makes stays on its own origin, which is the proof behind ADR-0001 D7. Firefox joins Chromium because it is the main development browser and the canvas fallback differs between them. Safari is checked by hand, on Apple hardware, and nowhere else: the public `/selftest/` page goes with the move, and so does the README section that asks readers to open it and paste its lines into an issue.
+`/selftest/` and `.github/check.mjs` become these two suites, as ADR-0001 asked. The `decodeAny` checks need a real canvas and a real worker, and browser mode gives them both, so they move to Vitest unchanged in substance. Playwright covers what only the built page has: the policy of D3, and every request staying on the page's own origin, which is the proof behind ADR-0001 D7. Firefox joins Chromium because it is the main development browser and the canvas fallback differs between them. Safari is checked by hand, on Apple hardware, and nowhere else: the public `/selftest/` page goes with the move, and so does the README section that asks readers to open it and paste its lines into an issue.
+
+oxlint's JS plugins are alpha. If the alias stops loading, the hooks rules still run natively, and ESLint with `eslint-plugin-react-hooks` is the fallback for the React Compiler rules alone.
 
 ### D7. The layout, the deploy and the updates
 
@@ -168,7 +200,8 @@ The repository root becomes the Vite project. `site/` goes.
 index.html                the entry Vite builds
 src/                      D5
 public/                   files served as they are: the icon, the samples if ADR-0001 adds them
-tests/e2e/                the Playwright suite and its fixtures
+tests/e2e/                the Playwright suite and its fixtures. Vitest tests sit next to what they
+                          test, as `*.test.ts` and `*.test.tsx`
 package.json              `sqzer` and the rest, at exact versions
 package-lock.json         committed
 vite.config.ts            D3
@@ -182,6 +215,30 @@ Dependabot watches `npm` at the root, daily. `sqzer` comes alone, so a release o
 ### D8. Styling is ADR-0003
 
 The design system, the component library and the styling system are chosen together in ADR-0003, after a survey, as ADR-0001 D10 says. That record starts from the maintainer's default, shadcn/ui on Tailwind, and has to meet ADR-0001 D10: headless components, nothing loaded from another host, licences MIT or Apache-2.0 compatible. Nothing in this record rules out that default: Tailwind 4 is a Vite plugin, and shadcn/ui is source copied into `src/shared/ui`.
+
+### D9. React's newest APIs carry the motion and the panels
+
+ADR-0001's changes of state are view transitions. Dropping a file turns the drop zone into the image, a result replaces the trial list, a panel collapses into the bottom expander. Each is wrapped in `<ViewTransition>` and named with `addTransitionType` (`drop`, `result`, `collapse`), and the stylesheet animates each type through `::view-transition-*`. The View Transition API is Baseline, newly available since 2025-10-14, and a browser without it changes state without the animation. Under `prefers-reduced-motion` the stylesheet turns the animations off.
+
+Collapsed panels and the closed Advanced expander are `<Activity mode="hidden">`, not unmounted. What was typed into a field survives a collapse, and a hidden panel renders at low priority while the comparison has the main thread. `useEffectEvent` is the answer when an effect needs the latest value without re-running, as the standards say.
+
+### D10. The search is a state machine
+
+The search's lifecycle is an XState 5 machine in `src/features/encode-image/model/`: `empty`, `searching`, `result`, `failed`, with `cancel` going back to the state the search started from. Each run of ADR-0001 D4 is its context: the trials as they land, the result, the error kind.
+
+The worker is a callback actor invoked by `searching`. The actor starts the worker, turns its messages into events (`trial`, `done`, `failed`), and returns a cleanup that terminates the worker. Leaving `searching` for any reason stops the actor, so a cancel, a new drop or a change of format during a search ends the worker. That is the rule in `CLAUDE.md`, now held by the machine instead of by care:
+
+```ts
+// the worker as an actor. stopping the actor ends the worker. in the prototype it called
+// `new Worker` directly; in the page it goes through the client of D4
+const encoder = fromCallback<Events, { bytes: ArrayBuffer }>(({ sendBack, input }) => {
+  const worker = startEncoder({ onMessage: (message) => sendBack(toEvent(message)) });
+  worker.encode(input.bytes);
+  return () => worker.terminate();
+});
+```
+
+The rest of the page reads the machine through `useSelector` from `@xstate/react`, and sends it events from handlers. Short-lived UI state, such as a panel being open, stays in `useState` where it is used.
 
 ---
 
@@ -201,7 +258,17 @@ The design system, the component library and the styling system are chosen toget
 
 **Keep a public browser check** as a second Vite entry, so anyone can open it in Safari and paste its lines into an issue, as `/selftest/` allows today. Rejected: it is a second page to build and keep in step with the suite for one browser. Safari is checked by hand.
 
-**The Rust React Compiler.** Faster builds, marked experimental by the plugin that ships it. Deferred.
+**The Babel React Compiler.** The stable path, and the fallback of D1. Not the default because the review asked for the new tooling, and the prototype showed both producing the same bundle.
+
+**ESLint.** The stable linter and the home of `eslint-plugin-react-hooks`. Not the default for the same reason. It stays the fallback for the React Compiler rules if oxlint's JS plugins fail them.
+
+**Vitest in jsdom with React Testing Library.** The usual setup. Rejected: jsdom has no canvas and no worker, so the `decodeAny` checks could not move into it, and browser mode tests the components in the engines the page runs in.
+
+**A typed `useReducer` for the search.** No dependency. Rejected: the worker's lifetime would sit in an effect next to the reducer, and keeping the two in step is exactly what an invoked actor does on its own.
+
+**`@xstate/store`.** Smaller, but it is a store of events, without states or invoked actors, so the worker's lifetime would again be held by hand. Rejected.
+
+**React's `unstable_` and canary APIs.** Out: the standards keep production code to stable APIs and Baseline features. D9 uses only what 19.3 exports as stable.
 
 ---
 
@@ -211,15 +278,19 @@ The design system, the component library and the styling system are chosen toget
 
 **69 KB of React and a bigger first download.** React and the 8 % from D2 together come to about 270 KB on a page that already moves 2.4 MB before the first image. Against that, the page talks to one origin.
 
+**New tools against settled ones.** The Rust compiler is experimental, its version lags the plugin's peer range, and oxlint's JS plugins are alpha. Each has its stable counterpart named as a fallback in D1 and D6, and each switch back is a change to configuration, not to the code.
+
+**XState against plain React state.** 14 kB gzip and a second way of holding state. The machine holds only the search, where the worker's lifetime makes it worth it, and nothing else moves into it.
+
 **The development server differs from the site.** It runs without the policy and with inline Fast Refresh scripts. A change that breaks the policy shows up in the Playwright suite against `vite preview`, not while developing.
 
-**More tools to keep current.** TypeScript, ESLint, Steiger, Vitest and Playwright each have releases. Dependabot groups them, and none of them ships to the reader.
+**More tools to keep current.** TypeScript, oxlint, Steiger, Vitest, Playwright and XState each have releases. Dependabot groups them, and none of them ships to the reader.
 
 ---
 
 ## 5. Consequences
 
-What becomes easier: ADR-0001 can be built as components, with types from the package and a component library. The policy loses its one exception. The tests run where the code runs, in two engines, and say so in CI.
+What becomes easier: ADR-0001 can be built as components, with types from the package and a component library. Cancelling a search can no longer leak a worker, because the machine of D10 ends it. The policy loses its one exception. The tests run where the code runs, in two engines, and say so in CI.
 
 What becomes harder: the page is no longer something to open from a folder. Reading it means `npm ci` and `npm run dev`, and a contributor needs Node.
 
@@ -233,8 +304,8 @@ What changes elsewhere:
 
 ## 6. Action items
 
-1. [ ] The port: `site/` becomes the Vite project of D7, `main.js` and `worker.js` become TypeScript under D4 and D5, and the page behaves exactly as it does today. The redesign of ADR-0001 starts after it.
-2. [ ] The checks of D6 in `check.yml`, in the `browser` job, and `/selftest/` and `.github/check.mjs` moved into the Playwright suite. The suite's first green run in CI is the browser check this record could not make.
+1. [ ] The port: `site/` becomes the Vite project of D7, `main.js` and `worker.js` become TypeScript under D4 and D5 with the search as the machine of D10, and the page behaves exactly as it does today. The redesign of ADR-0001, with D9, starts after it.
+2. [ ] The checks of D6 in `check.yml`, in the `browser` job, with `/selftest/` moved into Vitest browser mode and `.github/check.mjs` into the Playwright suite. Their first green run in CI is the browser check this record could not make.
 3. [ ] `pages.yml` builds and uploads `dist/`.
 4. [ ] `dependabot.yml`: `npm` at the root, `sqzer` alone, the tooling grouped.
 5. [ ] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
@@ -255,6 +326,11 @@ What changes elsewhere:
 - ADR-0011 D6, `sqzer-dev/sqzer`: https://github.com/sqzer-dev/sqzer/blob/main/docs/adr/0011-browser-build.md
 - `@vitejs/plugin-react`, React Compiler: https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react
 - React Compiler: https://react.dev/learn/react-compiler
+- `<ViewTransition>`: https://react.dev/reference/react/ViewTransition, `<Activity>`: https://react.dev/reference/react/Activity
+- View transitions in Baseline: https://web-platform-dx.github.io/web-features-explorer/features/view-transitions/
+- oxlint JS plugins: https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+- Vitest browser mode: https://vitest.dev/guide/browser/, `vitest-browser-react`: https://github.com/vitest-dev/vitest-browser-react
+- XState: https://stately.ai/docs/xstate, callback actors: https://stately.ai/docs/callback-actors
 - Vite, workers and `new URL(..., import.meta.url)`: https://vite.dev/guide/features#web-workers, https://vite.dev/guide/assets#new-url-url-import-meta-url
 - Vite, `build.assetsInlineLimit`: https://vite.dev/config/build-options#build-assetsinlinelimit
 - Feature-Sliced Design: https://feature-sliced.design, Steiger: https://github.com/feature-sliced/steiger
