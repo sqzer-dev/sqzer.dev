@@ -169,7 +169,7 @@ The wasm the page loads already carries every one of these options. Leaving them
 
 For the first 500 ms of a search, nothing changes, so a fast encode does not flash. After that the status panel shows each trial as it lands: its number out of the budget, its quality and its score, as in `trial 3 of at most 6: q 62, score 71.4`. There is no percent bar, because the search usually stops before the budget is spent. A cancel button sits beside it, and cancelling ends the worker, as it does now.
 
-The chart is the same data drawn over rules: plain horizontal lines, one every twenty points of quality, with no ticks and no background. Each trial is a point and consecutive trials are joined. The target is one labelled rule. The runs before this one in the session stay behind it as subtle lines, so changing the target or the format and searching again shows where the new search went against the old ones. Several images at full weight belong to batch mode, which is later (section 3). Its axes are quality and score until the package reports a size per trial (Action items). The chart comes from the numbers and draws nothing that did not happen.
+The chart is the same data drawn over rules: plain horizontal lines, one every twenty points of quality, with no ticks and no background. Each trial is a point and consecutive trials are joined. The target is one labelled rule. The runs before this one in the session stay behind it as subtle lines, so changing the target or the format and searching again shows where the new search went against the old ones. They last as long as the tab: a reload starts with an empty chart, and nothing is stored. Several images at full weight belong to batch mode, which is later (section 3). Its axes are quality and score until the package reports a size per trial (Action items). The chart comes from the numbers and draws nothing that did not happen.
 
 The status line stays `role="status"`. Only a trial's text is announced, not the drawing.
 
@@ -179,16 +179,16 @@ The result panel leads with the output size and the difference, set large, as Sq
 
 ```text
 19.3 KB    96 % smaller                                   [ Download ]
-(target reached) (resized) (metadata kept)
+reached  resized  metadata
 ```
 
-Chips under the size mark the booleans that applied and the options that were sent: `(lossless)`, `(target reached)` or `(not reached)`, `(resized)`, `(metadata kept)`, `(ICC kept)`, `(first frame only)` for an animated input, and one chip for each Advanced option set away from its default. A result with no chips is the package's defaults.
+Chips under the size mark the booleans that applied and the options that were sent, one word each: `lossless`, `reached` or `missed`, `resized`, `metadata`, `icc`, `animated` for an input of which only the first frame was encoded, and the name of each Advanced option set away from its default, such as `effort`. The full meaning of a chip, "metadata kept" or "effort 9, default 6", is its tooltip and its accessible name. When the chips do not fit on one line, the ones that do are shown and the rest collapse into a last chip, `+3`, that expands them. A result with no chips is the package's defaults.
 
 Everything else sits below, behind an expander on a wide screen and further down the bottom expander on a phone: the input size, the score with its words, the format, the quality, the trials, the backend and its tier, and the full record the package returned, so a bug report can still carry the raw numbers. When the search stopped short, the panel says so in one line there: "the target was not reached; this is the best quality the encoder has" for `capped`, and the score it did reach. The dimensions are in the corner labels of D2, not here.
 
 ### D6. Errors and limits are an alert
 
-Errors are shown as an alert over the image or in place of it: one sentence that names the file and what to do, a way to dismiss it, and `role="alert"` so it is announced. Every `SqzerError` kind has its sentence. `EncoderUnavailable` and `DecoderUnavailable` say which build has the format, from `availableIn`. `TooLarge` gives the limit in megapixels and points to `maxPixels` under Advanced. `InvalidParams` names the options that clash. A note that is not a failure, such as an animated input encoded as its first frame, is a chip (D5), not an alert.
+Errors are shown as an alert in the panel, between the download button and the options, where most forms put theirs; with no result yet it sits above the options, and on a phone the bottom expander opens to show it. It has one sentence that names the file and what to do, a way to dismiss it, and `role="alert"` so it is announced. Every `SqzerError` kind has its sentence. `EncoderUnavailable` and `DecoderUnavailable` say which build has the format, from `availableIn`. `TooLarge` gives the limit in megapixels and points to `maxPixels` under Advanced. `InvalidParams` names the options that clash. A note that is not a failure, such as an animated input encoded as its first frame, is a chip (D5), not an alert.
 
 ### D7. The privacy claim is one the page can prove
 
@@ -283,7 +283,6 @@ What to revisit: whether readers find the alternatives to the target and the Adv
 - Sample images (section 3).
 - The form of the animated background in D1, within the line language and the limits set there.
 - Whether the details of D5 are an expander or simply what follows on scroll. Both were named in review.
-- Whether the lines of earlier runs survive a reload. It would be `localStorage`, on this device only.
 - Colour, type and spacing, under D10.
 
 ---
