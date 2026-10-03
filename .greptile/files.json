@@ -24,6 +24,19 @@
       ]
     },
     {
+      "path": "docs/adr/0002-framework-and-bundler.md",
+      "description": "What the page is built with: React 19 and TypeScript under Vite, React Compiler, `sqzer` from npm served from the page's own origin, the Content-Security-Policy injected at build, one worker behind one adapter, Feature-Sliced Design, the checks, the layout, the deploy and Dependabot",
+      "scope": [
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "tests/**",
+        ".github/**"
+      ]
+    },
+    {
       "path": "site/worker.js",
       "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
       "scope": [

@@ -13,31 +13,36 @@
     "dependabot[bot]"
   ],
   "ignorePatterns": "site/selftest/fixtures/*\nLICENSE-*\nCODE_OF_CONDUCT.md",
-  "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser: plain HTML, one ES module, one worker script, no framework, no bundler, no build step. CLAUDE.md is the rule book and docs/adr holds the decisions; review against them. The page depends on the published package by exact version from jsDelivr and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
+  "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser. It moves from plain HTML to React 19, TypeScript and Vite under ADR-0002; until that port lands, `site/` is the page. CLAUDE.md is the rule book and docs/adr holds the decisions; where they disagree during the port, the accepted ADR wins. Review against them. The page depends on the published package by exact version and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
   "rules": [
     {
       "id": "no-third-party",
-      "rule": "The page talks to its own origin and `cdn.jsdelivr.net` and nothing else: no analytics, no error reporting, no font, script, stylesheet or image from another host, no `data:` URI. The `Content-Security-Policy` in `site/index.html` says so and is not widened for convenience. Flag any new origin, any inline `style` attribute or `<style>` block, and any removal or loosening of a CSP directive.",
+      "rule": "The page talks to its own origin and nothing else: no analytics, no error reporting, no font, script, stylesheet, image or wasm from another host, no `data:` URI. The `Content-Security-Policy` is written once in `vite.config.ts` and injected into the built `index.html`; it is not widened for convenience. Flag any new origin, any inline script in `index.html`, any `style` attribute or `<style>` block, a React `style` prop that sets anything but a custom property, a raised `build.assetsInlineLimit`, and any removal or loosening of a directive.",
       "scope": [
-        "site/**"
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "public/**"
       ],
       "severity": "high"
     },
     {
       "id": "package-by-version",
-      "rule": "`sqzer` reaches the page from jsDelivr at the exact version written in `site/package.json`, which `site/worker.js` reads at run time. Flag a second place the version is written, a range instead of an exact version, a checkout or vendored copy of the package, a bundler or build step, and any runtime dependency other than `sqzer`.",
+      "rule": "`sqzer` is a dependency in `package.json` at an exact version, installed from npm with the committed `package-lock.json`, bundled by Vite and served from the page's own origin. Flag a range instead of an exact version, a second place the version is written, a URL import of the package, a checkout or vendored copy of it, and `npm install` in CI where `npm ci` belongs. Any new dependency states its licence in the pull request.",
       "scope": [
-        "site/**",
+        "package.json",
+        "package-lock.json",
+        "src/**",
+        "vite.config.ts",
         ".github/**"
       ],
       "severity": "high"
     },
     {
       "id": "work-in-the-worker",
-      "rule": "Every call into the package happens in `site/worker.js`; `site/main.js` never imports it. The package is synchronous and a search cannot be interrupted, so cancelling means ending the worker and starting another, and that stays the only way. Flag an import of the package on the main thread and any attempt to interrupt an encode otherwise.",
+      "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`, and the rest of the page reaches it only through that slice's client. The package is synchronous and a search cannot be interrupted, so cancelling means ending the worker and starting another, and that stays the only way. Flag an import of `sqzer` outside the worker, a second worker that calls it, and any attempt to interrupt an encode otherwise.",
       "scope": [
-        "site/main.js",
-        "site/worker.js"
+        "src/**"
       ],
       "severity": "high"
     },
@@ -45,7 +50,7 @@
       "id": "no-codecs-here",
       "rule": "No decoder, encoder, resampler, colour transform or metric is written in this repository. The package's decoder comes first; the browser's canvas decodes only what the package cannot (SVG, HEIC where the browser can), never inside the search. An SVG is drawn on the page from an `<img>`, because `createImageBitmap` refuses an SVG blob inside a worker in every browser. A missing capability is a pull request to `sqzer-dev/sqzer`, followed by a version bump here.",
       "scope": [
-        "site/**"
+        "src/**"
       ],
       "severity": "high"
     },
@@ -53,8 +58,7 @@
       "id": "codecs-drive-the-controls",
       "rule": "What the page offers as formats, backends and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats or backends. The controls start at the package's defaults and the page never changes a default of the package on its own.",
       "scope": [
-        "site/main.js",
-        "site/index.html"
+        "src/**"
       ],
       "severity": "medium"
     },
@@ -65,11 +69,13 @@
     },
     {
       "id": "browser-check",
-      "rule": "`.github/check.mjs` runs on every pull request: `/selftest/` and one JPEG through the page in headless Chromium. A change to `site/main.js`, `site/worker.js` or `site/selftest/**` keeps it passing, and a change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a line to `/selftest/` so the next browser run shows it. The Playwright version in `check.yml` and the local instructions change together and on purpose.",
+      "rule": "The `browser` job of `check.yml` runs on every pull request: `tsc --noEmit`, ESLint with `eslint-plugin-react-hooks`, Steiger, Vitest, and the Playwright suite in `tests/e2e/` against the built page in Chromium and Firefox. A change keeps it green, and a change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a Playwright test for it. The suite checks that no request leaves the page's origin. Tool versions change through `package.json` and Dependabot, on purpose.",
       "scope": [
-        "site/**",
-        ".github/check.mjs",
-        ".github/workflows/check.yml"
+        "src/**",
+        "tests/**",
+        "index.html",
+        "vite.config.ts",
+        ".github/**"
       ],
       "severity": "medium"
     },
