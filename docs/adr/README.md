@@ -4,7 +4,7 @@ One file per decision, numbered, never edited after acceptance. A superseded rec
 
 ```
 0001-page-design.md   the design of the page, from references   Accepted
-0002-stack.md         the stack: React 19, Vite, XState, `sqzer` from npm   Proposed
+0002-stack.md         the stack: React 19, Vite, XState, `sqzer` from npm   Accepted
 ```
 
 The decisions this page is built on were taken in [`sqzer-dev/sqzer`](https://github.com/sqzer-dev/sqzer) and stay there: [`docs/adr/0011-browser-build.md`](https://github.com/sqzer-dev/sqzer/blob/main/docs/adr/0011-browser-build.md), D3 for the package's API and D6 for this page: its own repository, the published package by version from jsDelivr, a static page without a framework or a build step, nothing sent anywhere, the licence line it sits on.

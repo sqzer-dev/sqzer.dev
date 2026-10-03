@@ -1,6 +1,6 @@
 # ADR-0002: The stack
 
-**Status:** Proposed   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
 **Scope:** What the page is built with: the framework, the language, the bundler, the React APIs the page leans on, how the search's state is held, how `sqzer` reaches the page, the Content-Security-Policy under a build, the source layout, the checks, the deploy and the dependency updates. The design system, the component library and the styling system are ADR-0003 (ADR-0001 D10). What the page looks like and does is ADR-0001, and nothing here changes it.
 
 ---
