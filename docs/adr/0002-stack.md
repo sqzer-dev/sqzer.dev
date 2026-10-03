@@ -24,8 +24,8 @@ typescript   `strict`, `verbatimModuleSyntax`, `erasableSyntaxOnly`. no `enum`. 
              in CI, because Vite strips types without checking them
 structure    Feature-Sliced Design: import only from lower layers, through a slice's
              `index.ts`; barrels per slice only; boundaries enforced by a tool (Steiger)
-deps         every dependency is a risk. commit the lockfile, `npm ci` in CI. wrap a
-             third-party API behind one adapter
+deps         every dependency is a risk. commit the lockfile, install from it unchanged in CI.
+             wrap a third-party API behind one adapter. the package manager is pnpm
 tests        Vitest and React Testing Library by role and text; few end-to-end tests
 styling      default for a new project: shadcn/ui on Tailwind. one styling system per app
 browsers     Baseline features only in production. Firefox is the main development browser
@@ -52,6 +52,7 @@ vitest-browser-react          2.3.0      MIT
 xstate                        5.33.2     MIT
 @xstate/react                 6.1.0      MIT
 sqzer                         0.3.0      MIT OR Apache-2.0
+pnpm                          12.8.1     MIT    lockfile format 9.0
 ```
 
 `@vitejs/plugin-react` 6 runs React Compiler two ways. `react({ compiler: true })` uses `oxc-transform-react`, a Rust port, which its README marks experimental. `reactCompilerPreset()` runs the Babel compiler through `@rolldown/plugin-babel`, and that is the stable path. In the prototype below, both compiled the component, memo cache and all, into byte-identical bundles.
@@ -72,6 +73,8 @@ react 19.3       exports `ViewTransition`, `addTransitionType`, `Activity` and `
 view transitions Baseline newly available since 2025-10-14: Chrome 111, Firefox 144, Safari 18
 xstate 5         a machine with the worker as a callback actor, typed by `setup()`: `tsc` clean,
                  and 14 kB gzip on top of React (68.94 kB to 82.96 kB)
+pnpm 12          the prototype installs, type-checks and builds to the same bundle as under npm.
+                 Dependabot supports pnpm 7 to 12 and reads `pnpm-lock.yaml`
 ```
 
 The published `sqzer@0.3.0` is `sqzer.js`, `sqzer.d.ts`, `snippets/` and an 8.1 MB `sqzer_bg.wasm`, which `sqzer.js` finds through `new URL('sqzer_bg.wasm', import.meta.url)`. A bundler that understands that pattern emits the wasm as a file of its own next to the code.
@@ -111,7 +114,7 @@ It is a single-page application with one route and no server: the build is stati
 
 ### D2. `sqzer` from npm, served from the page's own origin
 
-`sqzer` is a dependency in `package.json` at an exact version, installed from npm with the lockfile committed and `npm ci` in CI. Vite bundles `sqzer.js` into the worker and emits `sqzer_bg.wasm` as a hashed file, both served from `sqzer.dev`. The page stops loading anything from jsDelivr, and `cdn.jsdelivr.net` leaves the Content-Security-Policy.
+`sqzer` is a dependency in `package.json` at an exact version, installed from the npm registry by pnpm, with `pnpm-lock.yaml` committed and `pnpm install --frozen-lockfile` in CI. Vite bundles `sqzer.js` into the worker and emits `sqzer_bg.wasm` as a hashed file, both served from `sqzer.dev`. The page stops loading anything from jsDelivr, and `cdn.jsdelivr.net` leaves the Content-Security-Policy.
 
 The version the footer shows comes from the package at build time, not from a second place it is written. `package.json` and the lockfile are still the only places that name it, and a Dependabot pull request is still the whole bump.
 
@@ -202,15 +205,15 @@ src/                      D5
 public/                   files served as they are: the icon, the samples if ADR-0001 adds them
 tests/e2e/                the Playwright suite and its fixtures. Vitest tests sit next to what they
                           test, as `*.test.ts` and `*.test.tsx`
-package.json              `sqzer` and the rest, at exact versions
-package-lock.json         committed
+package.json              `sqzer` and the rest, at exact versions, and `packageManager: pnpm@12.8.1`
+pnpm-lock.yaml            committed
 vite.config.ts            D3
 tsconfig.json             D1
 ```
 
-`pages.yml` runs `npm ci` and `npm run build`, and uploads `dist/` instead of `site/`. Every merge to `main` is still a deploy.
+`pages.yml` sets up pnpm from `packageManager` with `pnpm/action-setup`, runs `pnpm install --frozen-lockfile` and `pnpm build`, and uploads `dist/` instead of `site/`. `check.yml` installs the same way. Every merge to `main` is still a deploy.
 
-Dependabot watches `npm` at the root, daily. `sqzer` comes alone, so a release of the package is one pull request with nothing else in it. The build and test tooling comes grouped, one pull request at a time.
+Dependabot watches the root with its `npm` ecosystem, which covers pnpm and its lockfile, daily. `sqzer` comes alone, so a release of the package is one pull request with nothing else in it. The build and test tooling comes grouped, one pull request at a time.
 
 ### D8. Styling is ADR-0003
 
@@ -274,7 +277,7 @@ The rest of the page reads the machine through `useSelector` from `@xstate/react
 
 ## 4. Trade-offs
 
-**A build step against none.** Every change now goes through `npm ci`, a build and a lockfile, and a broken build stops a deploy. The checks of D6 run on every pull request, so it stops there and not on the site.
+**A build step against none.** Every change now goes through `pnpm install`, a build and a lockfile, and a broken build stops a deploy. The checks of D6 run on every pull request, so it stops there and not on the site.
 
 **69 KB of React and a bigger first download.** React and the 8 % from D2 together come to about 270 KB on a page that already moves 2.4 MB before the first image. Against that, the page talks to one origin.
 
@@ -292,7 +295,7 @@ The rest of the page reads the machine through `useSelector` from `@xstate/react
 
 What becomes easier: ADR-0001 can be built as components, with types from the package and a component library. Cancelling a search can no longer leak a worker, because the machine of D10 ends it. The policy loses its one exception. The tests run where the code runs, in two engines, and say so in CI.
 
-What becomes harder: the page is no longer something to open from a folder. Reading it means `npm ci` and `npm run dev`, and a contributor needs Node.
+What becomes harder: the page is no longer something to open from a folder. Reading it means `pnpm install` and `pnpm dev`, and a contributor needs Node and pnpm.
 
 What changes elsewhere:
 
@@ -307,7 +310,7 @@ What changes elsewhere:
 1. [ ] The port: `site/` becomes the Vite project of D7, `main.js` and `worker.js` become TypeScript under D4 and D5 with the search as the machine of D10, and the page behaves exactly as it does today. The redesign of ADR-0001, with D9, starts after it.
 2. [ ] The checks of D6 in `check.yml`, in the `browser` job, with `/selftest/` moved into Vitest browser mode and `.github/check.mjs` into the Playwright suite. Their first green run in CI is the browser check this record could not make.
 3. [ ] `pages.yml` builds and uploads `dist/`.
-4. [ ] `dependabot.yml`: `npm` at the root, `sqzer` alone, the tooling grouped.
+4. [ ] `dependabot.yml`: the `npm` ecosystem at the root, `sqzer` alone, the tooling grouped.
 5. [ ] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
 6. [ ] `sqzer-dev/sqzer`: a note under ADR-0011 action item 5 pointing here.
 7. [ ] ADR-0003: the design system, the component library and the styling system.
@@ -336,3 +339,5 @@ What changes elsewhere:
 - Feature-Sliced Design: https://feature-sliced.design, Steiger: https://github.com/feature-sliced/steiger
 - GitHub Pages, the `wabt` demo used for the compression check: https://webassembly.github.io/wabt/demo/
 - `sqzer` on npm: https://www.npmjs.com/package/sqzer
+- pnpm: https://pnpm.io, `pnpm/action-setup`: https://github.com/pnpm/action-setup
+- Dependabot's supported pnpm versions: https://github.com/dependabot/dependabot-core/blob/main/npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb

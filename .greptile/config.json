@@ -28,10 +28,10 @@
     },
     {
       "id": "package-by-version",
-      "rule": "`sqzer` is a dependency in `package.json` at an exact version, installed from npm with the committed `package-lock.json`, bundled by Vite and served from the page's own origin. Flag a range instead of an exact version, a second place the version is written, a URL import of the package, a checkout or vendored copy of it, and `npm install` in CI where `npm ci` belongs. Any new dependency states its licence in the pull request.",
+      "rule": "`sqzer` is a dependency in `package.json` at an exact version, installed by pnpm from the npm registry with the committed `pnpm-lock.yaml`, bundled by Vite and served from the page's own origin. Flag a range instead of an exact version, a second place the version is written, a URL import of the package, a checkout or vendored copy of it, an npm or Yarn lockfile, and a CI install that may change the lockfile instead of `pnpm install --frozen-lockfile`. Any new dependency states its licence in the pull request.",
       "scope": [
         "package.json",
-        "package-lock.json",
+        "pnpm-lock.yaml",
         "src/**",
         "vite.config.ts",
         ".github/**"
