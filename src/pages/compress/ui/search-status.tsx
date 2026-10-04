@@ -15,8 +15,8 @@ export function SearchStatus() {
   });
 
   return (
-    <p id="status" role="status" aria-live="polite" data-failed={failed || undefined}>
+    <output id="status" data-failed={failed || undefined}>
       {text}
-    </p>
+    </output>
   );
 }

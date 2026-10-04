@@ -78,7 +78,7 @@ test('the footer names the version of `sqzer` the worker loaded', async ({ page 
 test('a change of format during a search ends the worker and starts another', async ({ page }) => {
   const status = await open(page);
   await page.evaluate(() => {
-    const line = document.querySelector('[role="status"]');
+    const line = document.querySelector('output');
     if (!line) throw new Error('the page has no status line');
     window.statuses = [];
     new MutationObserver(() => {

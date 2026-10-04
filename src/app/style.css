@@ -65,8 +65,11 @@ pre,
   color: GrayText;
 }
 
+/* An `<output>` is inline. The status line is a paragraph of its own. */
 #status {
+  display: block;
   min-height: 1.5em;
+  margin: 1em 0;
 }
 #status[data-failed] {
   color: #b00020;
