@@ -11,59 +11,32 @@
     {
       "path": "docs/adr/README.md",
       "description": "The index of design and behaviour decisions, and which decisions taken in sqzer-dev/sqzer govern this page",
-      "scope": [
-        "docs/adr/**",
-        "src/**",
-        "index.html"
-      ]
+      "scope": ["docs/adr/**", "src/**", "index.html"]
     },
     {
       "path": "docs/adr/0001-page-design.md",
       "description": "The design of the page: the drop zone as the empty state, the image on the whole screen under glass panels, the target first and every package option behind Advanced, untouched controls sending nothing, the search shown as it runs, the result as size, difference and chips, errors as alerts, the privacy claim, the wordmark, the accessibility floor",
-      "scope": [
-        "src/**",
-        "index.html"
-      ]
+      "scope": ["src/**", "index.html"]
     },
     {
       "path": "docs/adr/0002-stack.md",
       "description": "The stack: React 19 and TypeScript under Vite with the Rust React Compiler, `<ViewTransition>` and `<Activity>`, the search as an XState machine with the worker as an actor, `sqzer` from npm served from the page's own origin, the Content-Security-Policy injected at build, Feature-Sliced Design, oxlint, Vitest browser mode, Playwright, the layout, the deploy and Dependabot",
-      "scope": [
-        "src/**",
-        "index.html",
-        "vite.config.ts",
-        "package.json",
-        "tsconfig.json",
-        "tests/**",
-        ".github/**"
-      ]
+      "scope": ["src/**", "index.html", "vite.config.ts", "package.json", "tsconfig.json", "tests/**", ".github/**"]
     },
     {
       "path": "docs/adr/0003-design-system.md",
       "description": "The components and the look: shadcn/ui on Base UI under `<CSPProvider disableStyleElements>`, Tailwind 4 as the one styling system, Geist Sans and Mono self-hosted, Radix Colors grey mapped onto shadcn's tokens, one `glass` utility with its fallbacks and contrast test, Lucide icons, the licence notices",
-      "scope": [
-        "src/**",
-        "index.html",
-        "vite.config.ts",
-        "package.json",
-        "public/**",
-        "tests/**"
-      ]
+      "scope": ["src/**", "index.html", "vite.config.ts", "package.json", "public/**", "tests/**"]
     },
     {
       "path": "docs/adr/0004-worker-lifetime.md",
       "description": "The worker's lifetime and the layout: the worker actor is invoked by the machine's `open` state and keeps the decoded image between searches, cancelling is re-entering `open`, every message names its image, and slices are merged into `src/pages/compress/` until something is reused",
-      "scope": [
-        "src/**"
-      ]
+      "scope": ["src/**"]
     },
     {
       "path": "src/shared/api/sqzer/protocol.ts",
       "description": "The messages between the page and the worker: what the client sends, what the worker answers, and the stages a failure names",
-      "scope": [
-        "src/shared/api/**",
-        "src/pages/compress/model/**"
-      ]
+      "scope": ["src/shared/api/**", "src/pages/compress/model/**"]
     }
   ]
 }

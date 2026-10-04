@@ -119,7 +119,7 @@ It comes back if the hosting can send the headers or an encoder gains a hook. It
 ## 6. Action items
 
 1. [x] The machine of D1 to D3 and the layout of D4, in the port of ADR-0002 item 1.
-2. [ ] Steiger in `check.yml` with `fsd/insignificant-slice` on, with ADR-0002 item 2.
+2. [x] Steiger in `check.yml` with `fsd/insignificant-slice` on, with ADR-0002 item 2.
 
 ---
 

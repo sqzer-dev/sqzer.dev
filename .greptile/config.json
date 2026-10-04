@@ -1,78 +1,46 @@
 {
   "strictness": 2,
-  "commentTypes": [
-    "logic",
-    "syntax"
-  ],
-  "autoReview": [
-    "open",
-    "push"
-  ],
+  "commentTypes": ["logic", "syntax"],
+  "autoReview": ["open", "push"],
   "statusCheck": true,
-  "excludeAuthors": [
-    "dependabot[bot]"
-  ],
-  "ignorePatterns": "site/selftest/fixtures/*\nLICENSE-*\nCODE_OF_CONDUCT.md",
+  "excludeAuthors": ["dependabot[bot]"],
+  "ignorePatterns": "tests/fixtures/*\nLICENSE-*\nCODE_OF_CONDUCT.md",
   "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser. It moves from plain HTML to React 19, TypeScript and Vite under ADR-0002; until that port lands, `site/` is the page. CLAUDE.md is the rule book and docs/adr holds the decisions; where they disagree during the port, the accepted ADR wins. Review against them. The page depends on the published package by exact version and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
   "rules": [
     {
       "id": "no-third-party",
       "rule": "The page talks to its own origin and nothing else: no analytics, no error reporting, no font, script, stylesheet, image or wasm from another host, no `data:` URI. The `Content-Security-Policy` is written once in `vite.config.ts` and injected into the built `index.html`; it is not widened for convenience. Flag any new origin, any inline script in `index.html`, any `style` attribute or `<style>` block, a React `style` prop that sets anything but a custom property, a raised `build.assetsInlineLimit`, and any removal or loosening of a directive. Fonts are files bundled from our own packages, under `font-src 'self'`. The root stays wrapped in Base UI's `<CSPProvider disableStyleElements>`; flag any dependency that creates a `<style>` element at run time (Radix primitives that lock scroll through `react-remove-scroll`, Vaul, CSS-in-JS).",
-      "scope": [
-        "src/**",
-        "index.html",
-        "vite.config.ts",
-        "public/**"
-      ],
+      "scope": ["src/**", "index.html", "vite.config.ts", "public/**"],
       "severity": "high"
     },
     {
       "id": "package-by-version",
       "rule": "`sqzer` is a dependency in `package.json` at an exact version, installed by pnpm from the npm registry with the committed `pnpm-lock.yaml`, bundled by Vite and served from the page's own origin. Flag a range instead of an exact version, a second place the version is written, a URL import of the package, a checkout or vendored copy of it, an npm or Yarn lockfile, and a CI install that may change the lockfile instead of `pnpm install --frozen-lockfile`. Any new dependency states its licence in the pull request.",
-      "scope": [
-        "package.json",
-        "pnpm-lock.yaml",
-        "src/**",
-        "vite.config.ts",
-        ".github/**"
-      ],
+      "scope": ["package.json", "pnpm-lock.yaml", "src/**", "vite.config.ts", ".github/**"],
       "severity": "high"
     },
     {
       "id": "work-in-the-worker",
       "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`. Only that slice's client starts or ends the worker, and only the search machine in `src/pages/compress/model/` uses the client, as a callback actor invoked by the machine's `open` state, whose cleanup terminates the worker (ADR-0004). The worker outlives a search and keeps the decoded image. A search cannot be interrupted, so cancelling means re-entering `open`, which stops the actor and ends the worker; that stays the only way. Flag an import of `sqzer` outside the worker, a `new Worker` outside the client, the client used outside the machine, a worker ended while it is idle, and any attempt to interrupt an encode otherwise.",
-      "scope": [
-        "src/**"
-      ],
+      "scope": ["src/**"],
       "severity": "high"
     },
     {
       "id": "no-codecs-here",
       "rule": "No decoder, encoder, resampler, colour transform or metric is written in this repository. The package's decoder comes first; the browser's canvas decodes only what the package cannot (SVG, HEIC where the browser can), never inside the search. An SVG is drawn on the page from an `<img>`, because `createImageBitmap` refuses an SVG blob inside a worker in every browser. A missing capability is a pull request to `sqzer-dev/sqzer`, followed by a version bump here.",
-      "scope": [
-        "src/**"
-      ],
+      "scope": ["src/**"],
       "severity": "high"
     },
     {
       "id": "codecs-drive-the-controls",
       "rule": "What the page offers as formats, backends and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats or backends. The controls start at the package's defaults and the page never changes a default of the package on its own.",
-      "scope": [
-        "src/**"
-      ],
+      "scope": ["src/**"],
       "severity": "medium"
     },
     {
       "id": "one-styling-system",
       "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, Radix `red` anywhere but an alert, glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
-      "scope": [
-        "src/**",
-        "index.html",
-        "vite.config.ts",
-        "package.json",
-        "public/**",
-        "tests/**"
-      ],
+      "scope": ["src/**", "index.html", "vite.config.ts", "package.json", "public/**", "tests/**"],
       "severity": "medium"
     },
     {
@@ -82,23 +50,14 @@
     },
     {
       "id": "browser-check",
-      "rule": "The `browser` job of `check.yml` runs on every pull request: `tsc --noEmit`, oxlint with `eslint-plugin-react-hooks` as the JS plugin `react-hooks-js`, Steiger, Vitest in browser mode in Chromium and Firefox, and the Playwright suite in `tests/e2e/` against the built page in Chromium and Firefox. A change keeps it green. A change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a Vitest browser test for it, and the Playwright suite checks that no request leaves the page's origin. Tool versions change through `package.json` and Dependabot, on purpose.",
-      "scope": [
-        "src/**",
-        "tests/**",
-        "index.html",
-        "vite.config.ts",
-        ".github/**"
-      ],
+      "rule": "The `browser` job of `check.yml` runs on every pull request: `tsc`, oxlint with its type-aware rules and `eslint-plugin-react-hooks` as the JS plugin `react-hooks-js`, `oxfmt --check`, Steiger, Vitest in browser mode in Chromium and Firefox, and the Playwright suite in `tests/e2e/` against the built page in Chromium and Firefox. A change keeps it green, and does not loosen `.oxlintrc.json` or the `tsconfig` files to get there: a rule is turned off only with its reason next to it. A change to a path that depends on the browser (the canvas fallback, `decodeAny`, the comparison) adds a Vitest browser test for it, and the Playwright suite checks that no request leaves the page's origin. Tool versions change through `package.json` and Dependabot, on purpose.",
+      "scope": ["src/**", "tests/**", "index.html", "vite.config.ts", ".github/**"],
       "severity": "medium"
     },
     {
       "id": "accepted-adrs",
       "rule": "An accepted ADR is never rewritten; ticking or annotating its own action items and adding a `Superseded by` line at the top are fine. A change of design or behaviour that an ADR decided gets a new numbered file, a row in `docs/adr/README.md`, an entry in `.greptile/files.json` scoped to what it governs, and an update to any rule in `.greptile/config.json` it changes, all in the same PR.",
-      "scope": [
-        "docs/adr/**",
-        ".greptile/**"
-      ],
+      "scope": ["docs/adr/**", ".greptile/**"],
       "severity": "medium"
     },
     {

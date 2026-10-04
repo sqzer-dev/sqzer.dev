@@ -1,51 +1,48 @@
 import { useEffect, useEffectEvent, useState } from 'react';
 
-/** Where a file comes in: chosen, pasted, or dropped anywhere on the window. */
-export function DropZone({ onPick }: { onPick: (file: File) => void }) {
+/** A file pasted or dropped anywhere on the window goes to `onPick`. Says whether one is being dragged over it. */
+function useWindowFiles(onPick: (file: File) => void) {
   const [dragging, setDragging] = useState(false);
   const pick = useEffectEvent(onPick);
 
   useEffect(() => {
     const listeners = new AbortController();
     const { signal } = listeners;
-    addEventListener(
-      'paste',
-      (event) => {
-        const file = event.clipboardData?.files[0];
-        if (!file) return;
-        event.preventDefault();
-        pick(file);
-      },
-      { signal },
-    );
-    addEventListener(
-      'dragover',
-      (event) => {
-        event.preventDefault();
-        setDragging(true);
-      },
-      { signal },
-    );
-    addEventListener(
-      'dragleave',
-      (event) => {
-        // leaving the window, not moving from one element to the next
-        if (!event.relatedTarget) setDragging(false);
-      },
-      { signal },
-    );
-    addEventListener(
-      'drop',
-      (event) => {
-        event.preventDefault();
-        setDragging(false);
-        const file = event.dataTransfer?.files[0];
-        if (file) pick(file);
-      },
-      { signal },
-    );
-    return () => listeners.abort();
+    const paste = (event: ClipboardEvent) => {
+      const file = event.clipboardData?.files[0];
+      if (!file) return;
+      event.preventDefault();
+      pick(file);
+    };
+    const over = (event: DragEvent) => {
+      event.preventDefault();
+      setDragging(true);
+    };
+    const leave = (event: DragEvent) => {
+      // leaving the window, not moving from one element to the next
+      if (!event.relatedTarget) setDragging(false);
+    };
+    const drop = (event: DragEvent) => {
+      event.preventDefault();
+      setDragging(false);
+      const file = event.dataTransfer?.files[0];
+      if (file) pick(file);
+    };
+    addEventListener('paste', paste, { signal });
+    addEventListener('dragover', over, { signal });
+    addEventListener('dragleave', leave, { signal });
+    addEventListener('drop', drop, { signal });
+    return () => {
+      listeners.abort();
+    };
   }, []);
+
+  return dragging;
+}
+
+/** Where a file comes in: chosen, pasted, or dropped anywhere on the window. */
+export function DropZone({ onPick }: { onPick: (file: File) => void }) {
+  const dragging = useWindowFiles(onPick);
 
   return (
     <label id="drop" htmlFor="file" data-dragging={dragging || undefined}>

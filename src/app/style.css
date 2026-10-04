@@ -3,7 +3,9 @@
 
 :root {
   color-scheme: light dark;
-  font: 1rem/1.5 system-ui, sans-serif;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
 }
 
 body {
@@ -14,8 +16,14 @@ body {
   color: CanvasText;
 }
 
-h1 { margin: 0; }
-code, pre, #status { font-family: ui-monospace, monospace; }
+h1 {
+  margin: 0;
+}
+code,
+pre,
+#status {
+  font-family: ui-monospace, monospace;
+}
 
 #drop {
   display: block;
@@ -25,8 +33,13 @@ code, pre, #status { font-family: ui-monospace, monospace; }
   text-align: center;
   cursor: pointer;
 }
-#drop span { display: block; margin-bottom: 0.5rem; }
-#drop[data-dragging] { border-color: Highlight; }
+#drop span {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+#drop[data-dragging] {
+  border-color: Highlight;
+}
 
 #options {
   display: flex;
@@ -42,12 +55,23 @@ code, pre, #status { font-family: ui-monospace, monospace; }
   padding: 0;
   border: 0;
 }
-#options legend { padding: 0; }
-#options input[type="number"] { width: 5rem; }
-#options fieldset:disabled { color: GrayText; }
+#options legend {
+  padding: 0;
+}
+#options input[type='number'] {
+  width: 5rem;
+}
+#options fieldset:disabled {
+  color: GrayText;
+}
 
-#status { min-height: 1.5em; }
-#status[data-failed] { color: #b00020; color: light-dark(#b00020, #ff8a80); }
+#status {
+  min-height: 1.5em;
+}
+#status[data-failed] {
+  color: #b00020;
+  color: light-dark(#b00020, #ff8a80);
+}
 
 /* Two pictures in one cell, the second clipped at the handle. The size is
    the image's, once it is known. */
@@ -59,13 +83,22 @@ code, pre, #status { font-family: ui-monospace, monospace; }
   margin: 0 auto;
   background: repeating-conic-gradient(GrayText 0 25%, Canvas 0 50%) 0 0 / 1rem 1rem;
 }
-#compare > * { grid-area: 1 / 1; width: 100%; }
-#compare img { height: 100%; }
-#after { clip-path: inset(0 0 0 var(--split, 50%)); }
+#compare > * {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+#compare img {
+  height: 100%;
+}
+#after {
+  clip-path: inset(0 0 0 var(--split, 50%));
+}
 #split {
   align-self: end;
   margin: 0;
   opacity: 0.85;
 }
 
-#summary { white-space: pre-wrap; }
+#summary {
+  white-space: pre-wrap;
+}

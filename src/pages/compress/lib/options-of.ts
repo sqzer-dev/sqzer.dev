@@ -1,4 +1,5 @@
 import type { Codec, EncodeOptions } from '@/shared/api';
+
 import { isLossy } from './codec';
 
 /** What the controls say, as the options of the package. It validates them. */
@@ -10,7 +11,8 @@ export function optionsOf(form: HTMLFormElement, codecs: Codec[]): EncodeOptions
   };
   const options: EncodeOptions = {};
   const format = field('format');
-  // the list comes from `codecs()`, so the package knows every format on it
+  // The list comes from `codecs()`, and the package validates what it is given.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   if (format !== 'auto') options.format = format as EncodeOptions['format'];
   if (isLossy(codecs, format)) {
     const mode = field('mode');

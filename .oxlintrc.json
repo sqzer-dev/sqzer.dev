@@ -1,0 +1,61 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "react", "jsx-a11y", "import", "promise", "unicorn", "oxc"],
+  // `eslint-plugin-react-hooks` under an alias, for the React Compiler rules (ADR-0002 D6)
+  "jsPlugins": [{ "name": "react-hooks-js", "specifier": "eslint-plugin-react-hooks" }],
+  "options": {
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "error"
+  },
+  "rules": {
+    "react-hooks-js/rules-of-hooks": "error",
+    "react-hooks-js/exhaustive-deps": "error",
+    "react-hooks-js/static-components": "error",
+    "react-hooks-js/use-memo": "error",
+    "react-hooks-js/void-use-memo": "error",
+    "react-hooks-js/preserve-manual-memoization": "error",
+    "react-hooks-js/incompatible-library": "error",
+    "react-hooks-js/immutability": "error",
+    "react-hooks-js/globals": "error",
+    "react-hooks-js/refs": "error",
+    "react-hooks-js/set-state-in-effect": "error",
+    "react-hooks-js/error-boundaries": "error",
+    "react-hooks-js/purity": "error",
+    "react-hooks-js/set-state-in-render": "error",
+    "react-hooks-js/unsupported-syntax": "error",
+    "react-hooks-js/config": "error",
+    "react-hooks-js/gating": "error",
+
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/consistent-type-imports": "error",
+    "eslint/no-console": "error",
+    "eslint/max-lines-per-function": ["error", { "max": 50, "skipBlankLines": true, "skipComments": true }],
+    "typescript/no-confusing-void-expression": ["error", { "ignoreArrowShorthand": true }],
+    // a stylesheet is imported for what it does, not for a value
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+
+    // the automatic JSX runtime needs no `React` in scope
+    "react/react-in-jsx-scope": "off",
+    // the DOM, XState and the package hand out mutable types, so nearly every parameter fails it
+    "typescript/prefer-readonly-parameter-types": "off",
+    // `noImplicitReturns` checks the same with the types, and allows an effect that has nothing to clean up
+    "typescript/consistent-return": "off",
+    // the status line stays `role="status"` (ADR-0001 D4)
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      "plugins": ["eslint", "typescript", "react", "jsx-a11y", "import", "promise", "unicorn", "oxc", "vitest"]
+    }
+  ],
+  "ignorePatterns": ["dist"]
+}

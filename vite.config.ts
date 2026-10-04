@@ -5,7 +5,8 @@ import { defineConfig } from 'vite';
 const csp =
   "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; " +
   "connect-src 'self'; img-src 'self' blob:; style-src 'self'; base-uri 'none'; form-action 'none'";
-const charset = '<meta charset="utf-8">';
+// The charset tag of `index.html`, however the formatter closes it.
+const charset = /<meta charset="utf-8"\s*\/?>/u;
 
 export default defineConfig({
   plugins: [
@@ -17,8 +18,8 @@ export default defineConfig({
       apply: 'build',
       transformIndexHtml(html) {
         // a browser reads the charset in the first 1024 bytes, so the policy goes after it
-        if (!html.includes(charset)) throw new Error(`index.html has no ${charset} to put the policy after`);
-        return html.replace(charset, `${charset}\n<meta http-equiv="Content-Security-Policy" content="${csp}">`);
+        if (!charset.test(html)) throw new Error('index.html has no `<meta charset="utf-8">` to put the policy after');
+        return html.replace(charset, `$&\n<meta http-equiv="Content-Security-Policy" content="${csp}">`);
       },
     },
   ],

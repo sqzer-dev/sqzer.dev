@@ -37,10 +37,10 @@ export type Failure = {
   type: 'error';
   /** `start` and `load` come before any request and name no image, the rest name the request that failed. */
   stage: 'start' | 'load' | Request['type'];
-  id?: number;
+  id?: number | undefined;
   kind: SqzerError['kind'];
   message: string;
-  availableIn?: string[];
+  availableIn?: string[] | undefined;
 };
 
 export type Reply =

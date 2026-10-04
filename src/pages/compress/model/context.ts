@@ -1,4 +1,5 @@
 import { createActorContext } from '@xstate/react';
+
 import { searchMachine } from './machine';
 
 const SearchContext = createActorContext(searchMachine);

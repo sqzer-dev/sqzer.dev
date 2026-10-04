@@ -1,5 +1,7 @@
 import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup } from 'xstate';
+
 import type { Codec, Decoded, EncodeOptions, TrialProgress } from '@/shared/api';
+
 import type { EncodeResult } from './encode-result';
 import { encoder, type EncoderCommand, type EncoderEvent } from './encoder';
 import type { Picked } from './picked';
@@ -48,11 +50,11 @@ type SearchEvent =
   | EncoderEvent;
 
 /** Drawn by the page's own `<img>` instead of decoded in the worker. */
-const onPage = ({ image, unreadable }: Context) => Boolean(image?.vector) || unreadable !== null;
+const onPage = ({ image, unreadable }: Context) => image?.vector === true || unreadable !== null;
 
 /** The width to draw a vector image at. A width the package will refuse is not one to draw at. */
 function drawWidth({ image, options: { width = 0 } }: Context) {
-  return image?.vector && Number.isInteger(width) && width > 0 ? width : 0;
+  return image?.vector === true && Number.isInteger(width) && width > 0 ? width : 0;
 }
 
 /**
@@ -63,6 +65,8 @@ function drawWidth({ image, options: { width = 0 } }: Context) {
  * the only way an encode is cancelled.
  */
 export const searchMachine = setup({
+  // XState reads the two types off these values and nothing else.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   types: { context: {} as Context, events: {} as SearchEvent },
   actors: { encoder },
   guards: {
@@ -70,8 +74,7 @@ export const searchMachine = setup({
     showable: ({ context }) => !context.unshowable,
     broken: ({ context }) => context.broken,
     outdated: ({ context }) => context.outdated,
-    needsReading: ({ context }) =>
-      !context.held || (onPage(context) && context.drawnWidth !== drawWidth(context)),
+    needsReading: ({ context }) => !context.held || (onPage(context) && context.drawnWidth !== drawWidth(context)),
   },
   actions: {
     takeImage: assign(({ event }) => {
@@ -112,7 +115,7 @@ export const searchMachine = setup({
     // Only an image the worker holds can be asked for, and only once.
     askForPreview: enqueueActions(({ context, enqueue }) => {
       const { unshowable, preview, previewAsked, held } = context;
-      if (!unshowable || preview || previewAsked || !held) return;
+      if (!unshowable || preview !== null || previewAsked || !held) return;
       const command: EncoderCommand = { type: 'preview' };
       enqueue.sendTo('encoder', command);
       enqueue.assign({ previewAsked: true });

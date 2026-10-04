@@ -11,5 +11,5 @@ export type EncodeResult = {
 
 /** The stem of `name` with the extension of the output. */
 export function rename(name: string, extension: string) {
-  return `${name.replace(/\.[^./\\]*$/, '')}.${extension}`;
+  return `${name.replace(/\.[^./\\]*$/u, '')}.${extension}`;
 }
