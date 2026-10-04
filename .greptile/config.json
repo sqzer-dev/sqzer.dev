@@ -40,7 +40,7 @@
     },
     {
       "id": "work-in-the-worker",
-      "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`. Only that slice's client starts or ends the worker, and only the search machine in `src/features/encode-image/model/` uses the client, as an invoked callback actor whose cleanup terminates the worker. A search cannot be interrupted, so cancelling means stopping the actor, which ends the worker; that stays the only way. Flag an import of `sqzer` outside the worker, a `new Worker` outside the client, the client used outside the machine, and any attempt to interrupt an encode otherwise.",
+      "rule": "Every call into the package happens in the worker in `src/shared/api/sqzer/`. Only that slice's client starts or ends the worker, and only the search machine in `src/pages/compress/model/` uses the client, as a callback actor invoked by the machine's `open` state, whose cleanup terminates the worker (ADR-0004). The worker outlives a search and keeps the decoded image. A search cannot be interrupted, so cancelling means re-entering `open`, which stops the actor and ends the worker; that stays the only way. Flag an import of `sqzer` outside the worker, a `new Worker` outside the client, the client used outside the machine, a worker ended while it is idle, and any attempt to interrupt an encode otherwise.",
       "scope": [
         "src/**"
       ],
@@ -105,8 +105,8 @@
       "id": "user-facing-prose",
       "rule": "User-facing text (the page's copy, README, contributor docs, issue forms, PR template, docs): sentence-case headings, backticks on every identifier, flag and path, no em dashes, no emoji, no tables, explanation in `#` comments above a command rather than prose around it, uncertainty stated flatly with the next step named.",
       "scope": [
-        "site/index.html",
-        "site/main.js",
+        "index.html",
+        "src/**",
         "README.md",
         "CONTRIBUTING.md",
         "SECURITY.md",

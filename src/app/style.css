@@ -26,7 +26,7 @@ code, pre, #status { font-family: ui-monospace, monospace; }
   cursor: pointer;
 }
 #drop span { display: block; margin-bottom: 0.5rem; }
-body.dragging #drop { border-color: Highlight; }
+#drop[data-dragging] { border-color: Highlight; }
 
 #options {
   display: flex;
@@ -47,12 +47,15 @@ body.dragging #drop { border-color: Highlight; }
 #options fieldset:disabled { color: GrayText; }
 
 #status { min-height: 1.5em; }
-#status.failed { color: #b00020; color: light-dark(#b00020, #ff8a80); }
+#status[data-failed] { color: #b00020; color: light-dark(#b00020, #ff8a80); }
 
-/* Two pictures in one cell, the second clipped at the handle. */
+/* Two pictures in one cell, the second clipped at the handle. The size is
+   the image's, once it is known. */
 #compare {
   display: grid;
+  width: var(--width, auto);
   max-width: 100%;
+  aspect-ratio: var(--ratio, auto);
   margin: 0 auto;
   background: repeating-conic-gradient(GrayText 0 25%, Canvas 0 50%) 0 0 / 1rem 1rem;
 }

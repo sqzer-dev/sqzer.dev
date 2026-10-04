@@ -1,6 +1,7 @@
 # ADR-0002: The stack
 
 **Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Superseded by:** ADR-0004 for the worker's lifetime in D10 and the slice list of D5: the worker lives as long as the machine's `open` state and keeps the decoded image between searches, and slices are merged into `src/pages/compress/` until something is reused
 **Scope:** What the page is built with: the framework, the language, the bundler, the React APIs the page leans on, how the search's state is held, how `sqzer` reaches the page, the Content-Security-Policy under a build, the source layout, the checks, the deploy and the dependency updates. The design system, the component library and the styling system are ADR-0003 (ADR-0001 D10). What the page looks like and does is ADR-0001, and nothing here changes it.
 
 ---
@@ -307,7 +308,7 @@ What changes elsewhere:
 
 ## 6. Action items
 
-1. [ ] The port: `site/` becomes the Vite project of D7, `main.js` and `worker.js` become TypeScript under D4 and D5 with the search as the machine of D10, and the page behaves exactly as it does today. The redesign of ADR-0001, with D9, starts after it.
+1. [x] The port: `site/` becomes the Vite project of D7, `main.js` and `worker.js` become TypeScript under D4 and D5 with the search as the machine of D10, and the page behaves exactly as it does today. The redesign of ADR-0001, with D9, starts after it.
 2. [ ] The checks of D6 in `check.yml`, in the `browser` job, with `/selftest/` moved into Vitest browser mode and `.github/check.mjs` into the Playwright suite. Their first green run in CI is the browser check this record could not make.
 3. [ ] `pages.yml` builds and uploads `dist/`.
 4. [ ] `dependabot.yml`: the `npm` ecosystem at the root, `sqzer` alone, the tooling grouped.

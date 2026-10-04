@@ -13,14 +13,16 @@
       "description": "The index of design and behaviour decisions, and which decisions taken in sqzer-dev/sqzer govern this page",
       "scope": [
         "docs/adr/**",
-        "site/**"
+        "src/**",
+        "index.html"
       ]
     },
     {
       "path": "docs/adr/0001-page-design.md",
       "description": "The design of the page: the drop zone as the empty state, the image on the whole screen under glass panels, the target first and every package option behind Advanced, untouched controls sending nothing, the search shown as it runs, the result as size, difference and chips, errors as alerts, the privacy claim, the wordmark, the accessibility floor",
       "scope": [
-        "site/**"
+        "src/**",
+        "index.html"
       ]
     },
     {
@@ -49,11 +51,18 @@
       ]
     },
     {
-      "path": "site/worker.js",
-      "description": "The message protocol between the page and the worker, at the top of the file, and how the package version is read",
+      "path": "docs/adr/0004-worker-lifetime.md",
+      "description": "The worker's lifetime and the layout: the worker actor is invoked by the machine's `open` state and keeps the decoded image between searches, cancelling is re-entering `open`, every message names its image, and slices are merged into `src/pages/compress/` until something is reused",
       "scope": [
-        "site/main.js",
-        "site/worker.js"
+        "src/**"
+      ]
+    },
+    {
+      "path": "src/shared/api/sqzer/protocol.ts",
+      "description": "The messages between the page and the worker: what the client sends, what the worker answers, and the stages a failure names",
+      "scope": [
+        "src/shared/api/**",
+        "src/pages/compress/model/**"
       ]
     }
   ]
