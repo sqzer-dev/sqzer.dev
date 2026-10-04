@@ -17,7 +17,7 @@
   "rules": [
     {
       "id": "no-third-party",
-      "rule": "The page talks to its own origin and nothing else: no analytics, no error reporting, no font, script, stylesheet, image or wasm from another host, no `data:` URI. The `Content-Security-Policy` is written once in `vite.config.ts` and injected into the built `index.html`; it is not widened for convenience. Flag any new origin, any inline script in `index.html`, any `style` attribute or `<style>` block, a React `style` prop that sets anything but a custom property, a raised `build.assetsInlineLimit`, and any removal or loosening of a directive.",
+      "rule": "The page talks to its own origin and nothing else: no analytics, no error reporting, no font, script, stylesheet, image or wasm from another host, no `data:` URI. The `Content-Security-Policy` is written once in `vite.config.ts` and injected into the built `index.html`; it is not widened for convenience. Flag any new origin, any inline script in `index.html`, any `style` attribute or `<style>` block, a React `style` prop that sets anything but a custom property, a raised `build.assetsInlineLimit`, and any removal or loosening of a directive. Fonts are files bundled from our own packages, under `font-src 'self'`. The root stays wrapped in Base UI's `<CSPProvider disableStyleElements>`; flag any dependency that creates a `<style>` element at run time (Radix primitives that lock scroll through `react-remove-scroll`, Vaul, CSS-in-JS).",
       "scope": [
         "src/**",
         "index.html",
@@ -59,6 +59,19 @@
       "rule": "What the page offers as formats, backends and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats or backends. The controls start at the package's defaults and the page never changes a default of the package on its own.",
       "scope": [
         "src/**"
+      ],
+      "severity": "medium"
+    },
+    {
+      "id": "one-styling-system",
+      "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, Radix `red` anywhere but an alert, glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
+      "scope": [
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "package.json",
+        "public/**",
+        "tests/**"
       ],
       "severity": "medium"
     },
