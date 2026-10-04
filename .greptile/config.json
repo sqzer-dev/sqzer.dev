@@ -64,7 +64,7 @@
     },
     {
       "id": "one-styling-system",
-      "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
+      "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, Radix `red` anywhere but an alert, glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
       "scope": [
         "src/**",
         "index.html",

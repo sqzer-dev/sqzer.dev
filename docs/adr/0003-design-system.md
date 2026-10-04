@@ -1,6 +1,6 @@
 # ADR-0003: The design system, the components and the styling
 
-**Status:** Proposed   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
 **Scope:** What ADR-0001 D10 left to its own record, on the stack of ADR-0002. It covers the headless component library, the styling system, the fonts, the colours, the glass panels, the icons, and the licences they bring. It also adds one directive to the Content-Security-Policy. What the page does and where things sit is ADR-0001, and nothing here changes it.
 
 ---
@@ -83,7 +83,7 @@ ADR-0001 D2 puts every control in glass panels over the reader's own image, whic
 
 ### D1. shadcn/ui on Base UI, styled with Tailwind 4
 
-The components are shadcn/ui's Base UI flavour, the default of `shadcn init`, on Tailwind 4. They are source copied into `src/shared/ui/`, one entry per component as ADR-0002 D5 says, and upgraded through `shadcn add`. What shadcn does not have, such as zoom and pan, the chart and the corner labels, is written on the same tokens and the same Base UI parts. The target slider's marks are positioned by our CSS, since Base UI's `Slider` has no marks part.
+The components are shadcn/ui's Base UI flavour, the default of `shadcn init`, on Tailwind 4, in shadcn's Mira style: rounded corners on the controls and on the glass of D5. They are source copied into `src/shared/ui/`, one entry per component as ADR-0002 D5 says, and upgraded through `shadcn add`. What shadcn does not have, such as zoom and pan, the chart and the corner labels, is written on the same tokens and the same Base UI parts. The target slider's marks are positioned by our CSS, since Base UI's `Slider` has no marks part.
 
 Tailwind 4 is the one styling system: the `@tailwindcss/vite` plugin, utilities in markup, and plain CSS in `@layer` only where a utility cannot say it (`@font-face`, `::view-transition-*`, the glass fallbacks of D5). No CSS Modules, no CSS-in-JS, no second component library.
 
@@ -126,11 +126,18 @@ dark    gray 7  1.92   gray 8  2.80   gray 9  3.45   gray 10  4.15
 
 `gray 9` passes in light by a hair, so the floor is `gray 10`.
 
-Light and dark follow `prefers-color-scheme`, as ADR-0002 D3 has it, with no script. There is no hue: the page is monochrome, as ADR-0001 wants. Whether alerts take one is under Open.
+Light and dark follow `prefers-color-scheme`, as ADR-0002 D3 has it, with no script. The page is monochrome, with one hue for one purpose: alerts are Radix `red`, from the same package. An alert has an opaque `red 3` fill, `red 12` text, and a `red 9` border and icon. The fill is opaque, so no coloured text ever sits on glass, as Fluent's guidance asks. Measured:
+
+```text
+light   red 12 on red 3  10.84   red 9 on gray 2  3.72
+dark    red 12 on red 3  11.95   red 9 on gray 2  4.49
+```
+
+`red 11` on `red 3` measures 4.54 in light, too close to 4.5 to rely on, so the text is `red 12`. Red appears nowhere else: not on chips, not on a result that missed its target, and not in the chart.
 
 ### D5. One glass, with its fallbacks
 
-Glass is one Tailwind utility, `glass`, for the surfaces that float over the image on their own: the panels, the bottom expander and the corner labels. Nothing inside them is glass. The chips, the fields and the alert sit on the panel's surface with a plain 1 px border at `gray 10` (D4) and no fill of their own. Its rules, taken from Apple's and Fluent's guidance:
+Glass is one Tailwind utility, `glass`, for the surfaces that float over the image on their own: the panels, the bottom expander and the corner labels. Nothing inside them is glass. The chips and the fields sit on the panel's surface with a plain 1 px border at `gray 10` (D4) and no fill of their own. The alert sits there too, with its opaque fill of D4. Its rules, taken from Apple's and Fluent's guidance:
 
 ```text
 where        controls only, never content. one level deep: no glass inside glass
@@ -211,7 +218,7 @@ What changes elsewhere: ADR-0002 D3's policy gains `font-src 'self'`. ADR-0002's
 
 ## 6. Action items
 
-1. [ ] `shadcn init` with the Base UI base on Tailwind 4 and Lucide, after ADR-0002's port, with the components into `src/shared/ui/`. The shadcn style is chosen then (Open).
+1. [ ] `shadcn init` with the Base UI base on Tailwind 4 and Lucide, after ADR-0002's port, in the Mira style, with the components into `src/shared/ui/`.
 2. [ ] `<CSPProvider disableStyleElements>` at the root, the scrollbar rules of D2, `font-src 'self'` in the policy, and the Playwright check for `securitypolicyviolation`.
 3. [ ] The Geist fonts of D3 and the token mapping of D4, light and dark.
 4. [ ] The `glass` utility of D5, its fallbacks, the "Solid panels" switch, and the contrast test of every glass surface over the white, black and noise fixtures.
@@ -221,8 +228,6 @@ What changes elsewhere: ADR-0002 D3's policy gains `font-src 'self'`. ADR-0002's
 
 ## Open
 
-- The shadcn style: Lyra, described as "boxy and sharp, pairs well with mono fonts", or Mira. Picked by looking at both on the real page.
-- Whether alerts take a hue, Radix `red`, or stay monochrome with an icon and words.
 - The blur radius, by measuring frame cost on a low-end phone while dragging the split.
 
 ---
