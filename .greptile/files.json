@@ -6,7 +6,7 @@
     },
     {
       "path": "README.md",
-      "description": "What the page is, how to run it, how the version of sqzer is bumped, how a browser is checked"
+      "description": "What the page is, how to run it, how the version of sqzer is bumped, the checks and the deploy"
     },
     {
       "path": "docs/adr/README.md",

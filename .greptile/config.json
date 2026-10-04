@@ -5,7 +5,7 @@
   "statusCheck": true,
   "excludeAuthors": ["dependabot[bot]"],
   "ignorePatterns": "tests/fixtures/*\nLICENSE-*\nCODE_OF_CONDUCT.md",
-  "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser. It moves from plain HTML to React 19, TypeScript and Vite under ADR-0002; until that port lands, `site/` is the page. CLAUDE.md is the rule book and docs/adr holds the decisions; where they disagree during the port, the accepted ADR wins. Review against them. The page depends on the published package by exact version and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
+  "instructions": "sqzer.dev is the page that runs the `sqzer` npm package in the browser. It is a React 19 and TypeScript application built by Vite (ADR-0002), with the search as an XState machine whose worker outlives a search (ADR-0004). CLAUDE.md is the rule book and docs/adr holds the decisions; where they disagree, the accepted ADR wins. Review against them. The page depends on the published package by exact version and sends nothing anywhere. The page never writes a decoder, encoder, resampler or metric; what the package lacks is a change to sqzer-dev/sqzer, not to this repository.",
   "rules": [
     {
       "id": "no-third-party",

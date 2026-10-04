@@ -18,9 +18,9 @@ The page is maintained by one person. Expect an acknowledgement within a week, a
 
 In scope:
 
-- anything that makes the page send image data, or anything else, to a host other than its own origin and `cdn.jsdelivr.net`
+- anything that makes the page send image data, or anything else, to a host other than its own origin
 - a way to run script or load a resource from a dropped, pasted or picked file: its name, an SVG's content, anything the page puts on screen
-- a way around the `Content-Security-Policy` in `site/index.html`
+- a way around the `Content-Security-Policy`, which `vite.config.ts` writes into the built `index.html`
 - a page that keeps running the previous visitor's data, or leaks it between tabs
 
 > **Note**: A crafted image that crashes the encoder, hangs it or makes it allocate without bound is a bug in the `sqzer` package, not in this page. Report it to [`sqzer-dev/sqzer`](https://github.com/sqzer-dev/sqzer/security/advisories/new) instead; the page picks up the fix with the next version bump.

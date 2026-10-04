@@ -312,9 +312,9 @@ What changes elsewhere:
 2. [x] The checks of D6 in `check.yml`, in the `browser` job, with `/selftest/` moved into Vitest browser mode and `.github/check.mjs` into the Playwright suite. Their first green run in CI is the browser check this record could not make.
 3. [x] `pages.yml` builds and uploads `dist/`.
 4. [x] `dependabot.yml`: the `npm` ecosystem at the root, `sqzer` alone, the tooling grouped.
-5. [ ] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
+5. [x] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
 6. [ ] `sqzer-dev/sqzer`: a note under ADR-0011 action item 5 pointing here.
-7. [ ] ADR-0003: the design system, the component library and the styling system.
+7. [x] ADR-0003: the design system, the component library and the styling system.
 
 ---
 
