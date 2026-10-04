@@ -313,7 +313,7 @@ What changes elsewhere:
 3. [x] `pages.yml` builds and uploads `dist/`.
 4. [x] `dependabot.yml`: the `npm` ecosystem at the root, `sqzer` alone, the tooling grouped.
 5. [x] `CLAUDE.md`, `README.md`, `CONTRIBUTING.md` and the PR template, with the port. The README's "Checking a browser" section goes.
-6. [ ] `sqzer-dev/sqzer`: a note under ADR-0011 action item 5 pointing here.
+6. [x] `sqzer-dev/sqzer`: a note under ADR-0011 action item 5 pointing here. (Opened as pull request 53 there, to merge after the port: https://github.com/sqzer-dev/sqzer/pull/53)
 7. [x] ADR-0003: the design system, the component library and the styling system.
 
 ---
