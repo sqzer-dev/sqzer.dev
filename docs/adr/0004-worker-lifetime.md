@@ -1,6 +1,6 @@
 # ADR-0004: The worker outlives a search
 
-**Status:** Proposed   **Date:** 2026-10-04   **Deciders:** Vlad (sole maintainer)
+**Status:** Accepted   **Date:** 2026-10-04   **Deciders:** Vlad (sole maintainer)
 **Scope:** How long the worker lives and how a search is cancelled, which ADR-0002 D10 decided, and where the page's code sits, which ADR-0002 D5 sketched. Nothing else in ADR-0002 changes, and nothing in ADR-0001 or ADR-0003.
 
 ---
