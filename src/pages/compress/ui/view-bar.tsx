@@ -14,14 +14,20 @@ type ViewBarProps = {
   flat: boolean;
   onFlat: (flat: boolean) => void;
   onPick: (file: File) => void;
-  /** Glass and a place where the bar floats on its own, nothing where it sits in the bottom expander. */
-  className?: string;
+  /** On its own over the image, in glass. Not where it sits in the bottom expander, which is glass already. */
+  floating?: boolean;
 };
 
 /** What is said of the view, not of the search: another image, what shows through a transparent one, and the page itself. */
-export function ViewBar({ flat, onFlat, onPick, className }: ViewBarProps) {
+export function ViewBar({ flat, onFlat, onPick, floating = false }: ViewBarProps) {
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div
+      data-slot="view-bar"
+      className={cn(
+        'flex items-center gap-1',
+        floating && 'glass absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg p-1',
+      )}
+    >
       <FilePicker variant="ghost" onPick={onPick}>
         <ImagePlusIcon data-icon="inline-start" /> New image
       </FilePicker>

@@ -1,18 +1,11 @@
 // Every glass surface over the worst images a reader can drop, in light and dark (ADR-0003 D5):
 // 4.5:1 for text and 3:1 for a line that marks a control, as WCAG 1.4.3 and 1.4.11 ask. The tint
 // in `style.css` is the lowest step of its scale that passes here.
-import type { ComponentType } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { render } from 'vitest-browser-react';
 import { commands, page, server } from 'vitest/browser';
 
-import { Badge } from '@/shared/ui/badge';
-import { Input } from '@/shared/ui/input';
-import { Slider } from '@/shared/ui/slider';
-
-import { BottomExpander } from './bottom-expander';
-import { CornerLabel } from './corner-label';
-import { Panel } from './panel';
+import { surfaces } from './glass.surfaces';
 
 type Media = {
   colorScheme?: 'light' | 'dark' | null;
@@ -38,49 +31,8 @@ const backdrops: Record<string, string> = {
   noise: new URL('../../../../tests/fixtures/noise.png', import.meta.url).href,
 };
 
-/** What a panel holds: body text, a chip, a slider and a field, here with the focus on it. */
-function Content() {
-  return (
-    <div className="flex flex-col items-start gap-3">
-      <p className="text-sm">The target was reached in 4 trials.</p>
-      <p className="text-xs text-muted-foreground">70, high: barely noticeable side by side</p>
-      <Badge variant="outline">lossless</Badge>
-      <Slider defaultValue={[70]} aria-label="Target" />
-      {/* oxlint-disable-next-line jsx-a11y/no-autofocus -- the focus ring is one of the lines measured */}
-      <Input autoFocus aria-label="Width" />
-    </div>
-  );
-}
-
-function Floating() {
-  return (
-    <Panel title="Options" className="top-16 left-4">
-      <Content />
-    </Panel>
-  );
-}
-
-function Expander() {
-  return (
-    <BottomExpander>
-      <Content />
-    </BottomExpander>
-  );
-}
-
-function Label() {
-  return <CornerLabel side="before" name="Before" size={{ width: 4032, height: 3024 }} />;
-}
-
-// The glass surfaces of the page (ADR-0003 D5), as the page builds them.
-const surfaces: Record<string, { Surface: ComponentType; selector: string }> = {
-  'a panel': { Surface: Floating, selector: '[data-size]' },
-  'the bottom expander': { Surface: Expander, selector: '[data-slot=drawer-popup]' },
-  'a corner label': { Surface: Label, selector: 'span' },
-};
-
 // What is measured against the glass: the surface's own text, and inside it every text, chip, field and slider track.
-const TEXTS = 'p, h2 button, [data-slot=badge]';
+const TEXTS = 'p, h2 button, label, [data-slot=badge], [data-slot=button], [data-slot=toggle]';
 const BORDERS = '[data-slot=badge], [data-slot=input]';
 const FILLS = '[data-slot=slider-track]';
 

@@ -42,12 +42,7 @@ export function Workspace({ values, onChange, onPick, dragging }: WorkspaceProps
           <Panel title="Result" className="right-3 bottom-3">
             <ResultPanel />
           </Panel>
-          <ViewBar
-            className="glass absolute bottom-3 left-1/2 -translate-x-1/2 rounded-lg p-1"
-            flat={flat}
-            onFlat={setFlat}
-            onPick={onPick}
-          />
+          <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} />
         </>
       ) : (
         <BottomExpander>
