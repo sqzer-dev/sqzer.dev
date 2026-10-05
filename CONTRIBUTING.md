@@ -51,14 +51,16 @@ A change to a path that depends on the browser, the canvas fallback, `decodeAny`
 
 - React 19 and TypeScript, built by Vite into static files. The code sits in `src/pages/compress/` until a second place uses a part of it, and imports go to lower layers through a public `index.ts`.
 - `sqzer` is a dependency at an exact version, installed from the committed `pnpm-lock.yaml` and served from the page's own origin. `package.json` and the lockfile are the only places the version is written.
-- The page sends nothing anywhere: its own origin is the only host. The `Content-Security-Policy` in `vite.config.ts` enforces it and is not widened for convenience. No inline script, no `style` attribute, no `<style>` block.
+- The page sends nothing anywhere: its own origin is the only host. The `Content-Security-Policy` in `vite.config.ts` enforces it and is not widened for convenience. No inline script, no `style` attribute, no `<style>` block, and no library that makes one at run time.
+- Tailwind 4 is the one styling system: utilities in the markup, on the tokens of `src/app/style.css`. The components are shadcn/ui's Base UI flavour in `src/shared/ui/`. No colour or font outside the tokens, and red only on an alert.
+- Glass is the `glass` utility, on what floats over the image and on nothing inside it. A new glass surface joins `glass.test.tsx`, which holds its contrast over a white, a black and a noisy image.
 - Every call into the package runs in the worker. A search cannot be interrupted, so cancelling means ending the worker and starting another, and only the search machine does that. An idle worker is kept: it holds the decoded image.
 - The package's decoder comes first; the browser's canvas decodes only what the package cannot. Nothing here decodes, encodes, resizes or scores an image itself.
 - Formats, backends and what the page says it reads come from the package's `codecs()`, never from a list in the code.
 
 ## Licences and new dependencies
 
-The page is `MIT OR Apache-2.0`. A pull request that adds a dependency says why the page cannot do without it and states the licence. AGPL and GPL code is not accepted until the page switches to the AGPL build of `sqzer`, which will be its own decision.
+The page is `MIT OR Apache-2.0`. A pull request that adds a dependency says why the page cannot do without it and states the licence. The build writes `licenses.txt` from what the page's script carries; a dependency that reaches the page as a stylesheet or a font is added to `UNLISTED` in `vite.config.ts`. AGPL and GPL code is not accepted until the page switches to the AGPL build of `sqzer`, which will be its own decision.
 
 Unless you say otherwise, any contribution you submit is dual-licensed as `MIT OR Apache-2.0`, as defined in the Apache-2.0 licence, without additional terms.
 

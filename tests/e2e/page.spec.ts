@@ -51,6 +51,12 @@ async function open(page: Page) {
   return status;
 }
 
+/** Picks from the format list, a Base UI select: its options are on the page only while it is open. */
+async function format(page: Page, name: RegExp) {
+  await page.getByRole('combobox', { name: 'Format' }).click();
+  await page.getByRole('option', { name }).click();
+}
+
 test('a JPEG goes through the page with the defaults', async ({ page }) => {
   const status = await open(page);
   await page.getByLabel(DROP).setInputFiles(fixture('pattern-rgb.jpg'));
@@ -58,6 +64,9 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
   await expect(status).toHaveText(/^Done in [\d.]+ s\.$/u, SLOW);
   await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
   await expect(page.getByText(/target 70 reached in \d trials?:/u)).toBeVisible();
+  // each side's size, in the corner over it
+  await expect(page.getByText('Before: 48 × 32')).toBeVisible();
+  await expect(page.getByText('After: 48 × 32')).toBeVisible();
 
   // the download is a picture of the fixture's size, not just a link
   const download = page.getByRole('link', { name: 'Download pattern-rgb.avif' });
@@ -84,6 +93,12 @@ test('the footer links the licences of what the page carries, the package in the
   const text = await licences.text();
   expect(text).toMatch(/^## react - \d/mu);
   expect(text).toMatch(/^## xstate - \d/mu);
+  expect(text).toMatch(/^## @base-ui\/react - \d/mu);
+  expect(text).toMatch(/^## lucide-react - \d.+\(ISC\)$/mu);
+  // what reaches the page as a stylesheet or a font
+  expect(text).toMatch(/^## geist - \d/mu);
+  expect(text).toContain('SIL Open Font License');
+  expect(text).toMatch(/^## @radix-ui\/colors - \d/mu);
   expect(text).toMatch(/^## sqzer - \d+\.\d+\.\d+ \(MIT OR Apache-2\.0\)$/mu);
 });
 
@@ -104,11 +119,11 @@ test('a change of format during a search ends the worker and starts another', as
 
   // drawn large, so a search takes seconds
   await page.getByLabel('Width').fill('2000');
-  await page.getByLabel(/^Format/u).selectOption('avif');
+  await format(page, /^AVIF/u);
   await page.getByLabel(DROP).setInputFiles(fixture('pattern-rgb.svg'));
   await expect(status).toHaveText(/^Encoding: trial 1 of at most/u, SLOW);
 
-  await page.getByLabel(/^Format/u).selectOption('jpeg');
+  await format(page, /^JPEG/u);
   await expect(status).toHaveText(/^Done in/u, SLOW);
   await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible();
 
@@ -118,6 +133,28 @@ test('a change of format during a search ends the worker and starts another', as
   expect(trial).toBeGreaterThan(-1);
   expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
   expect(statuses.join('\n')).not.toMatch(/avif/u);
+});
+
+test('the components and the fonts hold under the policy', async ({ page }) => {
+  await open(page);
+
+  // the list hides its scrollbar by a class, which Base UI would otherwise style from a `<style>` element
+  await page.getByRole('combobox', { name: 'Format' }).click();
+  await expect(page.getByRole('option', { name: 'chosen per image' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const solid = page.getByRole('switch', { name: 'Solid panels' });
+  await solid.click();
+  await expect(solid).toBeChecked();
+  await expect(page.locator('html')).toHaveAttribute('data-panels', 'solid');
+
+  // Geist comes from the page's own origin, under `font-src 'self'`
+  const fonts = await page.evaluate(async () => {
+    await Promise.all([document.fonts.load('1em Geist'), document.fonts.load('1em "Geist Mono"')]);
+    return [...document.fonts].map((font) => `${font.family} ${font.status}`);
+  });
+  expect(fonts.toSorted()).toEqual(['Geist Mono loaded', 'Geist loaded']);
+  await expect(page.locator('style')).toHaveCount(0);
 });
 
 test("the policy names no origin but the page's own", async ({ page }) => {
@@ -130,6 +167,7 @@ test("the policy names no origin but the page's own", async ({ page }) => {
 
   const policy = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   expect(policy).toMatch(/^default-src 'none'; /u);
+  expect(policy).toContain("style-src 'self'; font-src 'self';");
   expect(policy).not.toMatch(/https?:|\*|unsafe-inline|data:/u);
   expect([...origins]).toEqual([new URL(page.url()).origin]);
 });

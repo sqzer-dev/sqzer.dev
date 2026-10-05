@@ -34,6 +34,11 @@
       "scope": ["src/**"]
     },
     {
+      "path": "src/app/style.css",
+      "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
+      "scope": ["src/**"]
+    },
+    {
       "path": "src/shared/api/sqzer/protocol.ts",
       "description": "The messages between the page and the worker: what the client sends, what the worker answers, and the stages a failure names",
       "scope": ["src/shared/api/**", "src/pages/compress/model/**"]

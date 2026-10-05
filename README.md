@@ -2,13 +2,14 @@
 
 The page at [sqzer.dev](https://sqzer.dev): drop an image, get a smaller one that looks the same. It runs [`sqzer`](https://github.com/sqzer-dev/sqzer) in the browser, from the [`sqzer` package on npm](https://www.npmjs.com/package/sqzer). The image never leaves the tab: no upload, no analytics, no error reporting, and no request to any origin but the page's own.
 
-React 19 and TypeScript, built by Vite into static files.
+React 19 and TypeScript, built by Vite into static files. The components are shadcn/ui on Base UI, styled with Tailwind 4.
 
 ```
 index.html              the entry Vite builds
 src/app/                the root and the global stylesheet
 src/pages/compress/     the page: its parts, the search machine, the helpers
 src/shared/api/sqzer/   the worker: every call into `sqzer`, off the main thread
+src/shared/ui/          the components, one file each, copied in by `shadcn add`
 tests/                  the end-to-end suite and the fixtures
 docs/adr/               the decisions
 ```

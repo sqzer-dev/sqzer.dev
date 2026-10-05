@@ -48,12 +48,15 @@ async function renderPanel() {
     </SearchProvider>,
   );
   const options = () => (form.current ? optionsOf(form.current, codecs) : null);
-  return { screen, onChange, options };
+  const format = screen.getByRole('combobox', { name: 'Format' });
+  return { screen, onChange, options, format };
 }
 
 test('the format list is what `codecs()` can write', async () => {
-  const { screen } = await renderPanel();
+  const { screen, format } = await renderPanel();
+  await format.click();
 
+  await expect.element(screen.getByRole('option', { name: 'chosen per image' })).toBeInTheDocument();
   await expect.element(screen.getByRole('option', { name: 'JPEG (jpeg-rs)' })).toBeInTheDocument();
   await expect.element(screen.getByRole('option', { name: 'PNG, lossless (png-rs)' })).toBeInTheDocument();
   await expect.element(screen.getByRole('option', { name: /TIFF/u })).not.toBeInTheDocument();
@@ -67,8 +70,9 @@ test('the controls start at the target the page has always sent', async () => {
 });
 
 test('a format that is lossless only takes no quality', async () => {
-  const { screen, onChange, options } = await renderPanel();
-  await screen.getByRole('combobox', { name: /Format/u }).selectOptions('png');
+  const { screen, onChange, options, format } = await renderPanel();
+  await format.click();
+  await screen.getByRole('option', { name: 'PNG, lossless (png-rs)' }).click();
 
   await expect.element(screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' })).toBeDisabled();
   await expect.element(screen.getByRole('spinbutton', { name: 'Encoder quality, no search' })).toBeDisabled();
@@ -84,4 +88,32 @@ test('a fixed quality and a width are sent as numbers', async () => {
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
 
   expect(options()).toEqual({ quality: 80, width: 1600 });
+});
+
+test('"Solid panels" makes the glass opaque from `<html>`, keeps the choice, and starts no search', async () => {
+  localStorage.clear();
+  const { screen, onChange } = await renderPanel();
+  const solid = screen.getByRole('switch', { name: 'Solid panels' });
+  await expect.element(solid).not.toBeChecked();
+  expect(document.documentElement.dataset['panels']).toBe('glass');
+
+  await solid.click();
+
+  await expect.element(solid).toBeChecked();
+  expect(document.documentElement.dataset['panels']).toBe('solid');
+  expect(localStorage.getItem('panels')).toBe('solid');
+  // longer than the controls rest
+  await new Promise((resolve) => {
+    setTimeout(resolve, 400);
+  });
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+test('"Solid panels" starts as it was left', async () => {
+  localStorage.setItem('panels', 'solid');
+  const { screen } = await renderPanel();
+
+  await expect.element(screen.getByRole('switch', { name: 'Solid panels' })).toBeChecked();
+  expect(document.documentElement.dataset['panels']).toBe('solid');
+  localStorage.clear();
 });

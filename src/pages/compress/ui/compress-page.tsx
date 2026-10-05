@@ -13,7 +13,7 @@ function Footer() {
   const version = useSearch((snapshot) => snapshot.context.version);
 
   return (
-    <footer>
+    <footer className="mt-auto text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-foreground">
       <p>
         <a href="https://github.com/sqzer-dev/sqzer">sqzer</a> as a command line and a Rust library,{' '}
         <a href="https://www.npmjs.com/package/sqzer">
@@ -39,13 +39,15 @@ export function CompressPage() {
   };
 
   return (
-    <>
-      <header>
-        <h1>sqzer</h1>
-        <p>Drop an image, get a smaller one that looks the same. It is encoded in this tab: nothing is uploaded.</p>
+    <div className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-6 p-4 sm:p-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">sqzer</h1>
+        <p className="text-sm text-muted-foreground">
+          Drop an image, get a smaller one that looks the same. It is encoded in this tab: nothing is uploaded.
+        </p>
       </header>
 
-      <main>
+      <main className="flex flex-col gap-4">
         <DropZone
           onPick={(file) => {
             void take(file);
@@ -58,13 +60,13 @@ export function CompressPage() {
           }}
         />
         <SearchStatus />
-        <section id="result" hidden={!hasImage} aria-label="Result">
+        <section className="flex flex-col gap-4" hidden={!hasImage} aria-label="Result">
           <Comparison />
           <ResultPanel />
         </section>
       </main>
 
       <Footer />
-    </>
+    </div>
   );
 }
