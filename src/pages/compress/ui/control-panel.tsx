@@ -8,8 +8,15 @@ import { useSearch } from '../model/context';
 // How long the controls rest before a search starts with what they say.
 const TYPING_MS = 250;
 
+type QualityModeProps = {
+  mode: string;
+  label: string;
+  value: number;
+  hint: string;
+};
+
 /** A way to say the quality, and the number that goes with it. */
-function QualityMode({ mode, label, value, hint }: { mode: string; label: string; value: number; hint: string }) {
+function QualityMode({ mode, label, value, hint }: QualityModeProps) {
   return (
     <label>
       <input type="radio" name="mode" value={mode} defaultChecked={mode === 'target'} /> {label}
@@ -18,21 +25,27 @@ function QualityMode({ mode, label, value, hint }: { mode: string; label: string
   );
 }
 
+type FormatSelectProps = {
+  codecs: Codec[];
+  format: string;
+  onSelect: (format: string) => void;
+};
+
 /** Every format the package can write, as `codecs()` lists them. */
-function FormatSelect(props: { codecs: Codec[]; format: string; onSelect: (format: string) => void }) {
+function FormatSelect({ codecs, format, onSelect }: FormatSelectProps) {
   return (
     <label>
       Format
       <select
         id="format"
         name="format"
-        value={props.format}
+        value={format}
         onChange={(event) => {
-          props.onSelect(event.target.value);
+          onSelect(event.target.value);
         }}
       >
         <option value="auto">chosen per image</option>
-        {props.codecs.map(
+        {codecs.map(
           (codec) =>
             codec.encoder && (
               <option key={codec.format} value={codec.format}>
