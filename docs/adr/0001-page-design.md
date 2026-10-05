@@ -269,7 +269,7 @@ What to revisit: whether readers find the alternatives to the target and the Adv
 3. [x] `/selftest/` moved to a Playwright test suite, run by `check.yml`. With ADR-0002 or right after it. (With the port of ADR-0002: the `decodeAny` checks went to Vitest in browser mode, the rest to Playwright.)
 4. [x] A survey of design systems and headless component libraries against D10, and the record that picks them. (ADR-0003.)
 5. [x] Controls that were not touched send nothing (D3). Today the page always sends `target: 70`. (The score field starts empty and says `default`. The package states its default score in its docs only, so the page has no number to show there before a search.)
-6. [ ] The empty state of D1 and the full-screen comparison of D2: glass panels, corner labels, centred handle, synced zoom and pan, pixelated view, background toggle, bottom expander.
+6. [ ] The empty state of D1 and the full-screen comparison of D2: glass panels, corner labels, centred handle, synced zoom and pan, pixelated view, background toggle, bottom expander. (In two pull requests. The first has the empty state, the image over the whole screen, the panels, the corner labels in the corners of the screen, the centred handle, the background toggle and the bottom expander. Zoom and pan with the pixelated view come second. The animated background waits for its form, under Open.)
 7. [ ] The target control and the Advanced expander of D3.
 8. [ ] The trial list, cancel and chart of D4.
 9. [ ] The result panel of D5, the alerts of D6 and the privacy note of D7.

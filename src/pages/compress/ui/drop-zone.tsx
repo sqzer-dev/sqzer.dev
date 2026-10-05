@@ -1,9 +1,10 @@
-import { useEffect, useEffectEvent, useState } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
 
-import { Input } from '@/shared/ui/input';
+import { buttonVariants } from '@/shared/ui/button';
 
 /** A file pasted or dropped anywhere on the window goes to `onPick`. Says whether one is being dragged over it. */
-function useWindowFiles(onPick: (file: File) => void) {
+export function useWindowFiles(onPick: (file: File) => void) {
   const [dragging, setDragging] = useState(false);
   const pick = useEffectEvent(onPick);
 
@@ -42,24 +43,34 @@ function useWindowFiles(onPick: (file: File) => void) {
   return dragging;
 }
 
-/** Where a file comes in: chosen, pasted, or dropped anywhere on the window. */
-export function DropZone({ onPick }: { onPick: (file: File) => void }) {
-  const dragging = useWindowFiles(onPick);
+type FilePickerProps = VariantProps<typeof buttonVariants> & {
+  onPick: (file: File) => void;
+  /** What the button says, which is also the name of the file input inside it. */
+  children: ReactNode;
+};
 
+/**
+ * The button that opens the picker. It is a `<label>` around a real file input, so the picker
+ * opens without a script and the page works without a pointer that can drag (ADR-0001 D1).
+ */
+export function FilePicker({ variant, size, onPick, children }: FilePickerProps) {
   return (
     <label
-      htmlFor="file"
-      className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed border-input px-4 py-10 text-center text-sm data-dragging:border-foreground data-dragging:bg-muted"
-      data-dragging={dragging || undefined}
+      className={buttonVariants({
+        variant,
+        size,
+        className: 'cursor-pointer has-focus-visible:border-ring has-focus-visible:ring-2 has-focus-visible:ring-ring',
+      })}
     >
-      <span>Drop an image here, paste one, or choose a file.</span>
-      <Input
-        id="file"
+      {children}
+      <input
+        className="sr-only"
         type="file"
-        className="w-auto max-w-full cursor-pointer"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) onPick(file);
+          // the same file picked again is a change again
+          event.target.value = '';
         }}
       />
     </label>

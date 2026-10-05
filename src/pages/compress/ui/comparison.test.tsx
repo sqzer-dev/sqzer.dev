@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { render } from 'vitest-browser-react';
+import { userEvent } from 'vitest/browser';
 import { fromCallback } from 'xstate';
 
 import type { Output } from '@/shared/api';
@@ -59,14 +60,17 @@ async function renderComparison() {
   const screen = await render(
     <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
       <Pick file={file} />
-      <Comparison />
+      {/* the screen's part: the comparison fills what it is put in */}
+      <div className="relative h-96" data-testid="screen">
+        <Comparison flat={false} />
+      </div>
     </SearchProvider>,
   );
   await screen.getByRole('button', { name: 'Pick' }).click();
   return screen;
 }
 
-test("each side's size sits in the corner over it", async () => {
+test("each side's size sits in the corner of the screen over it", async () => {
   const screen = await renderComparison();
   const before = screen.getByText('Before: 48 × 32');
   const after = screen.getByText('After: 24 × 16');
@@ -74,20 +78,34 @@ test("each side's size sits in the corner over it", async () => {
   await expect.element(before).toBeVisible();
   await expect.element(after).toBeVisible();
   // the input's on the side of the picture as it was dropped, the output's on the side as it was encoded
-  const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' }).element();
-  const { left, width } = handle.getBoundingClientRect();
-  const middle = left + width / 2;
-  expect(before.element().getBoundingClientRect().right).toBeLessThan(middle);
-  expect(after.element().getBoundingClientRect().left).toBeGreaterThan(middle);
+  const edges = screen.getByTestId('screen').element().getBoundingClientRect();
+  expect(before.element().getBoundingClientRect().left - edges.left).toBe(12);
+  expect(edges.right - after.element().getBoundingClientRect().right).toBe(12);
 });
 
-test('the handle clips the after side where it stands', async () => {
+test('the handle is a slider, and it clips the after side where it stands', async () => {
   const screen = await renderComparison();
   const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
   await expect.element(after).toBeVisible();
   expect(getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 50%)');
 
-  await screen.getByRole('slider', { name: 'Before on the left, after on the right' }).fill('25');
+  // by the keys of a range input
+  const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
+  handle.element().focus();
+  await userEvent.keyboard('{ArrowLeft}');
+  await expect.poll(() => getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 49%)');
+  await userEvent.keyboard('{Home}');
+  await expect.poll(() => getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 0%)');
+});
 
-  expect(getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 25%)');
+test('the line runs the height of the picture, with the handle in its middle', async () => {
+  const screen = await renderComparison();
+  const picture = screen.getByRole('img', { name: 'As it was dropped' }).element().getBoundingClientRect();
+  const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' }).element();
+  const line = handle.closest('[data-index]')?.getBoundingClientRect();
+  const knob = handle.closest('[data-index]')?.querySelector('span')?.getBoundingClientRect();
+
+  expect(line?.height).toBe(picture.height);
+  expect(knob && line && knob.top + knob.height / 2).toBe(line && line.top + line.height / 2);
+  expect(knob && line && knob.left + knob.width / 2).toBe(line && line.left + line.width / 2);
 });

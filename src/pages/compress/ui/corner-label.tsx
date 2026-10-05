@@ -7,13 +7,13 @@ type CornerLabelProps = {
   size: { width: number; height: number };
 };
 
-/** The size of one side of the comparison, in the corner over that side (ADR-0001 D2). */
+/** The size of one side of the comparison, in the corner of the screen over that side (ADR-0001 D2). */
 export function CornerLabel({ side, name, size }: CornerLabelProps) {
   return (
     <span
       className={cn(
-        'glass absolute top-2 rounded-md px-1.5 py-0.5 font-mono text-xs whitespace-nowrap',
-        side === 'before' ? 'left-2' : 'right-2',
+        'glass absolute top-3 rounded-md px-1.5 py-0.5 font-mono text-xs whitespace-nowrap',
+        side === 'before' ? 'left-3' : 'right-3',
       )}
     >
       <span className="sr-only">{name}: </span>

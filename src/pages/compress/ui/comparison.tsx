@@ -1,9 +1,11 @@
+import { cn } from 'cn';
 import { useState } from 'react';
 
 import { useObjectUrl } from '@/shared/lib/object-url';
 
 import { useSearch, useSearchRef } from '../model/context';
 import { CornerLabel } from './corner-label';
+import { SplitHandle } from './split-handle';
 
 declare module 'react' {
   // State reaches the stylesheet as custom properties (ADR-0002 D3), which React's types leave out.
@@ -12,8 +14,15 @@ declare module 'react' {
   }
 }
 
-/** The image as it was dropped and as it was encoded, in one cell, split at the handle. */
-export function Comparison() {
+// The picture is as large as the screen lets it be, and never larger than its own pixels.
+const FIT = 'w-[min(100cqw,calc(100cqh*var(--aspect,1)),var(--width,100cqw))]';
+
+/**
+ * The image as it was dropped and as it was encoded, over the whole screen (ADR-0001 D2): two
+ * pictures in one cell, the second clipped at the handle. `flat` puts a plain colour under a
+ * transparent image where the checkerboard was.
+ */
+export function Comparison({ flat }: { flat: boolean }) {
   const search = useSearchRef();
   const image = useSearch((snapshot) => snapshot.context.image);
   const preview = useSearch((snapshot) => snapshot.context.preview);
@@ -31,16 +40,17 @@ export function Comparison() {
   const properties = {
     '--split': `${split}%`,
     '--width': size ? `${size.width}px` : undefined,
-    '--ratio': size ? `${size.width} / ${size.height}` : undefined,
+    '--aspect': size ? String(size.width / size.height) : undefined,
   };
 
-  // Two pictures in one cell, the second clipped at the handle. The size is the image's, once it is
-  // known. The labels sit in the corners of the row, so an image narrower than the two still shows.
   return (
-    <div className="relative min-h-10">
+    <div className="absolute inset-0 grid place-items-center [container-type:size]" style={properties}>
       <div
-        className="checkerboard mx-auto grid aspect-(--ratio,auto) w-(--width,auto) max-w-full *:col-start-1 *:row-start-1"
-        style={properties}
+        className={cn(
+          'grid aspect-(--aspect,auto) *:col-start-1 *:row-start-1',
+          FIT,
+          flat ? 'bg-card' : 'checkerboard',
+        )}
       >
         <img
           ref={before}
@@ -54,15 +64,7 @@ export function Comparison() {
           alt="As sqzer encoded it"
           hidden={!result}
         />
-        <input
-          type="range"
-          className="m-0 w-full self-end accent-foreground opacity-85"
-          min={0}
-          max={100}
-          value={split}
-          onChange={(event) => setSplit(event.target.valueAsNumber)}
-          aria-label="Before on the left, after on the right"
-        />
+        {result && <SplitHandle value={split} onChange={setSplit} />}
       </div>
       {decoded && <CornerLabel side="before" name="Before" size={decoded} />}
       {output && <CornerLabel side="after" name="After" size={output} />}

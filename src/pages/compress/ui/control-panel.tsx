@@ -1,44 +1,49 @@
-import { useId, useState, type Ref } from 'react';
+import { useId } from 'react';
 
 import type { Codec } from '@/shared/api';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
-import { Switch } from '@/shared/ui/switch';
 
 import { isLossy } from '../lib/codec';
 import { useSearch } from '../model/context';
-import { useSolidPanels } from '../model/solid-panels';
+import type { Controls } from '../model/controls';
+import { SolidPanels } from './solid-panels';
 
 // A label wrapped around its control, in the type of `Label`.
 const WRAPPED = 'flex items-center gap-2 text-xs/relaxed font-medium';
 
+type Change = (change: Partial<Controls>) => void;
+
 type QualityModeProps = {
-  mode: string;
+  mode: Controls['mode'];
   label: string;
-  /** The number the field starts at. Without one it starts empty and sends nothing, which leaves the package its default. */
-  value?: number;
+  value: string;
+  /** What an empty field says. The package has a default score, and the page does not restate it (ADR-0001 D3). */
+  placeholder?: string;
   hint: string;
+  onChange: Change;
 };
 
 /** A way to say the quality, and the number that goes with it. */
-function QualityMode({ mode, label, value, hint }: QualityModeProps) {
+function QualityMode({ mode, label, value, placeholder, hint, onChange }: QualityModeProps) {
   return (
     <div className="flex items-center gap-2">
       <label className={WRAPPED}>
         <RadioGroupItem value={mode} /> {label}
       </label>
       <Input
-        id={mode}
-        name={mode}
-        className="w-20 font-mono"
+        className="w-24 font-mono"
         type="number"
         min={0}
         max={100}
         step={1}
-        defaultValue={value}
-        placeholder={value === undefined ? 'default' : undefined}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => {
+          onChange({ [mode]: event.target.value });
+        }}
         aria-label={hint}
       />
     </div>
@@ -48,11 +53,11 @@ function QualityMode({ mode, label, value, hint }: QualityModeProps) {
 type FormatSelectProps = {
   codecs: Codec[];
   format: string;
-  onSelect: (format: string) => void;
+  onChange: Change;
 };
 
 /** Every format the package can write, as `codecs()` lists them. */
-function FormatSelect({ codecs, format, onSelect }: FormatSelectProps) {
+function FormatSelect({ codecs, format, onChange }: FormatSelectProps) {
   const items = [
     { value: 'auto', label: 'chosen per image' },
     ...codecs.flatMap(({ format: value, encoder }) =>
@@ -66,14 +71,13 @@ function FormatSelect({ codecs, format, onSelect }: FormatSelectProps) {
     <div className="flex flex-col gap-1.5">
       <Label htmlFor="format">Format</Label>
       <Select
-        name="format"
         items={items}
         value={format}
         onValueChange={(value) => {
-          if (value !== null) onSelect(value);
+          if (value !== null) onChange({ format: value });
         }}
       >
-        <SelectTrigger id="format" className="min-w-48">
+        <SelectTrigger id="format" className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -88,8 +92,14 @@ function FormatSelect({ codecs, format, onSelect }: FormatSelectProps) {
   );
 }
 
+type QualityProps = {
+  values: Controls;
+  disabled: boolean;
+  onChange: Change;
+};
+
 /** The score to search for, or a quality with no search. Neither where the encoder is lossless only. */
-function Quality({ disabled, onChange }: { disabled: boolean; onChange: () => void }) {
+function Quality({ values, disabled, onChange }: QualityProps) {
   const legend = useId();
 
   return (
@@ -98,75 +108,67 @@ function Quality({ disabled, onChange }: { disabled: boolean; onChange: () => vo
         Quality
       </legend>
       <RadioGroup
-        name="mode"
-        className="flex w-auto gap-4"
-        defaultValue="target"
+        className="flex w-auto flex-wrap gap-x-4 gap-y-2"
+        value={values.mode}
         disabled={disabled}
-        onValueChange={onChange}
+        onValueChange={(mode: unknown) => {
+          if (mode === 'target' || mode === 'quality') onChange({ mode });
+        }}
         aria-labelledby={legend}
       >
-        {/* the package has a default score, and the page does not restate it (ADR-0001 D3). it has none for a fixed quality */}
-        <QualityMode mode="target" label="score" hint="SSIMULACRA2 score to search for" />
-        <QualityMode mode="quality" label="fixed" value={80} hint="Encoder quality, no search" />
+        <QualityMode
+          mode="target"
+          label="score"
+          value={values.target}
+          placeholder="default"
+          hint="SSIMULACRA2 score to search for"
+          onChange={onChange}
+        />
+        <QualityMode
+          mode="quality"
+          label="fixed"
+          value={values.quality}
+          hint="Encoder quality, no search"
+          onChange={onChange}
+        />
       </RadioGroup>
     </fieldset>
   );
 }
 
-/** Makes every glass surface opaque, in any browser (ADR-0003 D5). It is no option of the search. */
-function SolidPanels() {
-  const [solid, setSolid] = useSolidPanels();
-
-  return (
-    <label className={WRAPPED}>
-      <Switch checked={solid} onCheckedChange={setSolid} /> Solid panels
-    </label>
-  );
-}
-
 /**
- * The controls. `onChange` is called on every change of one, as it happens; `optionsOf` reads the form
- * of `ref`. A control that was not touched sends nothing, so the defaults stay the package's (ADR-0001 D3).
+ * The controls, showing `values`. A field that was not touched is empty and sends nothing, so the
+ * defaults stay the package's (ADR-0001 D3).
  */
-export function ControlPanel({ ref, onChange }: { ref: Ref<HTMLFormElement>; onChange: () => void }) {
+export function ControlPanel({ values, onChange }: { values: Controls; onChange: Change }) {
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
-  const [format, setFormat] = useState('auto');
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
-      <form
-        ref={ref}
-        className="flex flex-wrap items-end gap-x-6 gap-y-4"
-        // a native field says it changed through the form's `input`, a Base UI part through its own callback
-        onInput={onChange}
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
-        <FormatSelect
-          codecs={codecs}
-          format={format}
-          onSelect={(value) => {
-            setFormat(value);
-            onChange();
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+      }}
+    >
+      <FormatSelect codecs={codecs} format={values.format} onChange={onChange} />
+      <Quality values={values} disabled={!isLossy(codecs, values.format)} onChange={onChange} />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="width">Width</Label>
+        <Input
+          id="width"
+          className="w-24 font-mono"
+          type="number"
+          min={1}
+          step={1}
+          value={values.width}
+          placeholder="original"
+          inputMode="numeric"
+          onChange={(event) => {
+            onChange({ width: event.target.value });
           }}
         />
-        <Quality disabled={!isLossy(codecs, format)} onChange={onChange} />
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="width">Width</Label>
-          <Input
-            id="width"
-            name="width"
-            className="w-24 font-mono"
-            type="number"
-            min={1}
-            step={1}
-            placeholder="original"
-            inputMode="numeric"
-          />
-        </div>
-      </form>
+      </div>
       <SolidPanels />
-    </div>
+    </form>
   );
 }
