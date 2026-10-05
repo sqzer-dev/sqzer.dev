@@ -1,8 +1,12 @@
 version: 2
 updates:
-  # The version of `sqzer` the page imports, which `site/worker.js` reads
-  # from `site/package.json`. Merging the pull request is the whole bump.
+  # `sqzer` comes alone: a release of the package is one pull request with
+  # nothing else in it, and merging it is the whole bump. The build and test
+  # tooling comes grouped.
   - package-ecosystem: npm
-    directory: /site
+    directory: /
     schedule:
       interval: daily
+    groups:
+      tooling:
+        dependency-type: development

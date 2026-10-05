@@ -1,0 +1,107 @@
+/* A placeholder look: system colours and the system font, light and dark
+   from `color-scheme`. The design record replaces it. */
+
+:root {
+  color-scheme: light dark;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+}
+
+body {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1rem;
+  background: Canvas;
+  color: CanvasText;
+}
+
+h1 {
+  margin: 0;
+}
+code,
+pre,
+#status {
+  font-family: ui-monospace, monospace;
+}
+
+#drop {
+  display: block;
+  padding: 2rem 1rem;
+  border: 2px dashed GrayText;
+  border-radius: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+}
+#drop span {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+#drop[data-dragging] {
+  border-color: Highlight;
+}
+
+#options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+#options fieldset {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#options legend {
+  padding: 0;
+}
+#options input[type='number'] {
+  width: 5rem;
+}
+#options fieldset:disabled {
+  color: GrayText;
+}
+
+/* An `<output>` is inline. The status line is a paragraph of its own. */
+#status {
+  display: block;
+  min-height: 1.5em;
+  margin: 1em 0;
+}
+#status[data-failed] {
+  color: #b00020;
+  color: light-dark(#b00020, #ff8a80);
+}
+
+/* Two pictures in one cell, the second clipped at the handle. The size is
+   the image's, once it is known. */
+#compare {
+  display: grid;
+  width: var(--width, auto);
+  max-width: 100%;
+  aspect-ratio: var(--ratio, auto);
+  margin: 0 auto;
+  background: repeating-conic-gradient(GrayText 0 25%, Canvas 0 50%) 0 0 / 1rem 1rem;
+}
+#compare > * {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+#compare img {
+  height: 100%;
+}
+#after {
+  clip-path: inset(0 0 0 var(--split, 50%));
+}
+#split {
+  align-self: end;
+  margin: 0;
+  opacity: 0.85;
+}
+
+#summary {
+  white-space: pre-wrap;
+}

@@ -1,0 +1,27 @@
+{
+  // `oxfmt` formats on save and `oxlint` fixes what it can, both run from `node_modules`
+  // with `.oxfmtrc.json` and `.oxlintrc.json`, the same as `pnpm format` and `pnpm lint`
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit"
+  },
+  "[typescript][typescriptreact][javascript][json][jsonc][css][html][yaml]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  // prose is not formatted: `.oxfmtrc.json` leaves Markdown alone
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "files.trimTrailingWhitespace": false
+  },
+  "oxc.lint.run": "onType",
+  "oxc.requireConfig": true,
+
+  "editor.rulers": [120],
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "search.exclude": {
+    "dist": true,
+    "pnpm-lock.yaml": true
+  }
+}

@@ -1,7 +1,7 @@
 name: Check
 
-# The page in headless Chromium against the version of `sqzer` that
-# `site/package.json` names, so a Dependabot bump is tested before it merges.
+# The checks of ADR-0002 D6, against the version of `sqzer` that `package.json`
+# names, so a Dependabot bump is tested before it merges.
 on:
   pull_request:
   push:
@@ -17,7 +17,19 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - run: npm install --no-save --no-package-lock playwright@1.63.0
-      - run: npx playwright install --with-deps chromium
-      - run: python3 -m http.server -d site 8000 &
-      - run: node .github/check.mjs
+      # the version of pnpm is the `packageManager` of `package.json`
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm fsd
+      - run: pnpm exec playwright install --with-deps chromium firefox
+      # units, components and `decodeAny`, in Chromium and Firefox
+      - run: pnpm test
+      # the built page, served by `vite preview`, in Chromium and Firefox
+      - run: pnpm test:e2e

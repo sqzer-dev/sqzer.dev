@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "singleQuote": true,
+  "sortImports": {},
+  "sortPackageJson": true,
+  "ignorePatterns": ["**/*.md", "pnpm-lock.yaml", "tests/fixtures/**", "LICENSE-*"]
+}

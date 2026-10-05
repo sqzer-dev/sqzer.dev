@@ -1,60 +1,64 @@
 # sqzer.dev
 
-The page at [sqzer.dev](https://sqzer.dev): drop an image, get a smaller one that looks the same. It runs [`sqzer`](https://github.com/sqzer-dev/sqzer) in the browser, from the [`sqzer` package on npm](https://www.npmjs.com/package/sqzer). The image never leaves the tab: no upload, no analytics, no error reporting.
+The page at [sqzer.dev](https://sqzer.dev): drop an image, get a smaller one that looks the same. It runs [`sqzer`](https://github.com/sqzer-dev/sqzer) in the browser, from the [`sqzer` package on npm](https://www.npmjs.com/package/sqzer). The image never leaves the tab: no upload, no analytics, no error reporting, and no request to any origin but the page's own.
 
-Plain HTML, one ES module and one worker script. No framework, no bundler, no build step.
+React 19 and TypeScript, built by Vite into static files.
 
 ```
-site/index.html     the page
-site/main.js        the file, the controls, what is shown
-site/worker.js      every call into `sqzer`, off the main thread
-site/package.json   the version of `sqzer` the page imports
-site/selftest/      what `decodeAny` does in the browser that opens it
+index.html              the entry Vite builds
+src/app/                the root and the global stylesheet
+src/pages/compress/     the page: its parts, the search machine, the helpers
+src/shared/api/sqzer/   the worker: every call into `sqzer`, off the main thread
+tests/                  the end-to-end suite and the fixtures
+docs/adr/               the decisions
 ```
 
 ## Run it
 
-Any static file server over `site/` works. The package itself comes from jsDelivr, so this needs a network.
+It needs Node 24 and pnpm, which `packageManager` in `package.json` pins.
 
 ```sh
-# then open http://localhost:8000
-python3 -m http.server -d site 8000
+pnpm install
+
+# the page at http://localhost:5173, reloading as you edit. it runs without the Content-Security-Policy
+pnpm dev
+
+# the page as it is deployed, at http://localhost:4173
+pnpm build && pnpm preview
 ```
 
 ## The version of `sqzer`
 
-`site/package.json` is the one place it is written. `worker.js` reads it and imports `https://cdn.jsdelivr.net/npm/sqzer@<version>/sqzer.js`. Nothing is installed from it.
+`sqzer` is a dependency at an exact version. Vite bundles it into the worker and serves its wasm from the page's own origin, and the footer shows the version the worker loaded.
 
 ```
-# site/package.json. after a release of sqzer: edit the version, or merge the Dependabot pull request that does
+# package.json. after a release of sqzer: merge the Dependabot pull request, or edit the version and run `pnpm install`
 "dependencies": { "sqzer": "0.3.0" }
 ```
 
-> **Note**: Keep it an exact version. `worker.js` puts the string into the URL as it is.
+> **Note**: Keep it an exact version. `package.json` and `pnpm-lock.yaml` are the only places it is written.
 
-## Deploy
+## Checks and deploy
 
-Every merge to `main` is a deploy: `.github/workflows/pages.yml` publishes `site/` to GitHub Pages as it is.
-
-Every pull request runs `.github/workflows/check.yml` first: the page and `/selftest/` in headless Chromium, against the version of `sqzer` the branch names. A Dependabot bump that breaks the page fails there instead of on the site.
+Every pull request runs `.github/workflows/check.yml` first, against the version of `sqzer` the branch names. A Dependabot bump that breaks the page fails there instead of on the site.
 
 ```sh
-# the same check, locally. needs the network: the package comes from jsDelivr
-npm install --no-save --no-package-lock playwright@1.63.0
-npx playwright install --with-deps chromium
-python3 -m http.server -d site 8000 &
-node .github/check.mjs
+# all of it, as CI runs it
+pnpm check
+
+# or one at a time
+pnpm typecheck      # tsc
+pnpm lint           # oxlint
+pnpm format:check   # oxfmt. `pnpm format` rewrites
+pnpm fsd            # Steiger, the Feature-Sliced Design layers
+pnpm test           # Vitest in browser mode, in Chromium and Firefox
+pnpm test:e2e       # Playwright against the built page, in Chromium and Firefox
+
+# the two test suites need the browsers once
+pnpm exec playwright install --with-deps chromium firefox
 ```
 
-## Checking a browser
-
-`sqzer`'s own tests run in Node, which has no canvas. What `decodeAny` does with an SVG or a HEIC file depends on the browser, so that part is checked by opening a page in it:
-
-```
-https://sqzer.dev/selftest/
-```
-
-It prints one line per check. `ok` is as documented, `note` differs between browsers and may, `FAIL` is a defect: open an issue with the text.
+Every merge to `main` is a deploy: `.github/workflows/pages.yml` builds the page and publishes `dist/` to GitHub Pages.
 
 ## Contributing
 

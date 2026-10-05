@@ -6,15 +6,15 @@
 
 ## Browsers tried
 
-<!-- CI covers headless Chromium. Which browsers did you load the page in? For a change to the canvas fallback or the comparison, Safari matters. -->
+<!-- CI covers headless Chromium and Firefox. Which browsers did you load the page in? For a change to the canvas fallback or the comparison, Safari matters. -->
 
 ## New dependencies
 
-<!-- The page has one, `sqzer`. Anything else: what, why the page cannot do without it, and its licence. Or "none". -->
+<!-- What, why the page cannot do without it, and its licence. Or "none". -->
 
 ## Checklist
 
-- [ ] `.github/check.mjs` passes locally, or CI shows it green
-- [ ] a path that depends on the browser got a line in `/selftest/`, if one changed
+- [ ] `pnpm check` passes locally, or CI shows it green
+- [ ] a path that depends on the browser got a Vitest test next to it, if one changed
 - [ ] a new ADR has its row in `docs/adr/README.md` and its entry in `.greptile/files.json`, if there is one
 - [ ] the `Content-Security-Policy` is unchanged, or the PR says why it had to change

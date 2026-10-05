@@ -25,12 +25,12 @@ body:
       placeholder: Firefox 156 on Windows 11, Safari on iOS 18.7, Chrome 139 on Android 15
     validations:
       required: true
-  - type: textarea
-    id: selftest
+  - type: input
+    id: version
     attributes:
-      label: Self-test
-      description: Open https://sqzer.dev/selftest/ in the same browser and paste what it prints. It names the package version and what the browser can decode.
-      render: text
+      label: Version of `sqzer`
+      description: The number in the page's footer, after "`sqzer` on npm".
+      placeholder: 0.3.0
     validations:
       required: true
   - type: textarea
