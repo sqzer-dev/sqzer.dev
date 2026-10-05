@@ -26,6 +26,7 @@ src/shared/lib/             small helpers, named by their domain
 tests/e2e/                  the Playwright suite, against the built page
 tests/fixtures/             the images both suites use
 package.json                `sqzer` and the tooling, at exact versions, bumped by Dependabot
+pnpm-workspace.yaml         pnpm's settings: the Next peer of `geist` is optional, so Next is not installed
 .greptile/                  what the reviewer reads and the rules it checks against
 docs/adr                    decisions. Add a new numbered file, never edit an accepted one
 ```
