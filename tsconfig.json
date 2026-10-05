@@ -1,4 +1,6 @@
 {
   "files": [],
+  // the alias again, for `shadcn add`, which reads it here and not in the referenced files
+  "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

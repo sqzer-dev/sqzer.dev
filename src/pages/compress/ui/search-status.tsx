@@ -15,7 +15,11 @@ export function SearchStatus() {
   });
 
   return (
-    <output id="status" data-failed={failed || undefined}>
+    // An `<output>` is inline. The status line is a paragraph of its own, and a failure is an alert's colours.
+    <output
+      className="block min-h-6 font-mono text-xs/6 data-failed:rounded-md data-failed:border data-failed:border-destructive data-failed:bg-alert data-failed:px-3 data-failed:py-1 data-failed:text-alert-foreground"
+      data-failed={failed || undefined}
+    >
       {text}
     </output>
   );

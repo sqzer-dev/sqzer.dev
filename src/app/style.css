@@ -1,107 +1,179 @@
-/* A placeholder look: system colours and the system font, light and dark
-   from `color-scheme`. The design record replaces it. */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
+/* Radix Colors (ADR-0003 D4). Its dark scales come scoped to a `.dark` class, and the page has no script
+   to set one, so the build moves them under `prefers-color-scheme` (`vite.config.ts`). */
+@import '@radix-ui/colors/gray.css';
+@import '@radix-ui/colors/gray-dark.css';
+@import '@radix-ui/colors/gray-alpha.css';
+@import '@radix-ui/colors/gray-dark-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/white-alpha.css';
+
+/* Every condition that makes glass opaque (ADR-0003 D5). Forced colours have their own, in `glass`. */
+@custom-variant solid {
+  @supports not (backdrop-filter: blur(1px)) {
+    @slot;
+  }
+  @media (prefers-contrast: more) {
+    @slot;
+  }
+  /* Chromium only, so the "Solid panels" switch does the same in every browser */
+  @media (prefers-reduced-transparency: reduce) {
+    @slot;
+  }
+  &:where([data-panels='solid'], [data-panels='solid'] *) {
+    @slot;
+  }
+}
+
+/* Geist Sans and Geist Mono, from the page's own origin (ADR-0003 D3). The package exports no path to
+   its files, so they are named where pnpm puts them. */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2');
+}
+
+/* shadcn's tokens, from Radix `gray` (ADR-0003 D4). A line that marks where a control is takes `gray 10`,
+   which holds 3:1 on `gray 2`; a line that only divides takes `gray 6`. Red is for alerts and nothing else. */
 :root {
   color-scheme: light dark;
-  font:
-    1rem/1.5 system-ui,
-    sans-serif;
+
+  --background: var(--gray-1);
+  --foreground: var(--gray-12);
+  --card: var(--gray-2);
+  --card-foreground: var(--gray-12);
+  --popover: var(--gray-2);
+  --popover-foreground: var(--gray-12);
+  --primary: var(--gray-12);
+  --primary-foreground: var(--gray-1);
+  --secondary: var(--gray-3);
+  --secondary-foreground: var(--gray-12);
+  --muted: var(--gray-3);
+  --muted-foreground: var(--gray-11);
+  --accent: var(--gray-4);
+  --accent-foreground: var(--gray-12);
+  --border: var(--gray-6);
+  --input: var(--gray-10);
+  --ring: var(--gray-10);
+  --radius: 0.625rem;
+
+  --alert: var(--red-3);
+  --alert-foreground: var(--red-12);
+  --destructive: var(--red-9);
+
+  /* The tint is the lowest step of the scale that passes `glass.test.tsx`, not one chosen by eye. */
+  --glass: var(--white-a11);
+  --glass-edge: var(--gray-a6);
+  --overlay: var(--black-a10);
 }
 
-body {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: 1rem;
-  background: Canvas;
-  color: CanvasText;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass: var(--black-a11);
+  }
 }
 
-h1 {
-  margin: 0;
-}
-code,
-pre,
-#status {
-  font-family: ui-monospace, monospace;
-}
-
-#drop {
-  display: block;
-  padding: 2rem 1rem;
-  border: 2px dashed GrayText;
-  border-radius: 0.5rem;
-  text-align: center;
-  cursor: pointer;
-}
-#drop span {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-#drop[data-dragging] {
-  border-color: Highlight;
+/* after Primer's high-contrast themes */
+@media (prefers-contrast: more) {
+  :root {
+    --input: var(--gray-11);
+    --ring: var(--gray-11);
+  }
 }
 
-#options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 2rem;
-  align-items: end;
-  margin: 1rem 0;
-}
-#options fieldset {
-  display: flex;
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-#options legend {
-  padding: 0;
-}
-#options input[type='number'] {
-  width: 5rem;
-}
-#options fieldset:disabled {
-  color: GrayText;
+@theme inline {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-alert: var(--alert);
+  --color-alert-foreground: var(--alert-foreground);
+  --color-destructive: var(--destructive);
+  --color-overlay: var(--overlay);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* moderate and fixed, the same everywhere. ADR-0003 leaves the radius open, to be measured on a phone */
+  --blur-glass: 12px;
 }
 
-/* An `<output>` is inline. The status line is a paragraph of its own. */
-#status {
-  display: block;
-  min-height: 1.5em;
-  margin: 1em 0;
-}
-#status[data-failed] {
-  color: #b00020;
-  color: light-dark(#b00020, #ff8a80);
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Base UI's scrollbar hiding for `Select` and `ScrollArea`, which `disableStyleElements` turns off */
+  .base-ui-disable-scrollbar {
+    scrollbar-width: none;
+  }
+  .base-ui-disable-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* Two pictures in one cell, the second clipped at the handle. The size is
-   the image's, once it is known. */
-#compare {
-  display: grid;
-  width: var(--width, auto);
-  max-width: 100%;
-  aspect-ratio: var(--ratio, auto);
-  margin: 0 auto;
-  background: repeating-conic-gradient(GrayText 0 25%, Canvas 0 50%) 0 0 / 1rem 1rem;
-}
-#compare > * {
-  grid-area: 1 / 1;
-  width: 100%;
-}
-#compare img {
-  height: 100%;
-}
-#after {
-  clip-path: inset(0 0 0 var(--split, 50%));
-}
-#split {
-  align-self: end;
-  margin: 0;
-  opacity: 0.85;
+/* The one glass (ADR-0003 D5): for what floats over the image on its own, the panels, the bottom
+   expander and the corner labels. Nothing inside glass is glass. */
+@utility glass {
+  border: 1px solid var(--glass-edge);
+  background-color: var(--glass);
+  backdrop-filter: blur(var(--blur-glass));
+
+  @variant solid {
+    border-color: var(--gray-8);
+    background-color: var(--gray-2);
+    backdrop-filter: none;
+  }
+  @media (forced-colors: active) {
+    border-color: CanvasText;
+    background-color: Canvas;
+    backdrop-filter: none;
+  }
 }
 
-#summary {
-  white-space: pre-wrap;
+/* What shows through a transparent image. */
+@utility checkerboard {
+  background: repeating-conic-gradient(var(--gray-4) 0 25%, var(--gray-2) 0 50%) 0 0 / 1rem 1rem;
 }

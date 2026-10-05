@@ -41,6 +41,8 @@
     "typescript/no-confusing-void-expression": ["error", { "ignoreArrowShorthand": true }],
     // a stylesheet is imported for what it does, not for a value
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    // the Base UI parts a `<label>` is wrapped around, which the rule cannot tell from any other component
+    "jsx-a11y/label-has-associated-control": ["error", { "controlComponents": ["RadioGroupItem", "Switch"] }],
 
     // the automatic JSX runtime needs no `React` in scope
     "react/react-in-jsx-scope": "off",

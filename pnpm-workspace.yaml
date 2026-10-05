@@ -1,0 +1,7 @@
+# `geist` names Next as a peer, for its `next/font` loaders. The page takes the font files only
+# (ADR-0003 D3), so the peer is optional here and Next stays out of the install.
+packageExtensions:
+  geist:
+    peerDependenciesMeta:
+      next:
+        optional: true
