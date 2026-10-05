@@ -222,7 +222,7 @@ What changes elsewhere: ADR-0002 D3's policy gains `font-src 'self'`. ADR-0002's
 2. [ ] `<CSPProvider disableStyleElements>` at the root, the scrollbar rules of D2, `font-src 'self'` in the policy, and the Playwright check for `securitypolicyviolation`.
 3. [ ] The Geist fonts of D3 and the token mapping of D4, light and dark.
 4. [ ] The `glass` utility of D5, its fallbacks, the "Solid panels" switch, and the contrast test of every glass surface over the white, black and noise fixtures.
-5. [ ] `licenses.txt` of D7, linked from the footer.
+5. [x] `licenses.txt` of D7, linked from the footer. (Written by the build since the port of ADR-0002: Vite's list for the page's bundle, and `sqzer` added for the worker's.)
 
 ---
 

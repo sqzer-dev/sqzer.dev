@@ -75,6 +75,18 @@ test('the footer names the version of `sqzer` the worker loaded', async ({ page 
   await expect(page.getByRole('contentinfo')).toContainText(/sqzer on npm \d+\.\d+\.\d+,/u);
 });
 
+test('the footer links the licences of what the page carries, the package in the worker included', async ({ page }) => {
+  await open(page);
+  const href = await page.getByRole('link', { name: 'the licences of what it carries' }).getAttribute('href');
+  const licences = await page.request.get(href ?? '');
+
+  expect(licences.ok()).toBe(true);
+  const text = await licences.text();
+  expect(text).toMatch(/^## react - \d/mu);
+  expect(text).toMatch(/^## xstate - \d/mu);
+  expect(text).toMatch(/^## sqzer - \d+\.\d+\.\d+ \(MIT OR Apache-2\.0\)$/mu);
+});
+
 test('a change of format during a search ends the worker and starts another', async ({ page }) => {
   const status = await open(page);
   await page.evaluate(() => {

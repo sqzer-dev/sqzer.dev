@@ -19,8 +19,8 @@ function Footer() {
         <a href="https://www.npmjs.com/package/sqzer">
           <code>sqzer</code> on npm
         </a>
-        {version !== null && ` ${version}`}, <a href="https://github.com/sqzer-dev/sqzer.dev">this page</a>. No
-        analytics, no error reporting.
+        {version !== null && ` ${version}`}, <a href="https://github.com/sqzer-dev/sqzer.dev">this page</a>,{' '}
+        <a href="licenses.txt">the licences of what it carries</a>. No analytics, no error reporting.
       </p>
     </footer>
   );
