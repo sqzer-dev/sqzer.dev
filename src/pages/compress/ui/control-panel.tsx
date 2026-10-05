@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type Ref } from 'react';
+import { useId, useState, type Ref } from 'react';
 
 import type { Codec } from '@/shared/api';
 import { Input } from '@/shared/ui/input';
@@ -11,16 +11,14 @@ import { isLossy } from '../lib/codec';
 import { useSearch } from '../model/context';
 import { useSolidPanels } from '../model/solid-panels';
 
-// How long the controls rest before a search starts with what they say.
-const TYPING_MS = 250;
-
 // A label wrapped around its control, in the type of `Label`.
 const WRAPPED = 'flex items-center gap-2 text-xs/relaxed font-medium';
 
 type QualityModeProps = {
   mode: string;
   label: string;
-  value: number;
+  /** The number the field starts at. Without one it starts empty and sends nothing, which leaves the package its default. */
+  value?: number;
   hint: string;
 };
 
@@ -34,12 +32,13 @@ function QualityMode({ mode, label, value, hint }: QualityModeProps) {
       <Input
         id={mode}
         name={mode}
-        className="w-16 font-mono"
+        className="w-20 font-mono"
         type="number"
         min={0}
         max={100}
         step={1}
         defaultValue={value}
+        placeholder={value === undefined ? 'default' : undefined}
         aria-label={hint}
       />
     </div>
@@ -106,7 +105,8 @@ function Quality({ disabled, onChange }: { disabled: boolean; onChange: () => vo
         onValueChange={onChange}
         aria-labelledby={legend}
       >
-        <QualityMode mode="target" label="score" value={70} hint="SSIMULACRA2 score to search for" />
+        {/* the package has a default score, and the page does not restate it (ADR-0001 D3). it has none for a fixed quality */}
+        <QualityMode mode="target" label="score" hint="SSIMULACRA2 score to search for" />
         <QualityMode mode="quality" label="fixed" value={80} hint="Encoder quality, no search" />
       </RadioGroup>
     </fieldset>
@@ -124,24 +124,21 @@ function SolidPanels() {
   );
 }
 
-/** The controls. `onChange` is called once they have rested; `optionsOf` reads the form of `ref`. */
+/**
+ * The controls. `onChange` is called on every change of one, as it happens; `optionsOf` reads the form
+ * of `ref`. A control that was not touched sends nothing, so the defaults stay the package's (ADR-0001 D3).
+ */
 export function ControlPanel({ ref, onChange }: { ref: Ref<HTMLFormElement>; onChange: () => void }) {
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
   const [format, setFormat] = useState('auto');
-  const typing = useRef(0);
-
-  // a native field says it changed through the form's `input`, a Base UI part through its own callback
-  const rest = () => {
-    clearTimeout(typing.current);
-    typing.current = window.setTimeout(onChange, TYPING_MS);
-  };
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
       <form
         ref={ref}
         className="flex flex-wrap items-end gap-x-6 gap-y-4"
-        onInput={rest}
+        // a native field says it changed through the form's `input`, a Base UI part through its own callback
+        onInput={onChange}
         onSubmit={(event) => {
           event.preventDefault();
         }}
@@ -151,10 +148,10 @@ export function ControlPanel({ ref, onChange }: { ref: Ref<HTMLFormElement>; onC
           format={format}
           onSelect={(value) => {
             setFormat(value);
-            rest();
+            onChange();
           }}
         />
-        <Quality disabled={!isLossy(codecs, format)} onChange={rest} />
+        <Quality disabled={!isLossy(codecs, format)} onChange={onChange} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="width">Width</Label>
           <Input
