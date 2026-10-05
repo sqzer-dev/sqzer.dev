@@ -62,11 +62,24 @@ test('the format list is what `codecs()` can write', async () => {
   await expect.element(screen.getByRole('option', { name: /TIFF/u })).not.toBeInTheDocument();
 });
 
-test('the controls start at the target the page has always sent', async () => {
+test("controls that were not touched send nothing, so the defaults are the package's", async () => {
   const { screen, options } = await renderPanel();
+  const target = screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' });
 
-  await expect.element(screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' })).toHaveValue(70);
-  expect(options()).toEqual({ target: 70 });
+  await expect.element(target).toHaveValue(null);
+  await expect.element(target).toHaveAttribute('placeholder', 'default');
+  expect(options()).toEqual({});
+});
+
+test('a score is sent once it is typed, and no longer once it is cleared', async () => {
+  const { screen, options } = await renderPanel();
+  const target = screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' });
+
+  await target.fill('85');
+  expect(options()).toEqual({ target: 85 });
+
+  await target.clear();
+  expect(options()).toEqual({});
 });
 
 test('a format that is lossless only takes no quality', async () => {
@@ -77,9 +90,8 @@ test('a format that is lossless only takes no quality', async () => {
   await expect.element(screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' })).toBeDisabled();
   await expect.element(screen.getByRole('spinbutton', { name: 'Encoder quality, no search' })).toBeDisabled();
   expect(options()).toEqual({ format: 'png' });
-  // the controls rest before a search starts
-  expect(onChange).not.toHaveBeenCalled();
-  await expect.poll(() => onChange.mock.calls).toHaveLength(1);
+  // a Base UI part reports its change like a native field does
+  expect(onChange).toHaveBeenCalled();
 });
 
 test('a fixed quality and a width are sent as numbers', async () => {
@@ -102,10 +114,6 @@ test('"Solid panels" makes the glass opaque from `<html>`, keeps the choice, and
   await expect.element(solid).toBeChecked();
   expect(document.documentElement.dataset['panels']).toBe('solid');
   expect(localStorage.getItem('panels')).toBe('solid');
-  // longer than the controls rest
-  await new Promise((resolve) => {
-    setTimeout(resolve, 400);
-  });
   expect(onChange).not.toHaveBeenCalled();
 });
 

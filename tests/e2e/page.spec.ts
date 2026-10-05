@@ -132,6 +132,8 @@ test('a change of format during a search ends the worker and starts another', as
   const trial = statuses.findIndex((text) => text.startsWith('Encoding: trial 1 '));
   expect(trial).toBeGreaterThan(-1);
   expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
+  // and only then: the controls changed just before the drop start no search of their own (issue 8)
+  expect(statuses.filter((text) => text === 'Reading pattern-rgb.svg.')).toHaveLength(2);
   expect(statuses.join('\n')).not.toMatch(/avif/u);
 });
 

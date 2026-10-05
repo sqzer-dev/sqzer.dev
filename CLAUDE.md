@@ -47,6 +47,7 @@ Vitest tests sit next to what they test, as `*.test.ts` and `*.test.tsx`.
 - A search cannot be interrupted. The machine's `restart` re-enters its `open` state, which ends the worker and starts another; keep that the only way an encode is cancelled. An idle worker is never ended: it holds the decoded image, so a change of the controls only pays for the encode (ADR-0004).
 - The package's decoder comes first, the browser's canvas decodes what the package cannot. An SVG is drawn on the page from an `<img>`, at the size asked for: `createImageBitmap` refuses an SVG blob inside a worker in Chrome and Firefox.
 - What the format list offers comes from `codecs()`. Do not hardcode formats or backends.
+- A control that was not touched sends nothing, so the defaults are the package's and the page does not restate them (ADR-0001 D3). A field with a default starts empty.
 - Never write a decoder, encoder, resampler or metric here. If the package lacks something, that is a change to `sqzer`.
 - Code sits in `src/pages/compress/` until a second place uses it, then it moves to the layer Feature-Sliced Design names for it (ADR-0004 D4). Imports go to lower layers, through a public `index.ts`.
 - The checks are strict on purpose. A lint rule is turned off only in `.oxlintrc.json`, with its reason next to it, and a `tsconfig` flag is not loosened to make a change pass.

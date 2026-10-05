@@ -26,6 +26,9 @@ function Footer() {
   );
 }
 
+// How long the controls rest before a search starts with what they say.
+const TYPING_MS = 250;
+
 export function CompressPage() {
   const search = useSearchRef();
   const hasImage = useSearch((snapshot) => snapshot.context.image !== null);
@@ -34,8 +37,25 @@ export function CompressPage() {
   // What the controls say now. They are read when a search starts, not kept in step with it.
   const options = () => (form.current ? optionsOf(form.current, search.getSnapshot().context.codecs) : {});
 
+  const resting = useRef(0);
+  const settle = () => {
+    clearTimeout(resting.current);
+  };
+
+  // A picked image starts its search with what the controls say at that moment. A change still at
+  // rest has nothing left to report then, and reporting it would end the worker for no reason.
   const take = async (file: File) => {
-    search.send({ type: 'picked', image: await pick(file), options: options() });
+    settle();
+    const image = await pick(file);
+    settle();
+    search.send({ type: 'picked', image, options: options() });
+  };
+
+  const moved = () => {
+    settle();
+    resting.current = window.setTimeout(() => {
+      search.send({ type: 'options', options: options() });
+    }, TYPING_MS);
   };
 
   return (
@@ -53,12 +73,7 @@ export function CompressPage() {
             void take(file);
           }}
         />
-        <ControlPanel
-          ref={form}
-          onChange={() => {
-            search.send({ type: 'options', options: options() });
-          }}
-        />
+        <ControlPanel ref={form} onChange={moved} />
         <SearchStatus />
         <section className="flex flex-col gap-4" hidden={!hasImage} aria-label="Result">
           <Comparison />

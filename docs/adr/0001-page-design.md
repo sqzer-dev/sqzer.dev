@@ -264,17 +264,17 @@ What to revisit: whether readers find the alternatives to the target and the Adv
 
 ## 6. Action items
 
-1. [ ] `sqzer-dev/sqzer`: an entry in `ROADMAP.md` and an issue for the size of each trial in `Trial` and `TrialProgress`, so the chart of D4 can draw it. A version bump here after its release.
-2. [ ] ADR-0002: a framework and a bundler. It records what changes from ADR-0011 D6 for this page, and updates `CLAUDE.md`, `README.md` and the `package-by-version` rule in `.greptile/config.json`.
-3. [ ] `/selftest/` moved to a Playwright test suite, run by `check.yml`. With ADR-0002 or right after it.
-4. [ ] A survey of design systems and headless component libraries against D10, and the record that picks them.
-5. [ ] Controls that were not touched send nothing (D3). Today the page always sends `target: 70`.
+1. [ ] `sqzer-dev/sqzer`: an entry in `ROADMAP.md` and an issue for the size of each trial in `Trial` and `TrialProgress`, so the chart of D4 can draw it. A version bump here after its release. (The issue is https://github.com/sqzer-dev/sqzer/issues/55. The roadmap entry and the release are still to come.)
+2. [x] ADR-0002: a framework and a bundler. It records what changes from ADR-0011 D6 for this page, and updates `CLAUDE.md`, `README.md` and the `package-by-version` rule in `.greptile/config.json`.
+3. [x] `/selftest/` moved to a Playwright test suite, run by `check.yml`. With ADR-0002 or right after it. (With the port of ADR-0002: the `decodeAny` checks went to Vitest in browser mode, the rest to Playwright.)
+4. [x] A survey of design systems and headless component libraries against D10, and the record that picks them. (ADR-0003.)
+5. [x] Controls that were not touched send nothing (D3). Today the page always sends `target: 70`. (The score field starts empty and says `default`. The package states its default score in its docs only, so the page has no number to show there before a search.)
 6. [ ] The empty state of D1 and the full-screen comparison of D2: glass panels, corner labels, centred handle, synced zoom and pan, pixelated view, background toggle, bottom expander.
 7. [ ] The target control and the Advanced expander of D3.
 8. [ ] The trial list, cancel and chart of D4.
 9. [ ] The result panel of D5, the alerts of D6 and the privacy note of D7.
 10. [ ] The wordmark of D8.
-11. [ ] Close pull request 1 once this record is accepted. Its branch stays as the record of what was tried.
+11. [x] Close pull request 1 once this record is accepted. Its branch stays as the record of what was tried.
 
 ---
 
