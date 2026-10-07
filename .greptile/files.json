@@ -39,6 +39,11 @@
       "scope": ["src/**", "tests/**"]
     },
     {
+      "path": "docs/adr/0006-blue-for-a-drop.md",
+      "description": "A second hue beside red: Radix `blue 9`, as the `drop` token, on the border of the drop target and on the workspace's outline while a file is dragged over the page, and nowhere else. The drop target's fill does not change",
+      "scope": ["src/**"]
+    },
+    {
       "path": "src/app/style.css",
       "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
       "scope": ["src/**"]

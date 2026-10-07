@@ -15,9 +15,15 @@ export function DownloadButton() {
   return (
     // The `href` is an object URL, made and revoked with the element by `useObjectUrl`.
     // oxlint-disable-next-line jsx-a11y/anchor-is-valid
-    <a ref={download} className={buttonVariants({ size: 'lg' })} download={file?.name} hidden={!file}>
+    <a
+      ref={download}
+      className={buttonVariants({ size: 'lg', className: 'max-w-full' })}
+      download={file?.name}
+      hidden={!file}
+    >
       <DownloadIcon data-icon="inline-start" />
-      {file && `Download ${file.name}`}
+      {/* a long name is cut, not the panel */}
+      <span className="truncate">{file && `Download ${file.name}`}</span>
     </a>
   );
 }

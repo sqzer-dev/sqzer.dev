@@ -15,7 +15,8 @@ type EmptyStateProps = {
 /**
  * The page with no file on it (ADR-0001 D1), laid out as Squoosh is: the name at the top, one large
  * drop target in the middle of the page, the privacy line and the footer at the bottom edge. A file
- * dropped anywhere on the window counts, and the target shows it while one is dragged.
+ * dropped anywhere on the window counts, and the target's border turns blue while one is dragged
+ * (ADR-0006).
  */
 export function EmptyState({ dragging, onPick }: EmptyStateProps) {
   return (
@@ -25,7 +26,7 @@ export function EmptyState({ dragging, onPick }: EmptyStateProps) {
       </header>
       <main className="flex flex-1 flex-col">
         <Empty
-          className="border-2 border-dashed border-input data-dragging:border-ring data-dragging:bg-muted"
+          className="border-2 border-dashed border-input data-dragging:border-drop"
           data-dragging={dragging || undefined}
         >
           <EmptyHeader>

@@ -92,6 +92,29 @@ test('with no file, the page is the name at the top and one drop target with the
   await expect.element(screen.getByText('Ready.')).toBeVisible();
 });
 
+test('the drop target turns blue at its border while a file is dragged over the window', async () => {
+  const { screen } = await renderPage();
+  const target = screen.getByRole('main').element().firstElementChild;
+  if (!(target instanceof HTMLElement)) throw new Error('the page has no drop target');
+  const blue = getComputedStyle(document.documentElement).getPropertyValue('--blue-9');
+  const fill = getComputedStyle(target).backgroundColor;
+
+  window.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true }));
+
+  await expect.element(target).toHaveAttribute('data-dragging');
+  // the token as the browser paints it
+  expect(getComputedStyle(target).borderTopColor).toBe(getComputedStyle(swatch(blue)).color);
+  expect(getComputedStyle(target).backgroundColor).toBe(fill);
+});
+
+/** An element in `colour`, so the browser says how it paints it. */
+function swatch(colour: string) {
+  const element = document.createElement('span');
+  element.style.color = colour;
+  document.body.append(element);
+  return element;
+}
+
 test('an image dropped on a page nobody touched is encoded with no options', async () => {
   const { encodes, drop } = await renderPage();
   await drop();
