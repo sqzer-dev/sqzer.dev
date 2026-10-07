@@ -1,8 +1,10 @@
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader } from '@/shared/ui/empty';
+import { ImagePlusIcon } from 'lucide-react';
+
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia } from '@/shared/ui/empty';
 
 import { About } from './about';
 import { FilePicker } from './drop-zone';
-import { SearchStatus } from './search-status';
+import { SearchFailure } from './search-failure';
 
 type EmptyStateProps = {
   /** A file is being dragged over the window. */
@@ -10,24 +12,33 @@ type EmptyStateProps = {
   onPick: (file: File) => void;
 };
 
-/** The page with no file on it: one drop target that fills the viewport (ADR-0001 D1). */
+/**
+ * The page with no file on it (ADR-0001 D1), laid out as Squoosh is: the name at the top, one large
+ * drop target in the middle of the page, the privacy line and the footer at the bottom edge. A file
+ * dropped anywhere on the window counts, and the target shows it while one is dragged.
+ */
 export function EmptyState({ dragging, onPick }: EmptyStateProps) {
   return (
-    <div
-      className="flex min-h-dvh flex-col gap-4 p-4 outline-2 -outline-offset-8 outline-transparent outline-dashed data-dragging:bg-muted data-dragging:outline-input sm:p-6"
-      data-dragging={dragging || undefined}
-    >
+    <div className="flex min-h-dvh flex-col gap-4 p-4 sm:p-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">sqzer</h1>
+      </header>
       <main className="flex flex-1 flex-col">
-        <Empty>
+        <Empty
+          className="border-2 border-dashed border-input data-dragging:border-ring data-dragging:bg-muted"
+          data-dragging={dragging || undefined}
+        >
           <EmptyHeader>
-            <h1 className="text-4xl font-semibold tracking-tight">sqzer</h1>
+            <EmptyMedia>
+              <ImagePlusIcon className="size-10 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+            </EmptyMedia>
             <EmptyDescription className="text-sm">Drop an image, paste one, or choose a file.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <FilePicker size="lg" onPick={onPick}>
               Choose an image
             </FilePicker>
-            <SearchStatus />
+            <SearchFailure />
           </EmptyContent>
         </Empty>
       </main>

@@ -1,15 +1,28 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+
+import { useToastManager } from '@/shared/ui/toast';
 
 import { optionsOf } from '../lib/options-of';
 import { useSearch, useSearchRef } from '../model/context';
 import { UNTOUCHED, type Controls } from '../model/controls';
+import { useNotices } from '../model/notices';
 import { pick } from '../model/picked';
 import { useWindowFiles } from './drop-zone';
 import { EmptyState } from './empty-state';
-import { Workspace } from './workspace';
 
 // How long the controls rest before a search starts with what they say.
 const TYPING_MS = 250;
+
+// The workspace, with the drawer, the popover and the tooltip it brings, is a chunk of its own, off
+// the first paint: the empty state has no use for it. It is fetched once the empty state is up.
+const load = () => import('./workspace');
+const Workspace = lazy(async () => ({ default: (await load()).Workspace }));
+
+/** Tells the toaster what the machine is doing (ADR-0005). On its own, so a toast re-renders nothing else. */
+function Notices() {
+  useNotices(useToastManager());
+  return null;
+}
 
 /** The one page: the drop zone until there is a file (ADR-0001 D1), the image over the whole screen once there is (D2). */
 export function CompressPage() {
@@ -19,6 +32,10 @@ export function CompressPage() {
   // what the controls say now, for a timer or a pick that outlives the render it started in
   const latest = useRef(UNTOUCHED);
   const resting = useRef(0);
+
+  useEffect(() => {
+    void load();
+  }, []);
 
   const options = () => optionsOf(latest.current, search.getSnapshot().context.codecs);
   const settle = () => {
@@ -47,10 +64,19 @@ export function CompressPage() {
   };
 
   const dragging = useWindowFiles(onPick);
+  const empty = <EmptyState dragging={dragging} onPick={onPick} />;
 
-  return hasImage ? (
-    <Workspace values={values} onChange={change} onPick={onPick} dragging={dragging} />
-  ) : (
-    <EmptyState dragging={dragging} onPick={onPick} />
+  return (
+    <>
+      <Notices />
+      {hasImage ? (
+        // the empty state stays up while the workspace is on its way, which is once
+        <Suspense fallback={empty}>
+          <Workspace values={values} onChange={change} onPick={onPick} dragging={dragging} />
+        </Suspense>
+      ) : (
+        empty
+      )}
+    </>
   );
 }

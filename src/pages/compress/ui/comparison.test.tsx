@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { render } from 'vitest-browser-react';
-import { userEvent } from 'vitest/browser';
+import { commands, userEvent } from 'vitest/browser';
 import { fromCallback } from 'xstate';
 
 import type { Output } from '@/shared/api';
@@ -9,6 +9,20 @@ import { SearchProvider, useSearchRef } from '../model/context';
 import type { EncoderCommand, EncoderEvent } from '../model/encoder';
 import { searchMachine } from '../model/machine';
 import { Comparison } from './comparison';
+
+type Point = { x: number; y: number };
+
+declare module 'vitest/browser' {
+  interface BrowserCommands {
+    /** Defined in `vitest.config.ts`: a drag with a real mouse, from one point to another. */
+    drag: (from: Point, to: Point) => Promise<void>;
+  }
+}
+
+const middle = (element: Element): Point => {
+  const { left, top, width, height } = element.getBoundingClientRect();
+  return { x: left + width / 2, y: top + height / 2 };
+};
 
 const fixture = new URL('../../../../tests/fixtures/pattern-rgb.jpg', import.meta.url);
 
@@ -83,29 +97,45 @@ test("each side's size sits in the corner of the screen over it", async () => {
   expect(edges.right - after.element().getBoundingClientRect().right).toBe(12);
 });
 
-test('the handle is a slider, and it clips the after side where it stands', async () => {
+test('the handle is a slider, and it clips the after side where it stands on the screen', async () => {
   const screen = await renderComparison();
   const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
   await expect.element(after).toBeVisible();
-  expect(getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 50%)');
+  // the layer the size of the screen that holds the picture, not the picture
+  const layer = after.element().closest('[data-slot=after]');
+  expect(layer && getComputedStyle(layer).clipPath).toBe('inset(0px 0px 0px 50%)');
 
   // by the keys of a range input
   const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
   handle.element().focus();
   await userEvent.keyboard('{ArrowLeft}');
-  await expect.poll(() => getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 49%)');
+  await expect.poll(() => layer && getComputedStyle(layer).clipPath).toBe('inset(0px 0px 0px 49%)');
   await userEvent.keyboard('{Home}');
-  await expect.poll(() => getComputedStyle(after.element()).clipPath).toBe('inset(0px 0px 0px 0%)');
+  await expect.poll(() => layer && getComputedStyle(layer).clipPath).toBe('inset(0px 0px 0px 0%)');
 });
 
-test('the line runs the height of the picture, with the handle in its middle', async () => {
+test('the line runs the height of the screen, past the picture, with the handle in its middle', async () => {
   const screen = await renderComparison();
+  const edges = screen.getByTestId('screen').element().getBoundingClientRect();
   const picture = screen.getByRole('img', { name: 'As it was dropped' }).element().getBoundingClientRect();
   const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' }).element();
   const line = handle.closest('[data-index]')?.getBoundingClientRect();
   const knob = handle.closest('[data-index]')?.querySelector('span')?.getBoundingClientRect();
 
-  expect(line?.height).toBe(picture.height);
+  expect(line?.height).toBe(edges.height);
+  expect(line?.height).toBeGreaterThan(picture.height);
   expect(knob && line && knob.top + knob.height / 2).toBe(line && line.top + line.height / 2);
   expect(knob && line && knob.left + knob.width / 2).toBe(line && line.left + line.width / 2);
+});
+
+test('a drag of the handle across the screen selects nothing', async () => {
+  const screen = await renderComparison();
+  const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
+  await expect.element(handle).toBeVisible();
+
+  // from the middle of the screen to the label in its far corner
+  await commands.drag(middle(handle.element()), middle(screen.getByText('After: 24 × 16').element()));
+
+  await expect.poll(() => handle.element().getAttribute('aria-valuenow')).not.toBe('50');
+  expect(getSelection()?.toString()).toBe('');
 });

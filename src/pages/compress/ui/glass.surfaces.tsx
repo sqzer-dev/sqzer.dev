@@ -27,7 +27,7 @@ function Content() {
 
 function Floating() {
   return (
-    <Panel title="Options" className="top-16 left-4">
+    <Panel title="Options" className="absolute top-16 left-4">
       <Content />
     </Panel>
   );

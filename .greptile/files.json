@@ -34,6 +34,11 @@
       "scope": ["src/**"]
     },
     {
+      "path": "docs/adr/0005-toasts.md",
+      "description": "What the page says in passing is a toast, on shadcn's `toast` over Base UI: the encoder loading, the image being read, the newest trial and the result's time, one toast per concern updated in place, nothing for the first 500 ms of a search, announced through the viewport's polite live region, at the top right under the corner labels, opaque and not glass. Failures stay ADR-0001 D6's alert. The policy is unchanged",
+      "scope": ["src/**", "tests/**"]
+    },
+    {
       "path": "src/app/style.css",
       "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
       "scope": ["src/**"]

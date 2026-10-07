@@ -4,6 +4,7 @@ import { page } from 'vitest/browser';
 import { fromCallback } from 'xstate';
 
 import type { Output } from '@/shared/api';
+import { Toaster } from '@/shared/ui/toast';
 
 import { SearchProvider } from '../model/context';
 import type { EncoderCommand } from '../model/encoder';
@@ -53,14 +54,18 @@ async function renderPage() {
     });
   });
   const screen = await render(
-    <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
-      <CompressPage />
-    </SearchProvider>,
+    <Toaster>
+      <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
+        <CompressPage />
+      </SearchProvider>
+    </Toaster>,
   );
   const encodes = () => workers.flat().flatMap((command) => (command.type === 'encode' ? [command.options] : []));
   const drop = async () => {
     await screen.getByLabelText('Choose an image').upload(file);
-    await expect.element(screen.getByRole('status')).toHaveTextContent('Done in 1.0 s.');
+    // the toast of ADR-0005, and the workspace, which is loaded once there is an image
+    await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
+    await expect.element(screen.getByRole('link', { name: 'Download pattern-rgb.jpg' })).toBeVisible();
   };
   return { screen, workers, encodes, drop };
 }
@@ -70,15 +75,21 @@ beforeEach(async () => {
   await page.viewport(1200, 800);
 });
 
-test('with no file, the page is the drop zone: a line and the button that opens the picker', async () => {
+test('with no file, the page is the name at the top and one drop target with the button that opens the picker', async () => {
   const { screen } = await renderPage();
 
-  await expect.element(screen.getByRole('heading', { name: 'sqzer' })).toBeVisible();
+  await expect.element(screen.getByRole('banner').getByRole('heading', { name: 'sqzer' })).toBeVisible();
   await expect.element(screen.getByText('Drop an image, paste one, or choose a file.')).toBeVisible();
   await expect.element(screen.getByLabelText('Choose an image')).toHaveAttribute('type', 'file');
   await expect.element(screen.getByRole('contentinfo').getByText(/nothing is sent anywhere/u)).toBeVisible();
+  // the target fills the page between the name and the footer
+  const target = screen.getByRole('main').element().firstElementChild?.getBoundingClientRect();
+  expect(target?.height).toBeGreaterThan(400);
+  expect(target?.width).toBeGreaterThan(1000);
   // the controls come with the image
   await expect.element(screen.getByRole('combobox', { name: 'Format' })).not.toBeInTheDocument();
+  // and so does what the encoder says in passing
+  await expect.element(screen.getByText('Ready.')).toBeVisible();
 });
 
 test('an image dropped on a page nobody touched is encoded with no options', async () => {
@@ -88,7 +99,14 @@ test('an image dropped on a page nobody touched is encoded with no options', asy
   expect(encodes()).toEqual([{}]);
 });
 
-test('with a file, the image is the page and the rest floats over it in panels', async () => {
+/** The box of the panel whose title is `name`. */
+function panel(screen: Awaited<ReturnType<typeof renderPage>>['screen'], name: string) {
+  const box = screen.getByRole('button', { name }).element().closest('[data-size]')?.getBoundingClientRect();
+  if (!box) throw new Error(`no panel is called ${name}`);
+  return box;
+}
+
+test('with a file, the image is the page, and the options float above the result at the right', async () => {
   const { screen, drop } = await renderPage();
   await drop();
 
@@ -96,7 +114,41 @@ test('with a file, the image is the page and the rest floats over it in panels',
   expect(picture?.getBoundingClientRect()).toMatchObject({ x: 0, y: 0, width: 1200, height: 800 });
   await expect.element(screen.getByRole('button', { name: 'Options' })).toHaveAttribute('aria-expanded', 'true');
   await expect.element(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-expanded', 'true');
-  await expect.element(screen.getByRole('link', { name: 'Download pattern-rgb.jpg' })).toBeVisible();
+  const options = panel(screen, 'Options');
+  const result = panel(screen, 'Result');
+  expect(options.bottom).toBeLessThan(result.top);
+  expect(options.right).toBe(result.right);
+  expect(result.right).toBe(1200 - 12);
+  // the view bar is at the other side
+  const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]')?.getBoundingClientRect();
+  expect(bar?.left).toBe(12);
+});
+
+test('the download button stays when the result is collapsed', async () => {
+  const { screen, drop } = await renderPage();
+  await drop();
+  const download = screen.getByRole('link', { name: 'Download pattern-rgb.jpg' });
+  const result = screen.getByRole('button', { name: 'Result' });
+
+  await result.click();
+
+  await expect.element(result).toHaveAttribute('aria-expanded', 'false');
+  // hidden, not unmounted: what was typed into a collapsed panel stays
+  await expect.element(screen.getByText(/pattern-rgb\.jpg -> /u)).not.toBeVisible();
+  await expect.element(download).toBeVisible();
+});
+
+test('at 768 px the view bar and the panels keep apart', async () => {
+  await page.viewport(768, 800);
+  const { screen, drop } = await renderPage();
+  await drop();
+
+  const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]')?.getBoundingClientRect();
+  if (!bar) throw new Error('the page has no view bar');
+  for (const name of ['Options', 'Result']) {
+    const box = panel(screen, name);
+    expect(bar.right).toBeLessThan(box.left);
+  }
 });
 
 test('a collapsed panel keeps what was typed into it', async () => {
