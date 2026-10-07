@@ -116,9 +116,12 @@ test('the handle is a slider, and it clips the after side where it stands on the
 
 test('the line runs the height of the screen, past the picture, with the handle in its middle', async () => {
   const screen = await renderComparison();
+  const slider = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
+  // the line comes with the after side, once the browser has loaded it
+  await expect.element(slider).toBeVisible();
   const edges = screen.getByTestId('screen').element().getBoundingClientRect();
   const picture = screen.getByRole('img', { name: 'As it was dropped' }).element().getBoundingClientRect();
-  const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' }).element();
+  const handle = slider.element();
   const line = handle.closest('[data-index]')?.getBoundingClientRect();
   const knob = handle.closest('[data-index]')?.querySelector('span')?.getBoundingClientRect();
 

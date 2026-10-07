@@ -1,5 +1,5 @@
 import { cn } from 'cn';
-import { useState } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 
 import { useObjectUrl } from '@/shared/lib/object-url';
 
@@ -25,6 +25,11 @@ const FIT = 'w-[min(100cqw,calc(100cqh*var(--aspect,1)),var(--width,100cqw))]';
  * image where the checkerboard was, so the picture's bounds vanish into the page. Nothing on the
  * screen is selectable: a drag of the handle would otherwise select the pictures and the labels on
  * its way. An image nobody could decode shows nothing, not the alt text of an empty `<img>`.
+ *
+ * Each side shows once the browser has loaded it, not before: the input's box is sized from the
+ * browser's own load until the worker has decoded it, so a small image after a large one does not
+ * start at the screen's width, and the after side waits for the encoded file to load, so nothing
+ * flashes where it will be.
  */
 export function Comparison({ flat }: { flat: boolean }) {
   const search = useSearchRef();
@@ -36,12 +41,16 @@ export function Comparison({ flat }: { flat: boolean }) {
   const [split, setSplit] = useState(50);
 
   // an image the browser cannot show itself, a TIFF say, is shown as the worker decoded it
-  const before = useObjectUrl<HTMLImageElement>(preview ?? image?.blob ?? null, 'src');
+  const input = preview ?? image?.blob ?? null;
+  const before = useObjectUrl<HTMLImageElement>(input, 'src');
   const after = useObjectUrl<HTMLImageElement>(result?.file ?? null, 'src');
+  const [loadedBefore, loadBefore] = useLoaded(input);
+  const [loadedAfter, loadAfter] = useLoaded(result?.file ?? null);
 
   const output = result && { width: result.output.outputWidth, height: result.output.outputHeight };
-  // the size of the output once there is one, of the input until then
-  const size = output ?? decoded;
+  // the size of the output once there is one, of the input until then: as the worker decoded it, or as
+  // the browser loaded it before that. A vector has no size of its own until it is drawn.
+  const size = output ?? decoded ?? (image?.vector === false ? loadedBefore : null);
   const properties = {
     '--split': `${split}%`,
     '--width': size ? `${size.width}px` : undefined,
@@ -56,28 +65,58 @@ export function Comparison({ flat }: { flat: boolean }) {
 
   return (
     <div className="absolute inset-0 select-none [container-type:size]" style={properties}>
-      <div className="absolute inset-0 grid place-items-center" hidden={unshowable && preview === null}>
-        <div className={picture}>
-          <img
-            ref={before}
-            className="size-full"
-            alt="As it was dropped"
-            onError={() => search.send({ type: 'unshowable' })}
-          />
-        </div>
-      </div>
-      <div
-        className="absolute inset-0 grid place-items-center [clip-path:inset(0_0_0_var(--split,50%))]"
-        data-slot="after"
-        hidden={!result}
-      >
-        <div className={picture}>
-          <img ref={after} className="size-full" alt="As sqzer encoded it" />
-        </div>
-      </div>
-      {result && <SplitHandle value={split} onChange={setSplit} />}
+      <Side picture={picture} hidden={size === null || (unshowable && preview === null)}>
+        <img
+          ref={before}
+          className="size-full"
+          alt="As it was dropped"
+          onLoad={loadBefore}
+          onError={() => search.send({ type: 'unshowable' })}
+        />
+      </Side>
+      <Side picture={picture} after hidden={loadedAfter === null}>
+        <img ref={after} className="size-full" alt="As sqzer encoded it" onLoad={loadAfter} />
+      </Side>
+      {loadedAfter && <SplitHandle value={split} onChange={setSplit} />}
       {decoded && <CornerLabel side="before" name="Before" size={decoded} />}
       {output && <CornerLabel side="after" name="After" size={output} />}
     </div>
   );
+}
+
+type SideProps = {
+  /** The classes of the picture's box. */
+  picture: string;
+  /** The side as encoded, clipped at the line. */
+  after?: boolean;
+  hidden: boolean;
+  children: ReactNode;
+};
+
+/** One side, the size of the screen, with the picture in its middle. */
+function Side({ picture, after = false, hidden, children }: SideProps) {
+  return (
+    <div
+      className={cn('absolute inset-0 grid place-items-center', after && '[clip-path:inset(0_0_0_var(--split,50%))]')}
+      data-slot={after ? 'after' : 'before'}
+      hidden={hidden}
+    >
+      <div className={picture}>{children}</div>
+    </div>
+  );
+}
+
+type Loaded = { of: Blob; width: number; height: number };
+
+/**
+ * The size of `blob` as the `<img>` it is shown in has loaded it, and the handler for that load.
+ * Null until then, and null again once `blob` is another: a size the browser reported for the
+ * blob before is not this one's.
+ */
+function useLoaded(blob: Blob | null) {
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const onLoad = ({ currentTarget }: SyntheticEvent<HTMLImageElement>) => {
+    if (blob) setLoaded({ of: blob, width: currentTarget.naturalWidth, height: currentTarget.naturalHeight });
+  };
+  return [loaded?.of === blob ? loaded : null, onLoad] as const;
 }
