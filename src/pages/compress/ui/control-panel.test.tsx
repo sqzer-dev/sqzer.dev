@@ -1,12 +1,12 @@
-import { createRef } from 'react';
+import { useState } from 'react';
 import { expect, test, vi } from 'vitest';
 import { render } from 'vitest-browser-react';
 import { fromCallback } from 'xstate';
 
 import type { Codec } from '@/shared/api';
 
-import { optionsOf } from '../lib/options-of';
 import { SearchProvider } from '../model/context';
+import { UNTOUCHED, type Controls } from '../model/controls';
 import type { EncoderCommand } from '../model/encoder';
 import { searchMachine } from '../model/machine';
 import { ControlPanel } from './control-panel';
@@ -35,21 +35,33 @@ const codec = (format: string, lossy?: boolean): Codec => ({
 // what a build could list: one lossy encoder, one that is lossless only, one format it only reads
 const codecs = [codec('jpeg', true), codec('png', false), codec('tiff')];
 
+/** The page's part: it holds what the controls say. */
+function Held({ onChange }: { onChange: (change: Partial<Controls>) => void }) {
+  const [values, setValues] = useState(UNTOUCHED);
+  return (
+    <ControlPanel
+      values={values}
+      onChange={(change) => {
+        setValues({ ...values, ...change });
+        onChange(change);
+      }}
+    />
+  );
+}
+
 /** The controls over a worker that only says what it has. */
 async function renderPanel() {
   const encoder = fromCallback<EncoderCommand>(({ sendBack }) => {
     sendBack({ type: 'ready', version: '0.0.0', codecs });
   });
-  const form = createRef<HTMLFormElement>();
-  const onChange = vi.fn<() => void>();
+  const onChange = vi.fn<(change: Partial<Controls>) => void>();
   const screen = await render(
     <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
-      <ControlPanel ref={form} onChange={onChange} />
+      <Held onChange={onChange} />
     </SearchProvider>,
   );
-  const options = () => (form.current ? optionsOf(form.current, codecs) : null);
   const format = screen.getByRole('combobox', { name: 'Format' });
-  return { screen, onChange, options, format };
+  return { screen, onChange, format };
 }
 
 test('the format list is what `codecs()` can write', async () => {
@@ -62,47 +74,46 @@ test('the format list is what `codecs()` can write', async () => {
   await expect.element(screen.getByRole('option', { name: /TIFF/u })).not.toBeInTheDocument();
 });
 
-test("controls that were not touched send nothing, so the defaults are the package's", async () => {
-  const { screen, options } = await renderPanel();
+test('the score starts empty and says `default`: the page does not restate what the package defaults to', async () => {
+  const { screen, onChange } = await renderPanel();
   const target = screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' });
 
   await expect.element(target).toHaveValue(null);
   await expect.element(target).toHaveAttribute('placeholder', 'default');
-  expect(options()).toEqual({});
+  expect(onChange).not.toHaveBeenCalled();
 });
 
-test('a score is sent once it is typed, and no longer once it is cleared', async () => {
-  const { screen, options } = await renderPanel();
+test('a score is reported as it is typed, and as it is cleared', async () => {
+  const { screen, onChange } = await renderPanel();
   const target = screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' });
 
   await target.fill('85');
-  expect(options()).toEqual({ target: 85 });
+  expect(onChange).toHaveBeenLastCalledWith({ target: '85' });
 
   await target.clear();
-  expect(options()).toEqual({});
+  expect(onChange).toHaveBeenLastCalledWith({ target: '' });
 });
 
 test('a format that is lossless only takes no quality', async () => {
-  const { screen, onChange, options, format } = await renderPanel();
+  const { screen, onChange, format } = await renderPanel();
   await format.click();
   await screen.getByRole('option', { name: 'PNG, lossless (png-rs)' }).click();
 
   await expect.element(screen.getByRole('spinbutton', { name: 'SSIMULACRA2 score to search for' })).toBeDisabled();
   await expect.element(screen.getByRole('spinbutton', { name: 'Encoder quality, no search' })).toBeDisabled();
-  expect(options()).toEqual({ format: 'png' });
-  // a Base UI part reports its change like a native field does
-  expect(onChange).toHaveBeenCalled();
+  expect(onChange).toHaveBeenCalledExactlyOnceWith({ format: 'png' });
 });
 
-test('a fixed quality and a width are sent as numbers', async () => {
-  const { screen, options } = await renderPanel();
+test('choosing a fixed quality and typing a width are each one change', async () => {
+  const { screen, onChange } = await renderPanel();
   await screen.getByRole('radio', { name: /fixed/u }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
 
-  expect(options()).toEqual({ quality: 80, width: 1600 });
+  expect(onChange.mock.calls).toEqual([[{ mode: 'quality' }], [{ width: '1600' }]]);
+  await expect.element(screen.getByRole('spinbutton', { name: 'Encoder quality, no search' })).toHaveValue(80);
 });
 
-test('"Solid panels" makes the glass opaque from `<html>`, keeps the choice, and starts no search', async () => {
+test('"Solid panels" makes the glass opaque from `<html>`, keeps the choice, and is no change of the controls', async () => {
   localStorage.clear();
   const { screen, onChange } = await renderPanel();
   const solid = screen.getByRole('switch', { name: 'Solid panels' });

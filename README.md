@@ -7,7 +7,7 @@ React 19 and TypeScript, built by Vite into static files. The components are sha
 ```
 index.html              the entry Vite builds
 src/app/                the root and the global stylesheet
-src/pages/compress/     the page: its parts, the search machine, the helpers
+src/pages/compress/     the page: the drop zone, the image under its panels, the search machine, the helpers
 src/shared/api/sqzer/   the worker: every call into `sqzer`, off the main thread
 src/shared/ui/          the components, one file each, copied in by `shadcn add`
 tests/                  the end-to-end suite and the fixtures

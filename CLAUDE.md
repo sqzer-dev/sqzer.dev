@@ -17,8 +17,10 @@ index.html                  the entry Vite builds. The Content-Security-Policy i
 vite.config.ts              the build, and the one place the policy is written
 components.json             what `shadcn add` reads: the Base UI base, the Mira style, where components go
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
-src/pages/compress/ui/      the page and its parts: drop zone, controls, status, comparison, result
-src/pages/compress/model/   the search machine, the worker actor, the picked image, the result
+src/pages/compress/ui/      the page and its parts: the empty state, the workspace with its comparison,
+                            panels, bottom expander and view bar, the controls, the status, the result
+src/pages/compress/model/   the search machine, the worker actor, the picked image, the result,
+                            what the controls say
 src/pages/compress/lib/     drawing on the page, codec lookups, the summary, reading the controls
 src/shared/api/sqzer/       the worker, its client and the message types. Every call into `sqzer`
 src/shared/ui/              the components, one file each, copied in by `shadcn add`. No barrel
@@ -41,8 +43,8 @@ Vitest tests sit next to what they test, as `*.test.ts` and `*.test.tsx`.
 - The page sends nothing anywhere: no analytics, no error reporting, no request to another origin. The `Content-Security-Policy` in `vite.config.ts` says so; do not widen it for convenience. No inline script, no `style` attribute, no `<style>` block, and a React `style` prop sets custom properties only.
 - Tailwind 4 is the one styling system: utilities in markup, and plain CSS in `src/app/style.css` only where a utility cannot say it. No CSS Modules, no CSS-in-JS, no second component library. A component comes from `shadcn add` into `src/shared/ui/` and is then ours: fields and chips take a `gray 10` border and no fill, the focus ring is solid, and nothing carries a shadow or a colour outside the tokens (ADR-0003 D4).
 - Nothing makes a `<style>` element at run time: the policy blocks it. The root stays in Base UI's `<CSPProvider disableStyleElements>`, and a new library is checked for it before it is added. The Playwright suite fails on any `securitypolicyviolation`.
-- The palette is Radix `gray`, with `red` on an alert and nowhere else. Light and dark follow `prefers-color-scheme`, with no script and no `.dark` class: the build moves Radix's dark scales under the media query.
-- Glass is the `glass` utility and nothing else, on what floats over the image on its own: the panels, the bottom expander, the corner labels. Nothing inside glass is glass. Its tint is whatever `glass.test.tsx` passes at, never a value chosen by eye, and a new glass surface joins that test.
+- The palette is Radix `gray`, with `red` on an alert and nowhere else on the page. The `destructive` variants of the components carry the alert's colours, `red 3`, `red 12` and `red 9`, for when one is an alert's own button or chip. Light and dark follow `prefers-color-scheme`, with no script and no `.dark` class: the build moves Radix's dark scales under the media query.
+- Glass is the `glass` utility and nothing else, on what floats over the image on its own: the panels, which are `Card`, the view bar, the bottom expander, the corner labels. Nothing inside glass is glass. Its tint is whatever `glass.test.tsx` passes at, never a value chosen by eye, and a new glass surface joins `glass.surfaces.tsx`, which that test measures.
 - Every call into `sqzer` runs in the worker. The package is synchronous, and a search takes seconds. Only the client in `src/shared/api/sqzer/` starts or ends a worker, and only the search machine uses the client.
 - A search cannot be interrupted. The machine's `restart` re-enters its `open` state, which ends the worker and starts another; keep that the only way an encode is cancelled. An idle worker is never ended: it holds the decoded image, so a change of the controls only pays for the encode (ADR-0004).
 - The package's decoder comes first, the browser's canvas decodes what the package cannot. An SVG is drawn on the page from an `<img>`, at the size asked for: `createImageBitmap` refuses an SVG blob inside a worker in Chrome and Firefox.

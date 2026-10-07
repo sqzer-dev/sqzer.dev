@@ -12,7 +12,7 @@ declare global {
 }
 
 const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
-const DROP = 'Drop an image here, paste one, or choose a file.';
+const PICK = 'Choose an image';
 const SLOW = { timeout: 120_000 };
 
 /** Every test fails on a page error, a console error, a refusal by the policy, or a request to another origin. */
@@ -59,12 +59,12 @@ async function format(page: Page, name: RegExp) {
 
 test('a JPEG goes through the page with the defaults', async ({ page }) => {
   const status = await open(page);
-  await page.getByLabel(DROP).setInputFiles(fixture('pattern-rgb.jpg'));
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
 
   await expect(status).toHaveText(/^Done in [\d.]+ s\.$/u, SLOW);
   await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
   await expect(page.getByText(/target 70 reached in \d trials?:/u)).toBeVisible();
-  // each side's size, in the corner over it
+  // each side's size, in the corner of the screen over it
   await expect(page.getByText('Before: 48 × 32')).toBeVisible();
   await expect(page.getByText('After: 48 × 32')).toBeVisible();
 
@@ -104,6 +104,11 @@ test('the footer links the licences of what the page carries, the package in the
 
 test('a change of format during a search ends the worker and starts another', async ({ page }) => {
   const status = await open(page);
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.svg'));
+  await expect(status).toHaveText(/^Done in/u, SLOW);
+  await format(page, /^AVIF/u);
+  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
+
   await page.evaluate(() => {
     const line = document.querySelector('output');
     if (!line) throw new Error('the page has no status line');
@@ -119,8 +124,6 @@ test('a change of format during a search ends the worker and starts another', as
 
   // drawn large, so a search takes seconds
   await page.getByLabel('Width').fill('2000');
-  await format(page, /^AVIF/u);
-  await page.getByLabel(DROP).setInputFiles(fixture('pattern-rgb.svg'));
   await expect(status).toHaveText(/^Encoding: trial 1 of at most/u, SLOW);
 
   await format(page, /^JPEG/u);
@@ -132,13 +135,14 @@ test('a change of format during a search ends the worker and starts another', as
   const trial = statuses.findIndex((text) => text.startsWith('Encoding: trial 1 '));
   expect(trial).toBeGreaterThan(-1);
   expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
-  // and only then: the controls changed just before the drop start no search of their own (issue 8)
+  // twice and no more: drawn at the new width, then read by the worker that replaced the one cut short
   expect(statuses.filter((text) => text === 'Reading pattern-rgb.svg.')).toHaveLength(2);
-  expect(statuses.join('\n')).not.toMatch(/avif/u);
 });
 
 test('the components and the fonts hold under the policy', async ({ page }) => {
-  await open(page);
+  const status = await open(page);
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
+  await expect(status).toHaveText(/^Done in/u, SLOW);
 
   // the list hides its scrollbar by a class, which Base UI would otherwise style from a `<style>` element
   await page.getByRole('combobox', { name: 'Format' }).click();
@@ -150,6 +154,16 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   await expect(solid).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-panels', 'solid');
 
+  // a panel collapses, the handle moves by its keys, a tooltip and a popover find their place
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(solid).toBeHidden();
+  await page.getByRole('slider', { name: 'Before on the left, after on the right' }).press('ArrowLeft');
+  await expect(page.getByRole('slider', { name: 'Before on the left, after on the right' })).toHaveValue('49');
+  await page.getByRole('button', { name: 'Checkerboard under a transparent image' }).hover();
+  await expect(page.getByText('Checkerboard under a transparent image')).toBeVisible();
+  await page.getByRole('button', { name: 'About this page' }).click();
+  await expect(page.getByRole('dialog').getByText(/nothing is sent anywhere/u)).toBeVisible();
+
   // Geist comes from the page's own origin, under `font-src 'self'`
   const fonts = await page.evaluate(async () => {
     await Promise.all([document.fonts.load('1em Geist'), document.fonts.load('1em "Geist Mono"')]);
@@ -159,12 +173,50 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   await expect(page.locator('style')).toHaveCount(0);
 });
 
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+
+  test('the panels are one bottom expander, pulled up over the image, under the policy', async ({ page }) => {
+    const status = await open(page);
+    await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
+    await expect(status).toHaveText(/^Done in/u, SLOW);
+
+    const expander = page.getByRole('dialog', { name: 'Result and options' });
+    const top = async () => {
+      // once it has stopped sliding
+      await expander.evaluate(async (sheet) => {
+        await Promise.all(sheet.getAnimations({ subtree: true }).map((animation) => animation.finished));
+      });
+      return (await expander.boundingBox())?.y ?? Number.NaN;
+    };
+    // the image keeps the screen: the expander shows its top edge and no more
+    await expect.poll(top).toBeGreaterThan(780 - 120);
+
+    const grip = await page.locator('[data-slot=drawer-swipe-handle]').boundingBox();
+    if (!grip) throw new Error('the expander has no handle');
+    const [x, y] = [grip.x + grip.width / 2, grip.y + grip.height / 2];
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 300, { steps: 20 });
+    await page.mouse.up();
+
+    await expect.poll(top).toBeLessThan(200);
+    await page.getByLabel('Width').fill('24');
+    await expect(page.getByText('After: 24 × 16')).toBeVisible(SLOW);
+
+    // Escape does not close it: it lets the image go again
+    await page.keyboard.press('Escape');
+    await expect.poll(top).toBeGreaterThan(600);
+    await expect(expander).toBeVisible();
+  });
+});
+
 test("the policy names no origin but the page's own", async ({ page }) => {
   const origins = new Set<string>();
   page.on('request', (request) => origins.add(new URL(request.url()).origin));
 
   const status = await open(page);
-  await page.getByLabel(DROP).setInputFiles(fixture('pattern-rgb.jpg'));
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
   await expect(status).toHaveText(/^Done in/u, SLOW);
 
   const policy = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');

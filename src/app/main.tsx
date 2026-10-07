@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { CompressPage, SearchProvider } from '@/pages/compress';
+import { TooltipProvider } from '@/shared/ui/tooltip';
 
 import './style.css';
 
@@ -13,9 +14,11 @@ createRoot(root).render(
   <StrictMode>
     {/* Base UI under `style-src 'self'`: no `<style>` element, its two rules are in the stylesheet (ADR-0003 D2) */}
     <CSPProvider disableStyleElements>
-      <SearchProvider>
-        <CompressPage />
-      </SearchProvider>
+      <TooltipProvider>
+        <SearchProvider>
+          <CompressPage />
+        </SearchProvider>
+      </TooltipProvider>
     </CSPProvider>
   </StrictMode>,
 );

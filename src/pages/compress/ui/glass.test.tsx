@@ -1,17 +1,11 @@
 // Every glass surface over the worst images a reader can drop, in light and dark (ADR-0003 D5):
 // 4.5:1 for text and 3:1 for a line that marks a control, as WCAG 1.4.3 and 1.4.11 ask. The tint
 // in `style.css` is the lowest step of its scale that passes here.
-import type { ComponentType } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { render } from 'vitest-browser-react';
 import { commands, page, server } from 'vitest/browser';
 
-import { Badge } from '@/shared/ui/badge';
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/shared/ui/drawer';
-import { Input } from '@/shared/ui/input';
-import { Slider } from '@/shared/ui/slider';
-
-import { CornerLabel } from './corner-label';
+import { surfaces } from './glass.surfaces';
 
 type Media = {
   colorScheme?: 'light' | 'dark' | null;
@@ -37,47 +31,8 @@ const backdrops: Record<string, string> = {
   noise: new URL('../../../../tests/fixtures/noise.png', import.meta.url).href,
 };
 
-/** A panel as ADR-0001 D2 has them: body text, a chip, a slider and a field, here with the focus on it. */
-function Panel() {
-  return (
-    <section className="glass absolute top-16 left-4 flex w-64 flex-col items-start gap-3 rounded-xl p-4">
-      <p className="text-sm">The target was reached in 4 trials.</p>
-      <p className="text-xs text-muted-foreground">70, high: barely noticeable side by side</p>
-      <Badge variant="outline">lossless</Badge>
-      <Slider defaultValue={[70]} aria-label="Target" />
-      {/* oxlint-disable-next-line jsx-a11y/no-autofocus -- the focus ring is one of the lines measured */}
-      <Input autoFocus aria-label="Width" />
-    </section>
-  );
-}
-
-/** The bottom expander of a phone: the drawer, open over the image without dimming it. */
-function Expander() {
-  return (
-    <Drawer open modal={false} showSwipeHandle>
-      <DrawerContent>
-        <div className="flex flex-col items-start gap-3 p-4">
-          <DrawerTitle>19.3 KB, 96 % smaller</DrawerTitle>
-          <DrawerDescription>The target was reached in 4 trials.</DrawerDescription>
-          <Badge variant="outline">resized</Badge>
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-function Label() {
-  return <CornerLabel side="before" name="Before" size={{ width: 4032, height: 3024 }} />;
-}
-
-const surfaces: Record<string, { Surface: ComponentType; selector: string }> = {
-  'a panel': { Surface: Panel, selector: 'section' },
-  'the bottom expander': { Surface: Expander, selector: '[data-slot=drawer-popup]' },
-  'a corner label': { Surface: Label, selector: 'span' },
-};
-
 // What is measured against the glass: the surface's own text, and inside it every text, chip, field and slider track.
-const TEXTS = 'p, h2, [data-slot=badge]';
+const TEXTS = 'p, h2 button, label, [data-slot=badge], [data-slot=button], [data-slot=toggle]';
 const BORDERS = '[data-slot=badge], [data-slot=input]';
 const FILLS = '[data-slot=slider-track]';
 
@@ -142,9 +97,12 @@ async function backgrounds(surface: HTMLElement): Promise<Rgb[]> {
   canvas.height = shot.naturalHeight;
   context.drawImage(shot, 0, 0);
 
-  const scale = shot.naturalWidth / surface.getBoundingClientRect().width;
+  const { top, width, height } = surface.getBoundingClientRect();
+  const scale = shot.naturalWidth / width;
   const inset = Math.ceil((Number(getComputedStyle(surface).borderTopLeftRadius.replace('px', '')) + 1) * scale);
-  const { data } = context.getImageData(inset, inset, canvas.width - 2 * inset, canvas.height - 2 * inset);
+  // the bottom expander reaches below the screen, and a screenshot has nothing to show of that part
+  const shown = Math.floor(Math.min(height, innerHeight - top) * scale);
+  const { data } = context.getImageData(inset, inset, canvas.width - 2 * inset, shown - 2 * inset);
   const seen = new Set<number>();
   for (let index = 0; index < data.length; index += 4) {
     seen.add(((data[index] ?? 0) << 16) | ((data[index + 1] ?? 0) << 8) | (data[index + 2] ?? 0));
