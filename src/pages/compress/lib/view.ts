@@ -14,8 +14,9 @@ export type Change = { dx?: number; dy?: number; factor?: number; origin?: Point
 
 /** One step of the zoom buttons and keys, as on Squoosh. */
 export const STEP = 1.25;
-/** 32 screen pixels to an image pixel, which is as close as the buttons go. */
+/** 32 screen pixels to an image pixel, which is as close as the view goes, and 32 image pixels to a screen pixel as far. */
 export const MAX_SCALE = 32;
+export const MIN_SCALE = 1 / MAX_SCALE;
 
 /** The scale at which the picture fits the screen, and never larger than its own pixels. */
 export function fitScale({ screen, picture }: Frame) {
@@ -27,37 +28,23 @@ export function fitted(frame: Frame): View {
   return { scale: fitScale(frame), x: 0, y: 0 };
 }
 
-const within = (value: number, limit: number) => Math.min(Math.max(value, -limit), limit);
-
-/**
- * `view` within bounds: no further out than fitted, no closer than `MAX_SCALE`, and the picture never
- * off the screen. While it is smaller than the screen it stays inside; once larger, it covers it.
- */
-export function clamped(view: View, frame: Frame): View {
-  const scale = Math.min(Math.max(view.scale, fitScale(frame)), MAX_SCALE);
-  const room = (axis: keyof Size) => Math.abs(frame.screen[axis] - frame.picture[axis] * scale) / 2;
-  return { scale, x: within(view.x, room('width')), y: within(view.y, room('height')) };
+/** `view` with its scale between `MIN_SCALE` and `MAX_SCALE`. The picture goes wherever it is taken, out of sight included: fit brings it back. */
+export function clamped(view: View): View {
+  return { ...view, scale: Math.min(Math.max(view.scale, MIN_SCALE), MAX_SCALE) };
 }
 
 /** `view` after `change`: panned, then zoomed about the origin, so what is under the pointer stays under it. */
-export function changed(
-  view: View,
-  frame: Frame,
-  { dx = 0, dy = 0, factor = 1, origin = { x: 0, y: 0 } }: Change,
-): View {
-  const { scale } = clamped({ ...view, scale: view.scale * factor }, frame);
+export function changed(view: View, { dx = 0, dy = 0, factor = 1, origin = { x: 0, y: 0 } }: Change): View {
+  const { scale } = clamped({ ...view, scale: view.scale * factor });
   const ratio = scale / view.scale;
-  return clamped(
-    { scale, x: origin.x + (view.x + dx - origin.x) * ratio, y: origin.y + (view.y + dy - origin.y) * ratio },
-    frame,
-  );
+  return { scale, x: origin.x + (view.x + dx - origin.x) * ratio, y: origin.y + (view.y + dy - origin.y) * ratio };
 }
 
 /** `view` one step in or out, about the screen's centre. A step that would pass 100 % stops there, so the picture's own pixels are a step away. */
-export function stepped(view: View, frame: Frame, direction: 'in' | 'out'): View {
+export function stepped(view: View, direction: 'in' | 'out'): View {
   const target = view.scale * (direction === 'in' ? STEP : 1 / STEP);
   const passesOne = (view.scale - 1) * (target - 1) < 0;
-  return changed(view, frame, { factor: (passesOne ? 1 : target) / view.scale });
+  return changed(view, { factor: (passesOne ? 1 : target) / view.scale });
 }
 
 /** Two fingers moved from `was` to `now`: their midpoint pans, and the distance between them zooms about it. */
@@ -69,12 +56,7 @@ export function pinched(was: [Point, Point], now: [Point, Point]): Change {
   return { dx: to.x - from.x, dy: to.y - from.y, factor: apart(now) / apart(was), origin: to };
 }
 
-/** Whether the picture reaches past the screen, so a drag has somewhere to take it. */
-export function overflows(view: View, { screen, picture }: Frame) {
-  return picture.width * view.scale > screen.width || picture.height * view.scale > screen.height;
-}
-
-/** The scale as the view bar prints it. */
+/** The scale as the view bar prints it, in whole percent. */
 export function percent(scale: number) {
-  return `${Math.round(scale * 100)} %`;
+  return String(Math.round(scale * 100));
 }

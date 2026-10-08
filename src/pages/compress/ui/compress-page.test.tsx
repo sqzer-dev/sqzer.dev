@@ -241,22 +241,24 @@ test('the checkerboard under a transparent image can be a flat colour', async ()
   expect(picture && getComputedStyle(picture).backgroundImage).toBe('none');
 });
 
-test('the view bar zooms the picture in steps, says how close it is, and fits it again', async () => {
+test('the view bar zooms the picture in steps, out past its own pixels, and fits it again', async () => {
   const { screen, drop } = await renderPage();
   await drop();
   const picture = screen.getByRole('img', { name: 'As it was dropped' });
-  await expect.element(screen.getByText('Zoom 100 %')).toBeInTheDocument();
-  expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
-
+  const zoom = screen.getByRole('textbox', { name: 'Zoom' });
+  await expect.element(zoom).toHaveValue('100');
+  await expect.element(picture).toBeVisible();
   await screen.getByRole('button', { name: 'Zoom in' }).click();
-
-  await expect.element(screen.getByText('Zoom 125 %')).toBeInTheDocument();
+  await expect.element(zoom).toHaveValue('125');
   expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 60, height: 40 });
 
   await screen.getByRole('button', { name: 'Fit to the screen' }).click();
-
-  await expect.element(screen.getByText('Zoom 100 %')).toBeInTheDocument();
+  await expect.element(zoom).toHaveValue('100');
   expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
+
+  // and out, below the fit, which is this picture's own pixels
+  await screen.getByRole('button', { name: 'Zoom out' }).click();
+  await expect.element(zoom).toHaveValue('80');
 });
 
 test('the controls rest before a search starts with what they say', async () => {

@@ -45,10 +45,13 @@ export function Workspace({ values, onChange, onPick, dragging }: WorkspaceProps
       <Comparison flat={flat} viewer={viewer} />
       {wide ? (
         <>
-          <div className="absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
-            <Panel title="Options">{controls}</Panel>
+          {/* the column is the height of the screen: between its panels the pointer reaches the image */}
+          <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
+            <Panel title="Options" className="pointer-events-auto">
+              {controls}
+            </Panel>
             {hasResult && (
-              <Panel title="Result" pinned={<DownloadButton />}>
+              <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto">
                 <ResultPanel />
               </Panel>
             )}

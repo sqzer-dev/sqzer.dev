@@ -69,28 +69,30 @@ export function Comparison({ flat, viewer }: ComparisonProps) {
   const img = 'absolute inset-0 size-full object-contain in-data-pixelated:[image-rendering:pixelated]';
 
   return (
-    // A region with keys of its own: the arrows pan, plus and minus zoom (ADR-0001 D9).
+    // A region with keys of its own: the arrows pan, plus and minus zoom (ADR-0001 D9). It is a stacking
+    // context of its own, so the handle, which Base UI raises, stays under the panels. The pictures are not
+    // draggable: a drag over them pans, and does not pick the file up.
     <div
       ref={root}
       role="application"
       aria-label="Before and after"
       tabIndex={0}
-      className="absolute inset-0 touch-none overflow-hidden outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-pannable:cursor-grab"
+      className="absolute inset-0 isolate cursor-grab touch-none overflow-hidden outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       style={properties}
       data-pixelated={viewer.view !== null && viewer.view.scale >= 1 ? '' : undefined}
-      data-pannable={viewer.pannable || undefined}
     >
       <Side picture={picture} hidden={viewer.view === null || (unshowable && preview === null)}>
         <img
           ref={before}
           className={img}
+          draggable={false}
           alt="As it was dropped"
           onLoad={viewer.onLoad}
           onError={() => search.send({ type: 'unshowable' })}
         />
       </Side>
       <Side picture={picture} after hidden={!afterShown}>
-        <img ref={after} className={img} alt="As sqzer encoded it" onLoad={afterLoaded} />
+        <img ref={after} className={img} draggable={false} alt="As sqzer encoded it" onLoad={afterLoaded} />
       </Side>
       {afterShown && <SplitHandle value={split} onChange={setSplit} />}
       {decoded && <CornerLabel side="before" name="Before" size={decoded} />}

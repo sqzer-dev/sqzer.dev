@@ -63,6 +63,15 @@ function pointer(screen: Awaited<ReturnType<typeof renderComparison>>['screen'],
     );
 }
 
+test('the pictures are not dragged as files, and the panels do not take the pointer between them', async () => {
+  const { screen } = await renderComparison();
+  const before = screen.getByRole('img', { name: 'As it was dropped' });
+  await expect.element(before).toBeVisible();
+  expect(before.element().getAttribute('draggable')).toBe('false');
+  // the comparison is a layer of its own, so the handle Base UI raises stays under what floats over the image
+  expect(getComputedStyle(region(screen).element()).isolation).toBe('isolate');
+});
+
 test('a drag of the screen pans both sides, and the arrows do the same', async () => {
   const { screen } = await renderComparison();
   const after = screen.getByRole('img', { name: 'As sqzer encoded it' });

@@ -1,7 +1,7 @@
 import { useState, type RefObject, type SyntheticEvent } from 'react';
 
 import { useSize } from '../lib/size';
-import { changed, fitted, overflows, stepped, type Change, type Frame, type Size, type View } from '../lib/view';
+import { changed, fitted, stepped, type Change, type Frame, type Size, type View } from '../lib/view';
 import { useSearch } from './context';
 import type { Picked } from './picked';
 
@@ -17,12 +17,11 @@ export type Viewer = {
   picture: Size | null;
   /** Where the picture stands, once the screen and the picture are measured. */
   view: View | null;
-  /** The picture reaches past the screen, so a drag has somewhere to take it. */
-  pannable: boolean;
   /** What the before side's `<img>` reports on load: the picture's size until the worker has decoded it. */
   onLoad: (event: SyntheticEvent<HTMLImageElement>) => void;
   change: (change: Change) => void;
-  zoom: (step: 'in' | 'out' | 'fit') => void;
+  /** A step in or out, the fit, or a scale to go to, about the screen's centre. */
+  zoom: (to: 'in' | 'out' | 'fit' | number) => void;
 };
 
 /**
@@ -58,15 +57,18 @@ export function useViewer(screen: RefObject<Element | null>): Viewer {
     input,
     picture: frame?.picture ?? null,
     view,
-    pannable: frame !== null && view !== null && overflows(view, frame),
     onLoad: ({ currentTarget }) => {
       if (input) setLoaded({ of: input, width: currentTarget.naturalWidth, height: currentTarget.naturalHeight });
     },
     change: (change) => {
-      update((current, measured) => changed(current, measured, change));
+      update((current) => changed(current, change));
     },
-    zoom: (step) => {
-      update((current, measured) => (step === 'fit' ? fitted(measured) : stepped(current, measured, step)));
+    zoom: (to) => {
+      update((current, measured) => {
+        if (to === 'fit') return fitted(measured);
+        if (typeof to === 'number') return changed(current, { factor: to / current.scale });
+        return stepped(current, to);
+      });
     },
   };
 }

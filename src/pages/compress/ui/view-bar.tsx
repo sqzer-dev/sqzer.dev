@@ -7,9 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { Toggle } from '@/shared/ui/toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';
 
-import { percent } from '../lib/view';
 import { About } from './about';
 import { FilePicker } from './drop-zone';
+import { ZoomField } from './zoom-field';
 
 type ViewBarProps = {
   /** A plain colour is under the image, not the checkerboard. */
@@ -18,7 +18,8 @@ type ViewBarProps = {
   onPick: (file: File) => void;
   /** The picture's scale, in screen pixels per image pixel. Null until the picture is measured. */
   scale: number | null;
-  onZoom: (step: 'in' | 'out' | 'fit') => void;
+  /** A step in or out, the fit, or a scale to go to. */
+  onZoom: (to: 'in' | 'out' | 'fit' | number) => void;
   /** On its own over the image, in glass, at the bottom left. Not where it sits in the bottom expander, which is glass already. */
   floating?: boolean;
 };
@@ -36,10 +37,7 @@ export function ViewBar({ flat, onFlat, onPick, scale, onZoom, floating = false 
       <Action label="Zoom out" onClick={() => onZoom('out')}>
         <ZoomOutIcon />
       </Action>
-      <span className="min-w-11 text-center font-mono text-xs tabular-nums">
-        <span className="sr-only">Zoom </span>
-        {scale === null ? '' : percent(scale)}
-      </span>
+      <ZoomField scale={scale} onZoom={onZoom} />
       <Action label="Zoom in" onClick={() => onZoom('in')}>
         <ZoomInIcon />
       </Action>

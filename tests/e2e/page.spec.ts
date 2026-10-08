@@ -195,7 +195,7 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   const picture = page.getByRole('img', { name: 'As it was dropped' });
   await expect(picture).toBeVisible();
   await page.getByRole('button', { name: 'Zoom in' }).click();
-  await expect(page.getByText('Zoom 125 %')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Zoom' })).toHaveValue('125');
   const before = await picture.boundingBox();
   if (!before) throw new Error('the picture has no box');
   expect(before.width).toBe(60);
@@ -205,7 +205,7 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   await page.mouse.up();
   await expect.poll(async () => (await picture.boundingBox())?.x).toBe(before.x + 30);
   await page.getByRole('button', { name: 'Fit to the screen' }).click();
-  await expect(page.getByText('Zoom 100 %')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Zoom' })).toHaveValue('100');
   await page.getByRole('button', { name: 'Checkerboard under a transparent image' }).hover();
   await expect(page.getByText('Checkerboard under a transparent image')).toBeVisible();
   await page.getByRole('button', { name: 'About this page' }).click();
