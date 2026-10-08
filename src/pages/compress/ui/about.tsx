@@ -8,7 +8,8 @@ export function About() {
   const version = useSearch((snapshot) => snapshot.context.version);
 
   return (
-    <div className="flex flex-col gap-1 text-xs/relaxed text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-foreground">
+    // the links take the page's focus ring, not the browser's
+    <div className="flex flex-col gap-1 text-xs/relaxed text-muted-foreground [&_a]:rounded-sm [&_a]:underline [&_a]:underline-offset-4 [&_a]:outline-none [&_a]:hover:text-foreground [&_a]:focus-visible:ring-2 [&_a]:focus-visible:ring-ring">
       <p>The image is encoded in this tab, and nothing is sent anywhere. No analytics, no error reporting.</p>
       <p>
         <a href="https://github.com/sqzer-dev/sqzer">sqzer</a> as a command line and a Rust library,{' '}
