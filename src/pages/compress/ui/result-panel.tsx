@@ -35,7 +35,7 @@ export function ResultPanel() {
 
   return (
     <div className="flex flex-col items-start gap-3">
-      <SearchFailure />
+      <SearchFailure of="image" />
       <pre className="font-mono text-xs/relaxed whitespace-pre-wrap empty:hidden">
         {image && result && summarize({ name: image.name, size: image.bytes.byteLength }, result)}
       </pre>

@@ -39,7 +39,7 @@ export function EmptyState({ dragging, onPick }: EmptyStateProps) {
             <FilePicker size="lg" onPick={onPick}>
               Choose an image
             </FilePicker>
-            <SearchFailure />
+            <SearchFailure of="encoder" />
           </EmptyContent>
         </Empty>
       </main>

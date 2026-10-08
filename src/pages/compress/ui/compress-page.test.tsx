@@ -36,16 +36,27 @@ const wait = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+/** What the stub worker gets wrong, if anything: its start, or reading the image. */
+type Fails = 'start' | 'read' | null;
+
 /** The page over workers that read and encode at once, and say what they were asked. */
-async function renderPage() {
+async function renderPage(fails: Fails = null) {
   const file = new File([await (await fetch(fixture)).blob()], 'pattern-rgb.jpg', { type: 'image/jpeg' });
   const workers: EncoderCommand[][] = [];
   const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
     const asked: EncoderCommand[] = [];
     workers.push(asked);
+    if (fails === 'start') {
+      sendBack({ type: 'failed', message: 'the worker did not start', broken: true });
+      return;
+    }
     sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
     receive((command) => {
       asked.push(command);
+      if (command.type === 'read' && fails === 'read') {
+        sendBack({ type: 'failed', message: 'no decoder for HEIC in this build', broken: false });
+        return;
+      }
       if (command.type === 'read') {
         const decoded = { width: 48, height: 32, format: 'jpeg', alpha: false, animated: false };
         sendBack({ type: 'decoded', decoded, drawnWidth: null });
@@ -90,6 +101,24 @@ test('with no file, the page is the name at the top and one drop target with the
   await expect.element(screen.getByRole('combobox', { name: 'Format' })).not.toBeInTheDocument();
   // and so does what the encoder says in passing
   await expect.element(screen.getByText('Ready.')).toBeVisible();
+});
+
+test("the encoder's own failure is the one the empty state shows", async () => {
+  const { screen } = await renderPage('start');
+
+  await expect.element(screen.getByRole('main').getByRole('alert')).toHaveTextContent('the worker did not start');
+  await expect.element(screen.getByLabelText('Choose an image')).toBeVisible();
+});
+
+test("an image's failure is shown in the result panel, and never in the empty state", async () => {
+  const { screen } = await renderPage('read');
+  await screen.getByLabelText('Choose an image').upload(new File(['not an image'], 'photo.heic'));
+
+  const alert = screen.getByRole('alert');
+  await expect.element(alert).toHaveTextContent('no decoder for HEIC in this build');
+  expect(alert.element().closest('[data-size]')?.querySelector('h2')?.textContent).toBe('Result');
+  expect(screen.getByRole('alert').elements()).toHaveLength(1);
+  await expect.element(screen.getByText('Drop an image, paste one, or choose a file.')).not.toBeInTheDocument();
 });
 
 test('the drop target turns blue at its border while a file is dragged over the window', async () => {
