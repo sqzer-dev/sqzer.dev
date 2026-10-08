@@ -60,7 +60,7 @@ search    Reading <file>.                                      loading, kept unt
           Done in 1.2 s.                                       success, the default timeout
 ```
 
-The 500 ms of ADR-0001 D4 hold: the search toast appears once a search has run for 500 ms, so a fast encode does not flash a toast on its way to the result. A search toast that is still on the screen, from the search before, changes at once. `Done` is shown whatever the search took, and a toast the reader closed during a search stays closed until then.
+The 500 ms of ADR-0001 D4 hold: the search toast appears once a search has run for 500 ms, and says `Done` for that search alone. A search over sooner shows no toast at all: the result panel is its message, and a toast would be the flash D4 rules out. A toast still on the screen from the search before waits the same 500 ms before it changes, so a run of quick changes to the controls does not flip it between encoding and done. A toast the reader closed during a search stays closed until the search is done.
 
 A failure closes the search toast and is shown where ADR-0001 D6 puts it: as an alert in the panel, and in the empty state until an image is on the page. Nothing in D6 changes.
 
@@ -106,7 +106,7 @@ A toast is the popover's surface: opaque, `popover` on its tokens, a `border` ed
 
 **One live region.** Everything the page says in passing goes through the viewport. A message that has to be assertive would need high priority, and the one such message, a failure, is not a toast.
 
-**Done after a fast encode.** A search that took 200 ms shows no loading toast and then a `Done` toast, after the result is already on the screen. The result panel changes at the same moment, so the toast says what the panel shows.
+**A stale `Done`.** A search over within 500 ms leaves the `Done` of the search before on the screen until its timeout, with that search's time on it. It is true of the search it names, and the result panel shows the new result beside it.
 
 ---
 

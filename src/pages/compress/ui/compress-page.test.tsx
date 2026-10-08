@@ -74,8 +74,8 @@ async function renderPage(fails: Fails = null) {
   const encodes = () => workers.flat().flatMap((command) => (command.type === 'encode' ? [command.options] : []));
   const drop = async () => {
     await screen.getByLabelText('Choose an image').upload(file);
-    // the toast of ADR-0005, and the workspace, which is loaded once there is an image
-    await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
+    // the workspace, which is loaded once there is an image. The search is over within the quiet 500 ms
+    // of ADR-0005, so no toast tells of it
     await expect.element(screen.getByRole('link', { name: 'Download pattern-rgb.jpg' })).toBeVisible();
   };
   return { screen, workers, encodes, drop };

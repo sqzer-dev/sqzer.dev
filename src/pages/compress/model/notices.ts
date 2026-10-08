@@ -67,20 +67,20 @@ function encoderTeller({ add, close }: Toaster) {
 }
 
 /**
- * Tells the `search` toast, updated in place. It waits out the quiet first 500 ms of a search unless
- * it is on the screen already, and one the reader closed stays closed until the search is done.
+ * Tells the `search` toast, updated in place. It appears once a search has run for the quiet 500 ms
+ * and says done for that search alone: a search over sooner shows nothing, the result panel is its
+ * message. One the reader closed stays closed until the search is done.
  */
 function searchTeller({ add, close }: Toaster) {
   let search: Notice | null = null;
-  // whether the toast is on the screen, until the reader or its timeout takes it off
-  let shown = false;
+  // whether the toast has told of the running search: only then does it tell of its end
+  let told = false;
   // the reader closed it while the search ran: no trial brings it back, the end of the search does
   let dismissed = false;
   let quiet = 0;
 
   const show = () => {
     if (!search) return;
-    shown = true;
     add({
       id: 'search',
       ...search,
@@ -91,9 +91,6 @@ function searchTeller({ add, close }: Toaster) {
       // at the close, not after the slide out: a trial landing meanwhile would bring the toast back
       onClose: () => {
         if (search?.type === 'loading') dismissed = true;
-      },
-      onRemove: () => {
-        shown = false;
       },
     });
   };
@@ -108,18 +105,22 @@ function searchTeller({ add, close }: Toaster) {
     if (next === null) {
       settle();
       dismissed = false;
-      if (shown) close('search');
+      told = false;
+      // a toast that is not on the screen is nothing to close, and Base UI takes it so
+      close('search');
     } else if (next.type === 'success') {
       settle();
       dismissed = false;
-      show();
+      if (told) show();
+      told = false;
     } else if (dismissed) {
       // closed by the reader: nothing until the search is done
-    } else if (shown) {
+    } else if (told) {
       show();
     } else if (quiet === 0) {
       quiet = window.setTimeout(() => {
         quiet = 0;
+        told = true;
         show();
       }, QUIET_MS);
     }

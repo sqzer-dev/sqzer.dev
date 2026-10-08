@@ -62,7 +62,8 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
   await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
 
-  await expect(said(page, /^Done in [\d.]+ s\.$/u)).toBeVisible(SLOW);
+  // a search of the fixture is over within the quiet 500 ms of ADR-0005, and no toast tells of it
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
   await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
   await expect(page.getByText(/target 70 reached in \d trials?:/u)).toBeVisible();
   // each side's size, in the corner of the screen over it
@@ -106,7 +107,7 @@ test('the footer links the licences of what the page carries, the package in the
 test('a change of format during a search ends the worker and starts another', async ({ page }) => {
   await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.svg'));
-  await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
+  await expect(page.getByRole('link', { name: /^Download pattern-rgb\./u })).toBeVisible(SLOW);
   await format(page, /^AVIF/u);
   await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
 
@@ -133,7 +134,7 @@ test('a change of format during a search ends the worker and starts another', as
 
   await format(page, /^JPEG/u);
   await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible();
+  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible(SLOW);
 
   // a new worker holds nothing, so the image is read again after the trial that was cut short
   const statuses = await page.evaluate(() => window.statuses);
@@ -166,14 +167,14 @@ test('the workspace is a chunk of its own, fetched once the empty state is up', 
 
 test('the components and the fonts hold under the policy', async ({ page }) => {
   await open(page);
-  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-  const done = said(page, /^Done in/u);
-  await expect(done).toBeVisible(SLOW);
   // the toast is a Base UI part too, drawn from its variables: it stays while hovered, and its button closes it
-  await done.hover();
-  await expect(done).toHaveAttribute('data-expanded');
-  await done.getByRole('button', { name: 'Close' }).click();
-  await expect(done).toBeHidden();
+  const ready = said(page, 'Ready.');
+  await ready.hover();
+  await expect(ready).toHaveAttribute('data-expanded');
+  await ready.getByRole('button', { name: 'Close' }).click();
+  await expect(ready).toBeHidden();
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
   // the list hides its scrollbar by a class, which Base UI would otherwise style from a `<style>` element
   await page.getByRole('combobox', { name: 'Format' }).click();
@@ -210,7 +211,7 @@ test.describe('on a phone', () => {
   test('the panels are one bottom expander, pulled up over the image, under the policy', async ({ page }) => {
     await open(page);
     await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-    await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
+    await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
     const expander = page.getByRole('dialog', { name: 'Result and options' });
     const top = async () => {
@@ -248,7 +249,7 @@ test("the policy names no origin but the page's own", async ({ page }) => {
 
   await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-  await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
   const policy = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   expect(policy).toMatch(/^default-src 'none'; /u);

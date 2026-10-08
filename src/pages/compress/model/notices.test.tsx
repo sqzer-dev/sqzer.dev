@@ -115,29 +115,35 @@ test('a search is one toast, shown after 500 ms with the newest trial, and done'
   await expect.element(screen.getByText(/^Trial 1/u)).not.toBeInTheDocument();
 });
 
-test('a fast search shows only that it is done', async () => {
-  const { screen, ready, pick, tell } = await renderNotices();
+test('a search over within 500 ms shows nothing: the result panel is its message', async () => {
+  const { screen, ready, pick, tell, toasts } = await renderNotices();
   ready();
   await pick();
   tell(decoded);
   tell(done);
 
-  await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
   await wait(SHOWN_MS);
-  expect(screen.getByText(/^Encoding|^Reading/u).elements()).toHaveLength(0);
+  expect(screen.getByText(/^Encoding|^Reading|^Done/u).elements()).toHaveLength(0);
+  // the ready toast went with the image
+  expect(toasts()).toBe(0);
 });
 
-test('a search toast still on the screen follows the next search at once', async () => {
+test('a done toast still on the screen waits the same 500 ms before it tells of the next search', async () => {
   const { screen, ready, pick, tell } = await renderNotices();
   ready();
   await pick();
   tell(decoded);
+  await wait(SHOWN_MS);
   tell(done);
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
 
   await pick();
 
+  await wait(QUIET_MS);
+  await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
+  await wait(SHOWN_MS - QUIET_MS);
   await expect.element(screen.getByText('Reading pattern-rgb.jpg.')).toBeVisible();
+  await expect.element(screen.getByText('Done in 1.0 s.')).not.toBeInTheDocument();
 });
 
 test('a failure closes the search toast', async () => {
