@@ -24,6 +24,11 @@ export type Viewer = {
   zoom: (to: 'in' | 'out' | 'fit' | number) => void;
 };
 
+/** The screen and the picture to hold a view against, once both are measured. */
+function framed(screen: Size | null, picture: Size | null): Frame | null {
+  return screen && picture ? { screen, picture: { width: picture.width, height: picture.height } } : null;
+}
+
 /**
  * Where the picture stands on the screen (ADR-0001 D2): fitted to it until the reader zooms or pans,
  * then as the reader left it, for as long as the image is on the page. Both sides of the comparison
@@ -43,19 +48,24 @@ export function useViewer(screen: RefObject<Element | null>): Viewer {
   // the size of the input: as the worker decoded it, or as the browser loaded it before that. A vector
   // has no size of its own until it is drawn.
   const picture = decoded ?? (image?.vector === false && loaded?.of === input ? loaded : null);
-  const frame: Frame | null =
-    box && picture ? { screen: box, picture: { width: picture.width, height: picture.height } } : null;
+  const frame = framed(box, picture);
   const view = frame ? ((zoomed.of === image ? zoomed.view : null) ?? fitted(frame)) : null;
 
-  // from what the view is at the moment of the update: a run of moves between two renders adds up
+  // from what the view is at the moment of the update: a run of moves between two renders adds up. The
+  // frame is measured again here, not taken from above: the view above changes with every pan, and a
+  // function that changed with it would have the view bar and the panels drawn again on each move
   const update = (next: (current: View, measured: Frame) => View) => {
-    if (!frame) return;
-    setZoomed((was) => ({ of: image, view: next((was.of === image ? was.view : null) ?? fitted(frame), frame) }));
+    const measured = framed(box, picture);
+    if (!measured) return;
+    setZoomed((was) => ({
+      of: image,
+      view: next((was.of === image ? was.view : null) ?? fitted(measured), measured),
+    }));
   };
 
   return {
     input,
-    picture: frame?.picture ?? null,
+    picture,
     view,
     onLoad: ({ currentTarget }) => {
       if (input) setLoaded({ of: input, width: currentTarget.naturalWidth, height: currentTarget.naturalHeight });

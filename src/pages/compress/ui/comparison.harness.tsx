@@ -1,5 +1,5 @@
 // The comparison in a test: over a worker that answers at once, on a screen of the test's size.
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { render } from 'vitest-browser-react';
 import { fromCallback } from 'xstate';
 
@@ -8,7 +8,7 @@ import type { Output } from '@/shared/api';
 import { SearchProvider, useSearchRef } from '../model/context';
 import type { EncoderCommand, EncoderEvent } from '../model/encoder';
 import { searchMachine } from '../model/machine';
-import { useViewer } from '../model/viewer';
+import { useViewer, type Viewer } from '../model/viewer';
 import { Comparison } from './comparison';
 
 type Point = { x: number; y: number };
@@ -65,10 +65,19 @@ function Change() {
   );
 }
 
+type ScreenProps = {
+  small?: boolean;
+  /** Every viewer the comparison was handed, in order, for a test of what a change leaves as it was. */
+  seen: Viewer[];
+};
+
 /** The screen's part: the comparison fills what it is put in, and the viewer is measured against it. */
-function Screen({ small = false }: { small?: boolean }) {
+function Screen({ small = false, seen }: ScreenProps) {
   const ref = useRef<HTMLDivElement>(null);
   const viewer = useViewer(ref);
+  useEffect(() => {
+    seen.push(viewer);
+  });
   return (
     <div ref={ref} className={small ? 'relative h-6 w-24' : 'relative h-96'} data-testid="screen">
       <Comparison flat={false} viewer={viewer} />
@@ -97,6 +106,7 @@ export async function renderComparison(small = false) {
   // another file for the same encode, as a change of the controls gives
   const again = new File([await (await fetch(fixture)).blob()], 'pattern-rgb-again.jpg', { type: 'image/jpeg' });
   const answer: { to?: (event: EncoderEvent) => void } = {};
+  const viewers: Viewer[] = [];
   const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
     answer.to = sendBack;
     sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
@@ -110,12 +120,13 @@ export async function renderComparison(small = false) {
       <Pick file={file} />
       <Pick file={unshowable} label="Pick the unshowable" />
       <Change />
-      <Screen small={small} />
+      <Screen small={small} seen={viewers} />
     </SearchProvider>,
   );
   await screen.getByRole('button', { name: 'Pick', exact: true }).click();
   return {
     screen,
+    viewers,
     preview: () => answer.to?.({ type: 'previewed', preview: file }),
     encodeAgain: async () => {
       answers['encode'] = { type: 'done', result: { output, file: again, seconds: 1 } };

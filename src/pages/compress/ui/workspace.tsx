@@ -34,6 +34,20 @@ export function Workspace({ values, onChange, onPick, dragging }: WorkspaceProps
   const screen = useRef<HTMLElement>(null);
   const viewer = useViewer(screen);
   const scale = viewer.view?.scale ?? null;
+  // the column is the height of the screen: between its panels the pointer reaches the image. It is
+  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
+  const column = wide && (
+    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
+      <Panel title="Options" className="pointer-events-auto">
+        {controls}
+      </Panel>
+      {hasResult && (
+        <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto">
+          <ResultPanel />
+        </Panel>
+      )}
+    </div>
+  );
 
   return (
     <main
@@ -45,17 +59,7 @@ export function Workspace({ values, onChange, onPick, dragging }: WorkspaceProps
       <Comparison flat={flat} viewer={viewer} />
       {wide ? (
         <>
-          {/* the column is the height of the screen: between its panels the pointer reaches the image */}
-          <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
-            <Panel title="Options" className="pointer-events-auto">
-              {controls}
-            </Panel>
-            {hasResult && (
-              <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto">
-                <ResultPanel />
-              </Panel>
-            )}
-          </div>
+          {column}
           <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
         </>
       ) : (

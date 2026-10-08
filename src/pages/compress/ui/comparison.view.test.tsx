@@ -104,6 +104,26 @@ test('a drag of the screen pans both sides, and the arrows do the same', async (
   await expect.poll(() => pictureBox(screen).top).toBe(was.top + 60);
 });
 
+test('a pan changes the view, and nothing else the viewer hands out, so the bar and the panels stay as they are', async () => {
+  const { screen, viewers } = await renderComparison();
+  await expect.element(screen.getByRole('img', { name: 'As sqzer encoded it' })).toBeVisible();
+  const was = viewers.at(-1);
+
+  pointer(screen, 'pointerdown', 1, { x: -150, y: -150 });
+  pointer(screen, 'pointermove', 1, { x: -120, y: -130 });
+  pointer(screen, 'pointerup', 1, { x: -120, y: -130 });
+
+  await expect.poll(() => viewers.at(-1)?.view).not.toEqual(was?.view);
+  const now = viewers.at(-1);
+  // the same functions and the same picture: the view bar, which has the zoom, and the panels around it
+  // get nothing new, and are not drawn again on each move
+  expect(now?.zoom).toBe(was?.zoom);
+  expect(now?.change).toBe(was?.change);
+  expect(now?.onLoad).toBe(was?.onLoad);
+  expect(now?.picture).toBe(was?.picture);
+  expect(now?.input).toBe(was?.input);
+});
+
 test('two fingers pinch about their midpoint', async () => {
   const { screen } = await renderComparison();
   await expect.element(screen.getByRole('img', { name: 'As sqzer encoded it' })).toBeVisible();
