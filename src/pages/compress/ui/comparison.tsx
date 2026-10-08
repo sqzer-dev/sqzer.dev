@@ -62,8 +62,10 @@ export function Comparison({ flat, viewer }: ComparisonProps) {
   // Each `<img>` is pinned to the box's edges and keeps its own aspect inside them, as on Squoosh: a
   // resized output's height is rounded, so stretched into the input's box it would be a pixel off
   // the input, where contained it is scaled evenly and at most half a pixel of ground shows at an edge.
+  // The box's centre is pinned to the screen's, not centred by a grid: a box larger than the screen
+  // would make the grid's track larger too, and be centred in that, off to the bottom right.
   const picture = cn(
-    'relative w-(--width) aspect-(--aspect,auto) translate-x-(--x) translate-y-(--y) scale-(--scale)',
+    'absolute top-1/2 left-1/2 w-(--width) aspect-(--aspect,auto) translate-x-[calc(var(--x)-50%)] translate-y-[calc(var(--y)-50%)] scale-(--scale)',
     flat ? 'bg-background' : 'checkerboard',
   );
   const img = 'absolute inset-0 size-full object-contain in-data-pixelated:[image-rendering:pixelated]';
@@ -141,7 +143,7 @@ type SideProps = {
 function Side({ picture, after = false, hidden, children }: SideProps) {
   return (
     <div
-      className={cn('absolute inset-0 grid place-items-center', after && '[clip-path:inset(0_0_0_var(--split,50%))]')}
+      className={cn('absolute inset-0', after && '[clip-path:inset(0_0_0_var(--split,50%))]')}
       data-slot={after ? 'after' : 'before'}
       hidden={hidden}
     >

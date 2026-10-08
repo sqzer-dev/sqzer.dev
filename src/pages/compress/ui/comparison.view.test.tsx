@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { userEvent } from 'vitest/browser';
 
-import { pictureBox, region, renderComparison } from './comparison.harness';
+import { middle, pictureBox, region, renderComparison } from './comparison.harness';
 
 type Point = { x: number; y: number };
 
@@ -37,8 +37,9 @@ test('on a screen the picture does not fit, it is scaled down and smooth, and a 
   const { screen } = await renderComparison(true);
   const before = screen.getByRole('img', { name: 'As it was dropped' });
   await expect.element(before).toBeVisible();
-  // 48 x 32 in a 96 x 24 screen: three quarters
+  // 48 x 32 in a 96 x 24 screen: three quarters, in the screen's middle, though its own pixels are taller than the screen
   expect(pictureBox(screen)).toMatchObject({ width: 36, height: 24 });
+  expect(middle(before.element())).toEqual(middle(screen.getByTestId('screen').element()));
   expect(getComputedStyle(before.element()).imageRendering).not.toBe('pixelated');
 
   region(screen).element().focus();
