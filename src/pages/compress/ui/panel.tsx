@@ -22,7 +22,7 @@ export function Panel({ title, pinned, className, children }: PanelProps) {
   return (
     <Collapsible defaultOpen render={<Card size="sm" className={cn('min-h-0 w-72 shrink', className)} />}>
       <h2 className="px-(--card-spacing)">
-        <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-sm text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-sm text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:py-2">
           {title}
           <ChevronDownIcon className="size-4 transition-transform group-data-panel-open:rotate-180" />
         </CollapsibleTrigger>

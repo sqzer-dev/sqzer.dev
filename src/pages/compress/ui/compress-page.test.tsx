@@ -1,85 +1,7 @@
 import { beforeEach, expect, test } from 'vitest';
-import { render } from 'vitest-browser-react';
 import { page } from 'vitest/browser';
-import { fromCallback } from 'xstate';
 
-import type { Output } from '@/shared/api';
-import { Toaster } from '@/shared/ui/toast';
-
-import { SearchProvider } from '../model/context';
-import type { EncoderCommand } from '../model/encoder';
-import { searchMachine } from '../model/machine';
-import { CompressPage } from './compress-page';
-
-const fixture = new URL('../../../../tests/fixtures/pattern-rgb.jpg', import.meta.url);
-
-const output: Output = {
-  bytes: new Uint8Array(1),
-  animated: false,
-  width: 48,
-  height: 32,
-  alpha: false,
-  content: 'photo',
-  format: 'jpeg',
-  outputWidth: 48,
-  outputHeight: 32,
-  backend: 'mozjpeg-rs',
-  tier: 'portable',
-  lossless: false,
-};
-
-// Longer than the controls rest and the machine waits for a busy worker, together.
-const SETTLED_MS = 800;
-
-const wait = (ms: number) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
-/** What the stub worker gets wrong, if anything: its start, or reading the image. */
-type Fails = 'start' | 'read' | null;
-
-/** The page over workers that read and encode at once, and say what they were asked. */
-async function renderPage(fails: Fails = null) {
-  const file = new File([await (await fetch(fixture)).blob()], 'pattern-rgb.jpg', { type: 'image/jpeg' });
-  const workers: EncoderCommand[][] = [];
-  const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
-    const asked: EncoderCommand[] = [];
-    workers.push(asked);
-    if (fails === 'start') {
-      sendBack({ type: 'failed', message: 'the worker did not start', broken: true });
-      return;
-    }
-    sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
-    receive((command) => {
-      asked.push(command);
-      if (command.type === 'read' && fails === 'read') {
-        sendBack({ type: 'failed', message: 'no decoder for HEIC in this build', broken: false });
-        return;
-      }
-      if (command.type === 'read') {
-        const decoded = { width: 48, height: 32, format: 'jpeg', alpha: false, animated: false };
-        sendBack({ type: 'decoded', decoded, drawnWidth: null });
-      }
-      if (command.type === 'encode') sendBack({ type: 'done', result: { output, file, seconds: 1 } });
-    });
-  });
-  const screen = await render(
-    <Toaster>
-      <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
-        <CompressPage />
-      </SearchProvider>
-    </Toaster>,
-  );
-  const encodes = () => workers.flat().flatMap((command) => (command.type === 'encode' ? [command.options] : []));
-  const drop = async () => {
-    await screen.getByLabelText('Choose an image').upload(file);
-    // the workspace, which is loaded once there is an image. The search is over within the quiet 500 ms
-    // of ADR-0005, so no toast tells of it
-    await expect.element(screen.getByRole('link', { name: 'Download pattern-rgb.jpg' })).toBeVisible();
-  };
-  return { screen, workers, encodes, drop };
-}
+import { panel, renderPage, SETTLED_MS, swatch, wait } from './compress-page.harness';
 
 // a wide screen, where the panels float. the last test is a phone
 beforeEach(async () => {
@@ -136,27 +58,12 @@ test('the drop target turns blue at its border while a file is dragged over the 
   expect(getComputedStyle(target).backgroundColor).toBe(fill);
 });
 
-/** An element in `colour`, so the browser says how it paints it. */
-function swatch(colour: string) {
-  const element = document.createElement('span');
-  element.style.color = colour;
-  document.body.append(element);
-  return element;
-}
-
 test('an image dropped on a page nobody touched is encoded with no options', async () => {
   const { encodes, drop } = await renderPage();
   await drop();
 
   expect(encodes()).toEqual([{}]);
 });
-
-/** The box of the panel whose title is `name`. */
-function panel(screen: Awaited<ReturnType<typeof renderPage>>['screen'], name: string) {
-  const box = screen.getByRole('button', { name }).element().closest('[data-size]')?.getBoundingClientRect();
-  if (!box) throw new Error(`no panel is called ${name}`);
-  return box;
-}
 
 test('with a file, the image is the page, and the options float above the result at the right', async () => {
   const { screen, drop } = await renderPage();
@@ -245,20 +152,20 @@ test('the view bar zooms the picture in steps, out past its own pixels, and fits
   const { screen, drop } = await renderPage();
   await drop();
   const picture = screen.getByRole('img', { name: 'As it was dropped' });
-  const zoom = screen.getByRole('textbox', { name: 'Zoom' });
-  await expect.element(zoom).toHaveValue('100');
+  const zoom = (said: string) => screen.getByRole('button', { name: `Zoom ${said} %` });
+  await expect.element(zoom('100')).toBeVisible();
   await expect.element(picture).toBeVisible();
   await screen.getByRole('button', { name: 'Zoom in' }).click();
-  await expect.element(zoom).toHaveValue('125');
+  await expect.element(zoom('125')).toBeVisible();
   expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 60, height: 40 });
 
   await screen.getByRole('button', { name: 'Fit to the screen' }).click();
-  await expect.element(zoom).toHaveValue('100');
+  await expect.element(zoom('100')).toBeVisible();
   expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
 
   // and out, below the fit, which is this picture's own pixels
   await screen.getByRole('button', { name: 'Zoom out' }).click();
-  await expect.element(zoom).toHaveValue('80');
+  await expect.element(zoom('80')).toBeVisible();
 });
 
 test('the controls rest before a search starts with what they say', async () => {
@@ -297,4 +204,10 @@ test('on a phone the panels are one bottom expander, and the controls keep what 
   await expect.element(screen.getByRole('dialog', { name: 'Result and options' })).toBeInTheDocument();
   await expect.element(screen.getByRole('button', { name: 'Options' })).not.toBeInTheDocument();
   await expect.element(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(1600);
+
+  // on the narrowest phone the view bar wraps, so every control stays within the screen
+  await page.viewport(320, 780);
+  const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]');
+  await expect.poll(() => bar && bar.getBoundingClientRect().height).toBeGreaterThan(40);
+  for (const control of bar?.children ?? []) expect(control.getBoundingClientRect().right).toBeLessThanOrEqual(320);
 });

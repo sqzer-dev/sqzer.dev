@@ -20,7 +20,7 @@ type ViewBarProps = {
   scale: number | null;
   /** A step in or out, the fit, or a scale to go to. */
   onZoom: (to: 'in' | 'out' | 'fit' | number) => void;
-  /** On its own over the image, in glass, at the bottom left. Not where it sits in the bottom expander, which is glass already. */
+  /** On its own over the image, in glass, at the bottom left. Not where it sits in the bottom expander, which is glass already, and where the bar wraps on a narrow phone. */
   floating?: boolean;
 };
 
@@ -29,7 +29,10 @@ export function ViewBar({ flat, onFlat, onPick, scale, onZoom, floating = false 
   return (
     <div
       data-slot="view-bar"
-      className={cn('flex items-center gap-1', floating && 'glass absolute bottom-3 left-3 rounded-lg p-1')}
+      className={cn(
+        'flex items-center gap-1',
+        floating ? 'glass absolute bottom-3 left-3 rounded-lg p-1' : 'flex-wrap',
+      )}
     >
       <FilePicker variant="ghost" onPick={onPick}>
         <ImagePlusIcon data-icon="inline-start" /> New image

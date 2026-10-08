@@ -25,6 +25,12 @@ test('the wheel zooms about the pointer, and both sides with it, drawn pixelated
   expect(pictureBox(screen).left).toBeCloseTo(was.left, 1);
   expect(after.element().getBoundingClientRect()).toEqual(pictureBox(screen));
   expect(pictureBox(screen).left).toBeGreaterThan(edges.left);
+
+  // a mouse that reports lines, 15 px each: 20 of them back
+  region(screen)
+    .element()
+    .dispatchEvent(new WheelEvent('wheel', { deltaY: 20, deltaMode: WheelEvent.DOM_DELTA_LINE, bubbles: true }));
+  await expect.poll(() => pictureBox(screen).width).toBeCloseTo(48, 1);
 });
 
 test('on a screen the picture does not fit, it is scaled down and smooth, and a step in snaps to 100 %', async () => {

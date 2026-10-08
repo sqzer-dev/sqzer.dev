@@ -28,7 +28,8 @@ export function SplitHandle({ value, onChange }: SplitHandleProps) {
       step={STEP}
       onValueChange={(next, { reason }) => {
         const delta = next - value;
-        onChange(reason === 'keyboard' && Math.abs(delta) < 1 ? value + Math.sign(delta) : next);
+        const whole = Math.min(Math.max(value + Math.sign(delta), 0), 100);
+        onChange(reason === 'keyboard' && Math.abs(delta) < 1 ? whole : next);
       }}
     >
       <Slider.Control className="size-full">

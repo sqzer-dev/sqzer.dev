@@ -13,7 +13,7 @@ type Listen = (change: Change) => void;
 
 /** How far an arrow key pans, in pixels. */
 const KEY_PAN = 40;
-/** The pixels in a line of the wheel, where a mouse reports lines. */
+/** The pixels in a line of the wheel, where a mouse reports lines. A page is the screen's height. */
 const LINE = 15;
 /** How much wheel makes a zoom by e: a mouse's, and a trackpad's pinch, which comes as a wheel with `ctrlKey` and is finer. */
 const WHEEL = { mouse: 300, pinch: 100 };
@@ -74,7 +74,10 @@ function pointing(element: HTMLElement, change: Listen) {
 function wheeling(element: HTMLElement, change: Listen) {
   return (event: WheelEvent) => {
     event.preventDefault();
-    const deltaY = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * LINE : event.deltaY;
+    const deltaY =
+      event.deltaY *
+      (event.deltaMode === WheelEvent.DOM_DELTA_LINE ? LINE : 1) *
+      (event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? element.clientHeight : 1);
     change({
       factor: Math.exp(-deltaY / (event.ctrlKey ? WHEEL.pinch : WHEEL.mouse)),
       origin: fromCentre(element, event),
