@@ -43,19 +43,24 @@ const output: Output = {
 };
 
 /** The picker's part: one button that hands the machine `file`. */
-function Pick({ file }: { file: File }) {
+function Pick({ file, label = 'Pick' }: { file: File; label?: string }) {
   const search = useSearchRef();
   const image = { name: file.name, vector: false, bytes: new ArrayBuffer(0), blob: file };
   return (
     <button type="button" onClick={() => search.send({ type: 'picked', image, options: {} })}>
-      Pick
+      {label}
     </button>
   );
 }
 
-/** The comparison over a worker that reads and encodes at once, with the fixture picked. */
+/**
+ * The comparison over a worker that reads and encodes at once, with the fixture picked. The worker
+ * answers for a preview only when the test says, through `preview`.
+ */
 async function renderComparison() {
   const file = new File([await (await fetch(fixture)).blob()], 'pattern-rgb.jpg', { type: 'image/jpeg' });
+  // what the worker can decode and the browser cannot show, a TIFF say
+  const unshowable = new File(['not an image'], 'pattern.tiff', { type: 'image/tiff' });
   const answers: Record<string, EncoderEvent> = {
     read: {
       type: 'decoded',
@@ -64,28 +69,36 @@ async function renderComparison() {
     },
     encode: { type: 'done', result: { output, file, seconds: 1 } },
   };
+  const answer: { to?: (event: EncoderEvent) => void } = {};
   const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
+    answer.to = sendBack;
     sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
     receive((command) => {
-      const answer = answers[command.type];
-      if (answer) sendBack(answer);
+      const reply = answers[command.type];
+      if (reply) sendBack(reply);
     });
   });
   const screen = await render(
     <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
       <Pick file={file} />
+      <Pick file={unshowable} label="Pick the unshowable" />
       {/* the screen's part: the comparison fills what it is put in */}
       <div className="relative h-96" data-testid="screen">
         <Comparison flat={false} />
       </div>
     </SearchProvider>,
   );
-  await screen.getByRole('button', { name: 'Pick' }).click();
-  return screen;
+  await screen.getByRole('button', { name: 'Pick', exact: true }).click();
+  return {
+    screen,
+    preview: () => answer.to?.({ type: 'previewed', preview: file }),
+    // the layer itself, hidden or not: a locator by role would skip it while it is hidden
+    source: () => document.querySelector('[data-slot=before]'),
+  };
 }
 
 test("each side's size sits in the corner of the screen over it", async () => {
-  const screen = await renderComparison();
+  const { screen } = await renderComparison();
   const before = screen.getByText('Before: 48 × 32');
   const after = screen.getByText('After: 24 × 16');
 
@@ -98,7 +111,7 @@ test("each side's size sits in the corner of the screen over it", async () => {
 });
 
 test('the handle is a slider, and it clips the after side where it stands on the screen', async () => {
-  const screen = await renderComparison();
+  const { screen } = await renderComparison();
   const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
   await expect.element(after).toBeVisible();
   // the layer the size of the screen that holds the picture, not the picture
@@ -115,7 +128,7 @@ test('the handle is a slider, and it clips the after side where it stands on the
 });
 
 test('the line runs the height of the screen, past the picture, with the handle in its middle', async () => {
-  const screen = await renderComparison();
+  const { screen } = await renderComparison();
   const slider = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
   // the line comes with the after side, once the browser has loaded it
   await expect.element(slider).toBeVisible();
@@ -132,7 +145,7 @@ test('the line runs the height of the screen, past the picture, with the handle 
 });
 
 test('a drag of the handle across the screen selects nothing', async () => {
-  const screen = await renderComparison();
+  const { screen } = await renderComparison();
   const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
   await expect.element(handle).toBeVisible();
 
@@ -141,4 +154,22 @@ test('a drag of the handle across the screen selects nothing', async () => {
 
   await expect.poll(() => handle.element().getAttribute('aria-valuenow')).not.toBe('50');
   expect(getSelection()?.toString()).toBe('');
+});
+
+test('an image the browser cannot show is hidden until the worker previews it, and the next image shows at once', async () => {
+  const { screen, preview, source } = await renderComparison();
+  await expect.element(screen.getByRole('img', { name: 'As it was dropped' })).toBeVisible();
+
+  await screen.getByRole('button', { name: 'Pick the unshowable' }).click();
+
+  // the browser's `<img>` fails on it, and nothing takes its place: not the alt text in an empty box
+  await expect.poll(() => source()?.hasAttribute('hidden')).toBe(true);
+  preview();
+  await expect.poll(() => source()?.hasAttribute('hidden')).toBe(false);
+  await expect.element(screen.getByRole('img', { name: 'As it was dropped' })).toBeVisible();
+
+  await screen.getByRole('button', { name: 'Pick', exact: true }).click();
+
+  await expect.element(screen.getByRole('img', { name: 'As it was dropped' })).toBeVisible();
+  expect(source()?.hasAttribute('hidden')).toBe(false);
 });

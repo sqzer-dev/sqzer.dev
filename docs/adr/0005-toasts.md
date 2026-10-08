@@ -52,7 +52,8 @@ Each concern is one toast with a fixed id, updated in place rather than added ag
 
 ```text
 encoder   Loading the encoder.                                 loading, kept until it changes
-          Ready.                                               success, the default timeout
+          Ready.                                               success, the default timeout, or gone as
+                                                               soon as an image is on the page
 search    Reading <file>.                                      loading, kept until it changes
           Encoding <file>.                                     loading, kept until it changes
             Trial 3 of at most 6: quality 62 scores 71.4.        the newest trial, as the description

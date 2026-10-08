@@ -17,11 +17,15 @@ export type Notice = {
 // How long a search runs before its toast appears, so a fast encode does not flash one (ADR-0001 D4).
 const QUIET_MS = 500;
 
-/** Whether the encoder is loaded. */
-export function encoderNotice({ context }: Snapshot): Notice {
-  return context.version === null
-    ? { type: 'loading', title: 'Loading the encoder.' }
-    : { type: 'success', title: 'Ready.' };
+/**
+ * Whether the encoder is loaded. Null once it failed to, there is nothing left to wait for, and null
+ * once an image is on the page, which says it as well as the toast did.
+ */
+export function encoderNotice(snapshot: Snapshot): Notice | null {
+  const { version, image } = snapshot.context;
+  if (version !== null) return image === null ? { type: 'success', title: 'Ready.' } : null;
+  if (snapshot.matches({ open: 'failed' })) return null;
+  return { type: 'loading', title: 'Loading the encoder.' };
 }
 
 /** Where the search is, with the newest trial. Null while there is no search to tell of. */
@@ -50,62 +54,90 @@ const same = (one: Notice | null, other: Notice | null) =>
 /** The toaster's part, as `useToastManager` gives it: what the page says, and what it takes back. */
 type Toaster = Pick<UseToastManagerReturnValue, 'add' | 'close'>;
 
-/**
- * Keeps the toaster saying what the machine says: two toasts, `encoder` and `search`, each updated in
- * place. The search toast waits out the quiet first 500 ms of a search unless it is on the screen
- * already, and one the reader closed stays closed until the search is done.
- */
-function teller({ add, close }: Toaster) {
+/** Tells the `encoder` toast: loading, ready, or gone once the worker failed to load. */
+function encoderTeller({ add, close }: Toaster) {
   let encoder: Notice | null = null;
+  return (snapshot: Snapshot) => {
+    const next = encoderNotice(snapshot);
+    if (same(encoder, next)) return;
+    encoder = next;
+    if (next) add({ id: 'encoder', ...next, timeout: next.type === 'loading' ? 0 : undefined });
+    else close('encoder');
+  };
+}
+
+/**
+ * Tells the `search` toast, updated in place. It waits out the quiet first 500 ms of a search unless
+ * it is on the screen already, and one the reader closed stays closed until the search is done.
+ */
+function searchTeller({ add, close }: Toaster) {
   let search: Notice | null = null;
-  // whether the search toast is on the screen, until the reader or its timeout takes it off
+  // whether the toast is on the screen, until the reader or its timeout takes it off
   let shown = false;
+  // the reader closed it while the search ran: no trial brings it back, the end of the search does
+  let dismissed = false;
   let quiet = 0;
 
-  // every field, each time: a toast with the id of one on the screen is merged into it, and a
-  // description left out would stay
-  const show = (id: string, { type, title, description }: Notice, onRemove?: () => void) => {
-    add({ id, type, title, description, timeout: type === 'loading' ? 0 : undefined, onRemove });
-  };
-  const showSearch = () => {
+  const show = () => {
     if (!search) return;
     shown = true;
-    show('search', search, () => {
-      shown = false;
+    add({
+      id: 'search',
+      ...search,
+      // every field, each time: a toast with the id of one on the screen is merged into it, and a
+      // description left out would stay
+      description: search.description,
+      timeout: search.type === 'loading' ? 0 : undefined,
+      // at the close, not after the slide out: a trial landing meanwhile would bring the toast back
+      onClose: () => {
+        if (search?.type === 'loading') dismissed = true;
+      },
+      onRemove: () => {
+        shown = false;
+      },
     });
   };
   const settle = () => {
     clearTimeout(quiet);
     quiet = 0;
   };
-
   const tell = (snapshot: Snapshot) => {
-    const nextEncoder = encoderNotice(snapshot);
-    if (!same(encoder, nextEncoder)) {
-      encoder = nextEncoder;
-      show('encoder', nextEncoder);
-    }
-
     const next = searchNotice(snapshot);
     if (same(search, next)) return;
     search = next;
     if (next === null) {
       settle();
+      dismissed = false;
       if (shown) close('search');
     } else if (next.type === 'success') {
       settle();
-      showSearch();
+      dismissed = false;
+      show();
+    } else if (dismissed) {
+      // closed by the reader: nothing until the search is done
     } else if (shown) {
-      showSearch();
+      show();
     } else if (quiet === 0) {
       quiet = window.setTimeout(() => {
         quiet = 0;
-        showSearch();
+        show();
       }, QUIET_MS);
     }
   };
-
   return { tell, stop: settle };
+}
+
+/** Keeps the toaster saying what the machine says: two toasts, `encoder` and `search` (ADR-0005 D2). */
+function teller(toaster: Toaster) {
+  const encoder = encoderTeller(toaster);
+  const search = searchTeller(toaster);
+  return {
+    tell: (snapshot: Snapshot) => {
+      encoder(snapshot);
+      search.tell(snapshot);
+    },
+    stop: search.stop,
+  };
 }
 
 /**

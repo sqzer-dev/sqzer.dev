@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/shared/ui/button';
 import { useToastManager } from '@/shared/ui/toast';
 
 import { optionsOf } from '../lib/options-of';
@@ -14,9 +15,39 @@ import { EmptyState } from './empty-state';
 const TYPING_MS = 250;
 
 // The workspace, with the drawer, the popover and the tooltip it brings, is a chunk of its own, off
-// the first paint: the empty state has no use for it. It is fetched once the empty state is up.
+// the first paint: the empty state has no use for it. It is fetched once the empty state is up. A
+// chunk that did not download fails again from the module map, so the way back is a reload, and
+// `lazy` gets a component that says so instead of an error it would throw past every boundary.
 const load = () => import('./workspace');
-const Workspace = lazy(async () => ({ default: (await load()).Workspace }));
+const Workspace = lazy(() =>
+  load().then(
+    (module) => ({ default: module.Workspace }),
+    () => ({ default: WorkspaceMissing }),
+  ),
+);
+
+/** In the workspace's place when its chunk did not download. */
+function WorkspaceMissing() {
+  return (
+    <main className="grid min-h-dvh place-items-center p-4">
+      <div
+        role="alert"
+        className="flex flex-col items-start gap-3 rounded-md border border-destructive bg-alert px-3 py-2 text-xs/relaxed text-alert-foreground"
+      >
+        <p>The rest of the page did not load. Reloading it fetches it again.</p>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            location.reload();
+          }}
+        >
+          Reload the page
+        </Button>
+      </div>
+    </main>
+  );
+}
 
 /** Tells the toaster what the machine is doing (ADR-0005). On its own, so a toast re-renders nothing else. */
 function Notices() {
@@ -34,7 +65,8 @@ export function CompressPage() {
   const resting = useRef(0);
 
   useEffect(() => {
-    void load();
+    // a download that fails is dealt with where the workspace is rendered, not here
+    load().catch(() => null);
   }, []);
 
   const options = () => optionsOf(latest.current, search.getSnapshot().context.codecs);

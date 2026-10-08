@@ -165,10 +165,31 @@ test('a search toast the reader closed stays closed until the search is done', a
   await encoding.getByRole('button', { name: 'Close' }).click();
   await expect.element(encoding).not.toBeInTheDocument();
 
+  // a trial landing after the quiet 500 ms would have brought it back
   tell(trial);
-  await wait(QUIET_MS);
+  await wait(SHOWN_MS);
   expect(screen.getByText(/^Encoding/u).elements()).toHaveLength(0);
 
   tell(done);
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
+});
+
+test('the ready toast goes once an image is on the page', async () => {
+  const { screen, ready, pick } = await renderNotices();
+  ready();
+  await expect.element(screen.getByText('Ready.')).toBeVisible();
+
+  await pick();
+
+  await expect.element(screen.getByText('Ready.')).not.toBeInTheDocument();
+});
+
+test('an encoder that failed to load no longer says it is loading', async () => {
+  const { screen, tell, toasts } = await renderNotices();
+  await expect.element(screen.getByText('Loading the encoder.')).toBeVisible();
+
+  tell({ type: 'failed', message: 'the worker did not start', broken: true });
+
+  await expect.element(screen.getByText('Loading the encoder.')).not.toBeInTheDocument();
+  expect(toasts()).toBe(0);
 });
