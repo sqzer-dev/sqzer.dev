@@ -162,8 +162,14 @@ test('with a file, the image is the page, and the options float above the result
   const { screen, drop } = await renderPage();
   await drop();
 
-  const picture = screen.getByRole('img', { name: 'As it was dropped' }).element().closest('main');
-  expect(picture?.getBoundingClientRect()).toMatchObject({ x: 0, y: 0, width: 1200, height: 800 });
+  const picture = screen.getByRole('img', { name: 'As it was dropped' });
+  await expect.element(picture).toBeVisible();
+  expect(picture.element().closest('main')?.getBoundingClientRect()).toMatchObject({
+    x: 0,
+    y: 0,
+    width: 1200,
+    height: 800,
+  });
   await expect.element(screen.getByRole('button', { name: 'Options' })).toHaveAttribute('aria-expanded', 'true');
   await expect.element(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-expanded', 'true');
   const options = panel(screen, 'Options');
@@ -223,6 +229,7 @@ test('a collapsed panel keeps what was typed into it', async () => {
 test('the checkerboard under a transparent image can be a flat colour', async () => {
   const { screen, drop } = await renderPage();
   await drop();
+  await expect.element(screen.getByRole('img', { name: 'As it was dropped' })).toBeVisible();
   const picture = screen.getByRole('img', { name: 'As it was dropped' }).element().parentElement;
   const checkerboard = screen.getByRole('button', { name: 'Checkerboard under a transparent image' });
   await expect.element(checkerboard).toHaveAttribute('aria-pressed', 'true');
@@ -232,6 +239,24 @@ test('the checkerboard under a transparent image can be a flat colour', async ()
 
   await expect.element(checkerboard).toHaveAttribute('aria-pressed', 'false');
   expect(picture && getComputedStyle(picture).backgroundImage).toBe('none');
+});
+
+test('the view bar zooms the picture in steps, says how close it is, and fits it again', async () => {
+  const { screen, drop } = await renderPage();
+  await drop();
+  const picture = screen.getByRole('img', { name: 'As it was dropped' });
+  await expect.element(screen.getByText('Zoom 100 %')).toBeInTheDocument();
+  expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
+
+  await screen.getByRole('button', { name: 'Zoom in' }).click();
+
+  await expect.element(screen.getByText('Zoom 125 %')).toBeInTheDocument();
+  expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 60, height: 40 });
+
+  await screen.getByRole('button', { name: 'Fit to the screen' }).click();
+
+  await expect.element(screen.getByText('Zoom 100 %')).toBeInTheDocument();
+  expect(picture.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
 });
 
 test('the controls rest before a search starts with what they say', async () => {

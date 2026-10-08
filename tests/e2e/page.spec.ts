@@ -191,6 +191,21 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   await expect(solid).toBeHidden();
   await page.getByRole('slider', { name: 'Before on the left, after on the right' }).press('ArrowLeft');
   await expect(page.getByRole('slider', { name: 'Before on the left, after on the right' })).toHaveValue('49');
+  // the view bar zooms in a step, and a drag of the picture with the mouse pans it
+  const picture = page.getByRole('img', { name: 'As it was dropped' });
+  await expect(picture).toBeVisible();
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect(page.getByText('Zoom 125 %')).toBeVisible();
+  const before = await picture.boundingBox();
+  if (!before) throw new Error('the picture has no box');
+  expect(before.width).toBe(60);
+  await page.mouse.move(100, 400);
+  await page.mouse.down();
+  await page.mouse.move(130, 380, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(async () => (await picture.boundingBox())?.x).toBe(before.x + 30);
+  await page.getByRole('button', { name: 'Fit to the screen' }).click();
+  await expect(page.getByText('Zoom 100 %')).toBeVisible();
   await page.getByRole('button', { name: 'Checkerboard under a transparent image' }).hover();
   await expect(page.getByText('Checkerboard under a transparent image')).toBeVisible();
   await page.getByRole('button', { name: 'About this page' }).click();

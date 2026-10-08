@@ -45,7 +45,7 @@ function Expander() {
 const unheard = () => {};
 
 function Bar() {
-  return <ViewBar floating flat={false} onFlat={unheard} onPick={unheard} />;
+  return <ViewBar floating flat={false} onFlat={unheard} onPick={unheard} scale={1} onZoom={unheard} />;
 }
 
 function Label() {
