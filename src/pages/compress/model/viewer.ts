@@ -61,13 +61,13 @@ export function useViewer(screen: RefObject<Element | null>): Viewer {
       if (input) setLoaded({ of: input, width: currentTarget.naturalWidth, height: currentTarget.naturalHeight });
     },
     change: (change) => {
-      update((current) => changed(current, change));
+      update((current, measured) => changed(current, measured, change));
     },
     zoom: (to) => {
       update((current, measured) => {
         if (to === 'fit') return fitted(measured);
-        if (typeof to === 'number') return changed(current, { factor: to / current.scale });
-        return stepped(current, to);
+        if (typeof to === 'number') return changed(current, measured, { factor: to / current.scale });
+        return stepped(current, measured, to);
       });
     },
   };

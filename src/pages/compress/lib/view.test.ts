@@ -14,19 +14,24 @@ test('fitted, the picture fills the screen on its tighter side, and never passes
 });
 
 test('a view stays between a 32nd and 32 times the pixels, and goes wherever it is taken', () => {
-  expect(clamped({ scale: 0.001, x: 0, y: 0 }).scale).toBe(1 / 32);
-  expect(clamped({ scale: 100, x: 0, y: 0 }).scale).toBe(32);
-  expect(clamped({ scale: 1, x: 5000, y: -5000 })).toEqual({ scale: 1, x: 5000, y: -5000 });
+  expect(clamped({ scale: 0.001, x: 0, y: 0 }, photo).scale).toBe(1 / 32);
+  expect(clamped({ scale: 100, x: 0, y: 0 }, photo).scale).toBe(32);
+  expect(clamped({ scale: 1, x: 5000, y: -5000 }, photo)).toEqual({ scale: 1, x: 5000, y: -5000 });
+  // a panorama fits further out than a 32nd: the fit is the floor then, so zooming out never enlarges it
+  const panorama: Frame = { screen: { width: 1600, height: 450 }, picture: { width: 100_000, height: 1000 } };
+  expect(fitScale(panorama)).toBe(0.016);
+  expect(clamped({ scale: 0.001, x: 0, y: 0 }, panorama).scale).toBe(0.016);
+  expect(stepped(fitted(panorama), panorama, 'out')).toEqual(fitted(panorama));
 });
 
 test('a zoom keeps what is under the pointer under it', () => {
   // the pointer 100 px right of the centre, over a point of the picture; doubled, that point is still there
-  const view = changed(fitted(photo), { factor: 2, origin: { x: 100, y: 0 } });
+  const view = changed(fitted(photo), photo, { factor: 2, origin: { x: 100, y: 0 } });
   expect(view).toEqual({ scale: 0.3, x: -100, y: 0 });
   // and a pan comes before the zoom
-  expect(changed(fitted(photo), { dx: 10, dy: -20, factor: 2 })).toEqual({ scale: 0.3, x: 20, y: -40 });
+  expect(changed(fitted(photo), photo, { dx: 10, dy: -20, factor: 2 })).toEqual({ scale: 0.3, x: 20, y: -40 });
   // a zoom past the far end keeps the point under the pointer at the scale it got
-  expect(changed({ scale: 16, x: 0, y: 0 }, { factor: 4, origin: { x: 100, y: 0 } })).toEqual({
+  expect(changed({ scale: 16, x: 0, y: 0 }, photo, { factor: 4, origin: { x: 100, y: 0 } })).toEqual({
     scale: 32,
     x: -100,
     y: 0,
@@ -34,11 +39,11 @@ test('a zoom keeps what is under the pointer under it', () => {
 });
 
 test('a step zooms by a quarter about the centre, and stops at 100 % on its way past', () => {
-  expect(stepped({ scale: 0.4, x: 0, y: 0 }, 'in').scale).toBe(0.5);
-  expect(stepped({ scale: 0.9, x: 0, y: 0 }, 'in').scale).toBe(1);
-  expect(stepped({ scale: 1, x: 0, y: 0 }, 'in').scale).toBe(1.25);
-  expect(stepped({ scale: 1.1, x: 0, y: 0 }, 'out').scale).toBe(1);
-  expect(stepped({ scale: 1, x: 0, y: 0 }, 'out').scale).toBe(0.8);
+  expect(stepped({ scale: 0.4, x: 0, y: 0 }, photo, 'in').scale).toBe(0.5);
+  expect(stepped({ scale: 0.9, x: 0, y: 0 }, photo, 'in').scale).toBe(1);
+  expect(stepped({ scale: 1, x: 0, y: 0 }, photo, 'in').scale).toBe(1.25);
+  expect(stepped({ scale: 1.1, x: 0, y: 0 }, photo, 'out').scale).toBe(1);
+  expect(stepped({ scale: 1, x: 0, y: 0 }, photo, 'out').scale).toBe(0.8);
 });
 
 test('two fingers pan by their midpoint and zoom by their distance, about where they meet', () => {
