@@ -17,7 +17,12 @@ export function DownloadButton() {
     // oxlint-disable-next-line jsx-a11y/anchor-is-valid
     <a
       ref={download}
-      className={buttonVariants({ size: 'lg', className: 'max-w-full' })}
+      // taller under a finger than under a mouse, as the one thing a phone's reader taps
+      className={buttonVariants({
+        size: 'lg',
+        className:
+          'max-w-full pointer-coarse:h-11 pointer-coarse:px-4 pointer-coarse:text-sm pointer-coarse:[&_svg]:size-4',
+      })}
       download={file?.name}
       hidden={!file}
     >
@@ -29,6 +34,11 @@ export function DownloadButton() {
 }
 
 /** What was made, as the command line would print it, or why nothing was. */
+/** Whether there is a result panel to show: a result, or the failure in its place (ADR-0001 D6). */
+export function useHasResult() {
+  return useSearch((snapshot) => snapshot.context.result !== null || snapshot.matches({ open: 'failed' }));
+}
+
 export function ResultPanel() {
   const image = useSearch((snapshot) => snapshot.context.image);
   const result = useSearch((snapshot) => snapshot.context.result);

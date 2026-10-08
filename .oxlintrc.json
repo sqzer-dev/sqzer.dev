@@ -43,6 +43,9 @@
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
     // the Base UI parts a `<label>` is wrapped around, which the rule cannot tell from any other component
     "jsx-a11y/label-has-associated-control": ["error", { "controlComponents": ["RadioGroupItem", "Switch"] }],
+    // the comparison is an `application`, the role ARIA gives a region with keys of its own: the arrows pan it
+    // and plus and minus zoom it (ADR-0001 D9), so it takes the focus
+    "jsx-a11y/no-noninteractive-tabindex": ["error", { "roles": ["tabpanel", "application"] }],
 
     // the automatic JSX runtime needs no `React` in scope
     "react/react-in-jsx-scope": "off",
