@@ -20,10 +20,9 @@ const TYPING_MS = 250;
 // `lazy` gets a component that says so instead of an error it would throw past every boundary.
 const load = () => import('./workspace');
 const Workspace = lazy(() =>
-  load().then(
-    (module) => ({ default: module.Workspace }),
-    () => ({ default: WorkspaceMissing }),
-  ),
+  load()
+    .then((module) => ({ default: module.Workspace }))
+    .catch(() => ({ default: WorkspaceMissing })),
 );
 
 /** In the workspace's place when its chunk did not download. */
