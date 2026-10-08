@@ -15,6 +15,23 @@ const emulateMedia: BrowserCommand<[media: Media]> = async ({ page }, media) => 
   await page.emulateMedia(media);
 };
 
+type Point = { x: number; y: number };
+
+/**
+ * A press at `from`, a move to `to` in steps and a release, with a real mouse: what a drag of the
+ * handle does to the page. The points are the test's, inside its frame, which sits somewhere on
+ * the browser's page.
+ */
+const drag: BrowserCommand<[from: Point, to: Point]> = async (context, from, to) => {
+  const { page } = context;
+  const box = await (await (await context.frame()).frameElement()).boundingBox();
+  const offset = { x: box?.x ?? 0, y: box?.y ?? 0 };
+  await page.mouse.move(from.x + offset.x, from.y + offset.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x + offset.x, to.y + offset.y, { steps: 10 });
+  await page.mouse.up();
+};
+
 // Units, components and the `decodeAny` checks, in the engines the page runs in (ADR-0002 D6).
 export default mergeConfig(
   app,
@@ -30,7 +47,7 @@ export default mergeConfig(
         enabled: true,
         headless: true,
         provider: playwright(),
-        commands: { emulateMedia },
+        commands: { emulateMedia, drag },
         instances: [{ browser: 'chromium' }, { browser: 'firefox' }],
         screenshotFailures: false,
       },

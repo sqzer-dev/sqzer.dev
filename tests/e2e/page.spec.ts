@@ -44,11 +44,12 @@ const test = base.extend<{ problems: string[] }>({
   ],
 });
 
+/** The toast that says `text` (ADR-0005): a dialog named by its title. */
+const said = (page: Page, text: string | RegExp) => page.getByRole('dialog', { name: text });
+
 async function open(page: Page) {
   await page.goto('/');
-  const status = page.getByRole('status');
-  await expect(status).toHaveText('Ready.', SLOW);
-  return status;
+  await expect(said(page, 'Ready.')).toBeVisible(SLOW);
 }
 
 /** Picks from the format list, a Base UI select: its options are on the page only while it is open. */
@@ -58,10 +59,11 @@ async function format(page: Page, name: RegExp) {
 }
 
 test('a JPEG goes through the page with the defaults', async ({ page }) => {
-  const status = await open(page);
+  await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
 
-  await expect(status).toHaveText(/^Done in [\d.]+ s\.$/u, SLOW);
+  // a search of the fixture is over within the quiet 500 ms of ADR-0005, and no toast tells of it
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
   await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
   await expect(page.getByText(/target 70 reached in \d trials?:/u)).toBeVisible();
   // each side's size, in the corner of the screen over it
@@ -103,19 +105,23 @@ test('the footer links the licences of what the page carries, the package in the
 });
 
 test('a change of format during a search ends the worker and starts another', async ({ page }) => {
-  const status = await open(page);
+  await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.svg'));
-  await expect(status).toHaveText(/^Done in/u, SLOW);
+  await expect(page.getByRole('link', { name: /^Download pattern-rgb\./u })).toBeVisible(SLOW);
   await format(page, /^AVIF/u);
   await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
 
+  // what the search toast says, each time it changes
   await page.evaluate(() => {
-    const line = document.querySelector('output');
-    if (!line) throw new Error('the page has no status line');
+    const toaster = document.querySelector('[data-slot=toast-viewport]');
+    if (!toaster) throw new Error('the page has no toaster');
     window.statuses = [];
     new MutationObserver(() => {
-      window.statuses.push(line.textContent);
-    }).observe(line, {
+      for (const title of toaster.querySelectorAll('[data-slot=toast-title]')) {
+        const text = title.textContent;
+        if (text !== 'Ready.' && text !== window.statuses.at(-1)) window.statuses.push(text);
+      }
+    }).observe(toaster, {
       childList: true,
       characterData: true,
       subtree: true,
@@ -124,25 +130,51 @@ test('a change of format during a search ends the worker and starts another', as
 
   // drawn large, so a search takes seconds
   await page.getByLabel('Width').fill('2000');
-  await expect(status).toHaveText(/^Encoding: trial 1 of at most/u, SLOW);
+  await expect(said(page, 'Encoding pattern-rgb.svg.')).toHaveText(/Trial 1 of at most/u, SLOW);
 
   await format(page, /^JPEG/u);
-  await expect(status).toHaveText(/^Done in/u, SLOW);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible();
+  await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
+  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible(SLOW);
 
   // a new worker holds nothing, so the image is read again after the trial that was cut short
   const statuses = await page.evaluate(() => window.statuses);
-  const trial = statuses.findIndex((text) => text.startsWith('Encoding: trial 1 '));
+  const trial = statuses.indexOf('Encoding pattern-rgb.svg.');
   expect(trial).toBeGreaterThan(-1);
   expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
-  // twice and no more: drawn at the new width, then read by the worker that replaced the one cut short
-  expect(statuses.filter((text) => text === 'Reading pattern-rgb.svg.')).toHaveLength(2);
+});
+
+test('the workspace is a chunk of its own, fetched once the empty state is up', async ({ page }) => {
+  await open(page);
+
+  const scripts = await page.evaluate(() => ({
+    inHtml: document.scripts.length,
+    fetched: performance
+      .getEntriesByType('resource')
+      .map((entry) => new URL(entry.name).pathname)
+      .filter((path) => path.endsWith('.js'))
+      .toSorted(),
+  }));
+  expect(scripts.inHtml).toBe(1);
+  // the page's script, the worker's, the workspace, and the little runtime Vite splits out with it
+  expect(scripts.fetched).toEqual(
+    expect.arrayContaining([
+      expect.stringMatching(/^\/assets\/index-/u),
+      expect.stringMatching(/^\/assets\/worker-/u),
+      expect.stringMatching(/^\/assets\/workspace-/u),
+    ]),
+  );
 });
 
 test('the components and the fonts hold under the policy', async ({ page }) => {
-  const status = await open(page);
+  await open(page);
+  // the toast is a Base UI part too, drawn from its variables: it stays while hovered, and its button closes it
+  const ready = said(page, 'Ready.');
+  await ready.hover();
+  await expect(ready).toHaveAttribute('data-expanded');
+  await ready.getByRole('button', { name: 'Close' }).click();
+  await expect(ready).toBeHidden();
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-  await expect(status).toHaveText(/^Done in/u, SLOW);
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
   // the list hides its scrollbar by a class, which Base UI would otherwise style from a `<style>` element
   await page.getByRole('combobox', { name: 'Format' }).click();
@@ -177,9 +209,9 @@ test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 780 } });
 
   test('the panels are one bottom expander, pulled up over the image, under the policy', async ({ page }) => {
-    const status = await open(page);
+    await open(page);
     await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-    await expect(status).toHaveText(/^Done in/u, SLOW);
+    await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
     const expander = page.getByRole('dialog', { name: 'Result and options' });
     const top = async () => {
@@ -215,9 +247,9 @@ test("the policy names no origin but the page's own", async ({ page }) => {
   const origins = new Set<string>();
   page.on('request', (request) => origins.add(new URL(request.url()).origin));
 
-  const status = await open(page);
+  await open(page);
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-  await expect(status).toHaveText(/^Done in/u, SLOW);
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
   const policy = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   expect(policy).toMatch(/^default-src 'none'; /u);

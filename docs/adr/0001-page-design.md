@@ -1,6 +1,7 @@
 # ADR-0001: The design of the page
 
 **Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Superseded by:** ADR-0005 for the status panel and the status line of D4: what the page says in passing, the encoder loading, the image being read, the trials as they land and the result's time, is a toast, updated in place and announced through the toaster's live region
 **Scope:** The look and behaviour of the page at `sqzer.dev`: the empty state, the page with an image on it, the controls, the search while it runs, the result, errors, the privacy claim and the wordmark. What the page is built with is ADR-0002, and the design system and component library it borrows are a record after that (D10). Anything not settled here is listed under Open.
 
 ---

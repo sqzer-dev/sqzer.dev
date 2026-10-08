@@ -39,7 +39,7 @@
     },
     {
       "id": "one-styling-system",
-      "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, Radix `red` on the page anywhere but an alert (the `destructive` variants in `src/shared/ui/` carry the alert's colours and are for an alert's own parts), glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the view bar, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
+      "rule": "Components are shadcn/ui's Base UI flavour in `src/shared/ui/`, styled with Tailwind 4 on shadcn's tokens, which map Radix Colors `gray` and `blackA`/`whiteA` (ADR-0003). Flag CSS Modules, CSS-in-JS, a second component library, a colour or font outside the tokens, Radix `red` on the page anywhere but an alert (the `destructive` variants in `src/shared/ui/` carry the alert's colours and are for an alert's own parts), Radix `blue` anywhere but the `drop` token on a border or outline while a file is dragged (ADR-0006), any other hue at all, glass built other than through the `glass` utility, glass nested in glass or used on anything but the floating panels, the view bar, the bottom expander and the corner labels, and a new dependency whose licence is not added to `licenses.txt`.",
       "scope": ["src/**", "index.html", "vite.config.ts", "package.json", "public/**", "tests/**"],
       "severity": "medium"
     },

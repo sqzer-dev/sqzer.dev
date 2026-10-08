@@ -2,20 +2,21 @@ import { Slider } from '@base-ui/react/slider';
 import { ChevronsLeftRightIcon } from 'lucide-react';
 
 type SplitHandleProps = {
-  /** Where the line stands, in percent of the picture's width. */
+  /** Where the line stands, in percent of the screen's width. */
   value: number;
   onChange: (value: number) => void;
 };
 
 /**
- * The line between before and after, and the handle centred on it (ADR-0001 D2). A slider on
- * Base UI's parts: it has the role and the keys of a range input, and a press anywhere on the
- * picture brings the line there. shadcn's `Slider` is a track with a fill, which this is not.
+ * The line between before and after, the height of the screen, and the handle centred on it
+ * (ADR-0001 D2). A slider on Base UI's parts: it has the role and the keys of a range input, and a
+ * press anywhere on the screen brings the line there. shadcn's `Slider` is a track with a fill,
+ * which this is not.
  */
 export function SplitHandle({ value, onChange }: SplitHandleProps) {
   return (
-    <Slider.Root className="size-full" value={value} min={0} max={100} onValueChange={onChange}>
-      <Slider.Control className="size-full cursor-ew-resize touch-none">
+    <Slider.Root className="absolute inset-0" value={value} min={0} max={100} onValueChange={onChange}>
+      <Slider.Control className="size-full cursor-ew-resize touch-none select-none">
         <Slider.Track className="size-full">
           {/* a light line between two dark ones, so it shows on any image */}
           <Slider.Thumb
