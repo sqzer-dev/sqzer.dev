@@ -59,19 +59,18 @@ export function Comparison({ flat }: { flat: boolean }) {
   // has no size of its own until it is drawn.
   const size = decoded ?? (image?.vector === false ? loadedBefore : null);
   const properties = drawn(split, size);
-  // the same ground under both pictures, so a transparent area of the one shows nothing of the other
-  const picture = cn(
-    'grid aspect-(--aspect,auto) *:col-start-1 *:row-start-1',
-    FIT,
-    flat ? 'bg-background' : 'checkerboard',
-  );
+  // the same ground under both pictures, so a transparent area of the one shows nothing of the other.
+  // Each `<img>` is pinned to the box's edges and keeps its own aspect inside them, as on Squoosh: a
+  // resized output's height is rounded, so stretched into the input's box it would be a pixel off
+  // the input, where contained it is scaled evenly and at most half a pixel of ground shows at an edge.
+  const picture = cn('relative aspect-(--aspect,auto)', FIT, flat ? 'bg-background' : 'checkerboard');
 
   return (
     <div className="absolute inset-0 select-none [container-type:size]" style={properties}>
       <Side picture={picture} hidden={size === null || (unshowable && preview === null)}>
         <img
           ref={before}
-          className="size-full"
+          className="absolute inset-0 size-full object-contain"
           alt="As it was dropped"
           onLoad={loadBefore}
           onError={() => search.send({ type: 'unshowable' })}
@@ -80,7 +79,7 @@ export function Comparison({ flat }: { flat: boolean }) {
       <Side picture={picture} after hidden={!afterShown}>
         <img
           ref={after}
-          className="size-full"
+          className="absolute inset-0 size-full object-contain"
           alt="As sqzer encoded it"
           onLoad={() => {
             if (result) setAfterOf(image);

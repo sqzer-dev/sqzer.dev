@@ -26,7 +26,8 @@ const middle = (element: Element): Point => {
 
 const fixture = new URL('../../../../tests/fixtures/pattern-rgb.jpg', import.meta.url);
 
-// The fixture is 48 x 32. The output is said to be half of it, as after a resize.
+// The fixture is 48 x 32. The output is said to be about half of it, as after a resize, with the
+// height rounded as a resampler rounds it: its aspect is not the input's.
 const output: Output = {
   bytes: new Uint8Array(1),
   animated: false,
@@ -35,7 +36,7 @@ const output: Output = {
   alpha: false,
   content: 'photo',
   format: 'jpeg',
-  outputWidth: 24,
+  outputWidth: 25,
   outputHeight: 16,
   backend: 'mozjpeg-rs',
   tier: 'portable',
@@ -118,7 +119,7 @@ async function renderComparison() {
 test("each side's size sits in the corner of the screen over it", async () => {
   const { screen } = await renderComparison();
   const before = screen.getByText('Before: 48 × 32');
-  const after = screen.getByText('After: 24 × 16');
+  const after = screen.getByText('After: 25 × 16');
 
   await expect.element(before).toBeVisible();
   await expect.element(after).toBeVisible();
@@ -168,7 +169,7 @@ test('a drag of the handle across the screen selects nothing', async () => {
   await expect.element(handle).toBeVisible();
 
   // from the middle of the screen to the label in its far corner
-  await commands.drag(middle(handle.element()), middle(screen.getByText('After: 24 × 16').element()));
+  await commands.drag(middle(handle.element()), middle(screen.getByText('After: 25 × 16').element()));
 
   await expect.poll(() => handle.element().getAttribute('aria-valuenow')).not.toBe('50');
   expect(getSelection()?.toString()).toBe('');
@@ -220,7 +221,7 @@ test("a resized output is drawn into the input's box, so the two sides line up",
   const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
   await expect.element(after).toBeVisible();
 
-  // the input is 48 x 32 and the output 24 x 16: both are shown at the input's size
+  // the input is 48 x 32 and the output 25 x 16: both are shown at the input's size, to the pixel
   expect(before.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
   expect(after.element().getBoundingClientRect()).toEqual(before.element().getBoundingClientRect());
 });
