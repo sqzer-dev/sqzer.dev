@@ -213,3 +213,14 @@ test('the next encode replaces the after side in place, without a blink', async 
   watcher.disconnect();
   expect(hides).toEqual([]);
 });
+
+test("a resized output is drawn into the input's box, so the two sides line up", async () => {
+  const { screen } = await renderComparison();
+  const before = screen.getByRole('img', { name: 'As it was dropped' });
+  const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
+  await expect.element(after).toBeVisible();
+
+  // the input is 48 x 32 and the output 24 x 16: both are shown at the input's size
+  expect(before.element().getBoundingClientRect()).toMatchObject({ width: 48, height: 32 });
+  expect(after.element().getBoundingClientRect()).toEqual(before.element().getBoundingClientRect());
+});

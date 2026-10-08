@@ -15,12 +15,15 @@ declare module 'react' {
   }
 }
 
-// The picture is as large as the screen lets it be, and never larger than its own pixels.
+// The picture is as large as the screen lets it be, and never larger than the input's own pixels.
 const FIT = 'w-[min(100cqw,calc(100cqh*var(--aspect,1)),var(--width,100cqw))]';
 
 /**
  * The image as it was dropped and as it was encoded, over the whole screen (ADR-0001 D2): two layers
- * the size of the screen, each with the picture in its middle, the second clipped at the line. The
+ * the size of the screen, each with the picture in its middle, the second clipped at the line. Both
+ * pictures take the box of the input, as on Squoosh: a resized output is drawn into it, so the two
+ * sides are scaled the same way and line up, where a box of the output's size had the browser scale
+ * the input into it and the two a pixel apart. The
  * line runs the height of the screen and moves across all of it, as on Squoosh, so the split is a
  * share of the screen, not of the picture. `flat` puts the page's own background under a transparent
  * image where the checkerboard was, so the picture's bounds vanish into the page. Nothing on the
@@ -52,9 +55,9 @@ export function Comparison({ flat }: { flat: boolean }) {
   const afterShown = result !== null && image !== null && afterOf === image;
 
   const output = result && { width: result.output.outputWidth, height: result.output.outputHeight };
-  // the size of the output once there is one, of the input until then: as the worker decoded it, or as
-  // the browser loaded it before that. A vector has no size of its own until it is drawn.
-  const size = output ?? decoded ?? (image?.vector === false ? loadedBefore : null);
+  // the size of the input: as the worker decoded it, or as the browser loaded it before that. A vector
+  // has no size of its own until it is drawn.
+  const size = decoded ?? (image?.vector === false ? loadedBefore : null);
   const properties = drawn(split, size);
   // the same ground under both pictures, so a transparent area of the one shows nothing of the other
   const picture = cn(
