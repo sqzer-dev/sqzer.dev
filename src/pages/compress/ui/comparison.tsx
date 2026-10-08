@@ -4,6 +4,7 @@ import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { useObjectUrl } from '@/shared/lib/object-url';
 
 import { useSearch, useSearchRef } from '../model/context';
+import type { Picked } from '../model/picked';
 import { CornerLabel } from './corner-label';
 import { SplitHandle } from './split-handle';
 
@@ -28,8 +29,9 @@ const FIT = 'w-[min(100cqw,calc(100cqh*var(--aspect,1)),var(--width,100cqw))]';
  *
  * Each side shows once the browser has loaded it, not before: the input's box is sized from the
  * browser's own load until the worker has decoded it, so a small image after a large one does not
- * start at the screen's width, and the after side waits for the encoded file to load, so nothing
- * flashes where it will be.
+ * start at the screen's width, and the after side waits for the first encode of an image to load,
+ * so nothing flashes where it will be. The encodes after that replace it in place: the `<img>`
+ * keeps the last one until the next has loaded, as Squoosh does, instead of blinking.
  */
 export function Comparison({ flat }: { flat: boolean }) {
   const search = useSearchRef();
@@ -45,17 +47,15 @@ export function Comparison({ flat }: { flat: boolean }) {
   const before = useObjectUrl<HTMLImageElement>(input, 'src');
   const after = useObjectUrl<HTMLImageElement>(result?.file ?? null, 'src');
   const [loadedBefore, loadBefore] = useLoaded(input);
-  const [loadedAfter, loadAfter] = useLoaded(result?.file ?? null);
+  // the image an encode has loaded for, which the encodes after it replace in place
+  const [afterOf, setAfterOf] = useState<Picked | null>(null);
+  const afterShown = result !== null && image !== null && afterOf === image;
 
   const output = result && { width: result.output.outputWidth, height: result.output.outputHeight };
   // the size of the output once there is one, of the input until then: as the worker decoded it, or as
   // the browser loaded it before that. A vector has no size of its own until it is drawn.
   const size = output ?? decoded ?? (image?.vector === false ? loadedBefore : null);
-  const properties = {
-    '--split': `${split}%`,
-    '--width': size ? `${size.width}px` : undefined,
-    '--aspect': size ? String(size.width / size.height) : undefined,
-  };
+  const properties = drawn(split, size);
   // the same ground under both pictures, so a transparent area of the one shows nothing of the other
   const picture = cn(
     'grid aspect-(--aspect,auto) *:col-start-1 *:row-start-1',
@@ -74,14 +74,32 @@ export function Comparison({ flat }: { flat: boolean }) {
           onError={() => search.send({ type: 'unshowable' })}
         />
       </Side>
-      <Side picture={picture} after hidden={loadedAfter === null}>
-        <img ref={after} className="size-full" alt="As sqzer encoded it" onLoad={loadAfter} />
+      <Side picture={picture} after hidden={!afterShown}>
+        <img
+          ref={after}
+          className="size-full"
+          alt="As sqzer encoded it"
+          onLoad={() => {
+            if (result) setAfterOf(image);
+          }}
+        />
       </Side>
-      {loadedAfter && <SplitHandle value={split} onChange={setSplit} />}
+      {afterShown && <SplitHandle value={split} onChange={setSplit} />}
       {decoded && <CornerLabel side="before" name="Before" size={decoded} />}
       {output && <CornerLabel side="after" name="After" size={output} />}
     </div>
   );
+}
+
+type Size = { width: number; height: number };
+
+/** What the stylesheet draws from: where the line stands, and the picture's size once it is known. */
+function drawn(split: number, size: Size | null) {
+  return {
+    '--split': `${split}%`,
+    '--width': size ? `${size.width}px` : undefined,
+    '--aspect': size ? String(size.width / size.height) : undefined,
+  };
 }
 
 type SideProps = {

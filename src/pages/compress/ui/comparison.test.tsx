@@ -53,9 +53,20 @@ function Pick({ file, label = 'Pick' }: { file: File; label?: string }) {
   );
 }
 
+/** The controls' part: one button that has the machine search again, as a change of a control does. */
+function Change() {
+  const search = useSearchRef();
+  return (
+    <button type="button" onClick={() => search.send({ type: 'options', options: {} })}>
+      Change
+    </button>
+  );
+}
+
 /**
  * The comparison over a worker that reads and encodes at once, with the fixture picked. The worker
- * answers for a preview only when the test says, through `preview`.
+ * answers for a preview only when the test says, through `preview`, and `encodeAgain` has the
+ * controls change, which the worker answers with another file.
  */
 async function renderComparison() {
   const file = new File([await (await fetch(fixture)).blob()], 'pattern-rgb.jpg', { type: 'image/jpeg' });
@@ -69,6 +80,8 @@ async function renderComparison() {
     },
     encode: { type: 'done', result: { output, file, seconds: 1 } },
   };
+  // another file for the same encode, as a change of the controls gives
+  const again = new File([await (await fetch(fixture)).blob()], 'pattern-rgb-again.jpg', { type: 'image/jpeg' });
   const answer: { to?: (event: EncoderEvent) => void } = {};
   const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
     answer.to = sendBack;
@@ -82,6 +95,7 @@ async function renderComparison() {
     <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
       <Pick file={file} />
       <Pick file={unshowable} label="Pick the unshowable" />
+      <Change />
       {/* the screen's part: the comparison fills what it is put in */}
       <div className="relative h-96" data-testid="screen">
         <Comparison flat={false} />
@@ -92,6 +106,10 @@ async function renderComparison() {
   return {
     screen,
     preview: () => answer.to?.({ type: 'previewed', preview: file }),
+    encodeAgain: async () => {
+      answers['encode'] = { type: 'done', result: { output, file: again, seconds: 1 } };
+      await screen.getByRole('button', { name: 'Change' }).click();
+    },
     // the layer itself, hidden or not: a locator by role would skip it while it is hidden
     source: () => document.querySelector('[data-slot=before]'),
   };
@@ -172,4 +190,26 @@ test('an image the browser cannot show is hidden until the worker previews it, a
 
   await expect.element(screen.getByRole('img', { name: 'As it was dropped' })).toBeVisible();
   expect(source()?.hasAttribute('hidden')).toBe(false);
+});
+
+test('the next encode replaces the after side in place, without a blink', async () => {
+  const { screen, encodeAgain } = await renderComparison();
+  const after = screen.getByRole('img', { name: 'As sqzer encoded it' });
+  await expect.element(after).toBeVisible();
+  const layer = after.element().closest('[data-slot=after]');
+  if (!layer) throw new Error('the after side has no layer');
+  const was = after.element().getAttribute('src');
+  // every change of the layer's `hidden` from here on
+  const hides: boolean[] = [];
+  const watcher = new MutationObserver(() => {
+    hides.push(layer.hasAttribute('hidden'));
+  });
+  watcher.observe(layer, { attributes: true, attributeFilter: ['hidden'] });
+
+  await encodeAgain();
+
+  await expect.poll(() => after.element().getAttribute('src')).not.toBe(was);
+  await expect.element(after).toBeVisible();
+  watcher.disconnect();
+  expect(hides).toEqual([]);
 });
