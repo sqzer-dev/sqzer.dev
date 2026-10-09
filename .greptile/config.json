@@ -33,7 +33,7 @@
     },
     {
       "id": "codecs-drive-the-controls",
-      "rule": "What the page offers as formats, backends and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats or backends. The controls start at the package's defaults and the page never changes a default of the package on its own.",
+      "rule": "What the page offers as formats, backends, backend options and what it says it can read comes from the package's `codecs()` at run time. Flag a hardcoded list of formats, backends or `codecOpts` keys. The controls start at the package's defaults and the page never changes a default of the package on its own: a control that was not touched sends nothing, and a control that does not apply to what the others say is not shown and sends nothing (ADR-0001 D3, ADR-0007). What the controls say is one `@tanstack/react-form` form held by the page, and `optionsOf` in `src/pages/compress/lib/` is the one place it becomes the package's options; flag a second translation, or an option assembled elsewhere.",
       "scope": ["src/**"],
       "severity": "medium"
     },

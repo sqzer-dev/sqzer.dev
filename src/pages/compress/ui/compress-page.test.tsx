@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 
 import { panel, renderPage, SETTLED_MS, swatch, wait } from './compress-page.harness';
 
@@ -210,4 +210,32 @@ test('on a phone the panels are one bottom expander, and the controls keep what 
   const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]');
   await expect.poll(() => bar && bar.getBoundingClientRect().height).toBeGreaterThan(40);
   for (const control of bar?.children ?? []) expect(control.getBoundingClientRect().right).toBeLessThanOrEqual(320);
+});
+
+test('the untouched target stands at the score the result reports, and sends nothing until it is moved', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  const slider = screen.getByRole('slider', { name: 'Target score' });
+
+  await expect.element(slider).toHaveValue('72');
+  await expect.element(screen.getByText('default: 72, high: barely noticeable side by side')).toBeVisible();
+  expect(encodes()).toEqual([{}]);
+
+  slider.element().focus();
+  await userEvent.keyboard('{ArrowRight}');
+  await expect.element(screen.getByText('73, high: barely noticeable side by side')).toBeVisible();
+  await wait(SETTLED_MS);
+  expect(encodes()).toEqual([{}, { target: 73 }]);
+});
+
+test('an option behind Advanced reaches the search as the package spells it', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Advanced' }).click();
+  await screen.getByRole('spinbutton', { name: 'Max pixels' }).fill('1000');
+  await screen.getByRole('switch', { name: 'Keep metadata' }).click();
+  await wait(SETTLED_MS);
+
+  // one search or two, as the clock has it between the two changes: the last says both
+  expect(encodes().at(-1)).toEqual({ keepMetadata: true, maxPixels: 1000 });
 });

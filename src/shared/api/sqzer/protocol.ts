@@ -1,9 +1,9 @@
 // The messages between the page and the worker. The worker holds one image
 // at a time, and every message names it by `id`: a reply for an image that
 // was replaced since is dropped by whoever reads it.
-import type { Codec, Options, Output as Encoded, SqzerError, TrialProgress } from 'sqzer';
+import type { Codec, CodecOption, Options, Output as Encoded, SqzerError, TrialProgress } from 'sqzer';
 
-export type { Codec, TrialProgress };
+export type { Codec, CodecOption, TrialProgress };
 
 /** Bytes that crossed from the worker: transferred, so in a buffer of their own. */
 export type Bytes = Uint8Array<ArrayBuffer>;
@@ -25,10 +25,10 @@ export type Decoded = {
 };
 
 export type Request =
-  /** A file, as it was picked. */
-  | { type: 'decode'; id: number; bytes: ArrayBuffer }
+  /** A file, as it was picked. `maxPixels` is the package's limit on what it decodes, which the reader may raise. */
+  | { type: 'decode'; id: number; bytes: ArrayBuffer; maxPixels?: number | undefined }
   /** RGBA the page drew itself. */
-  | { type: 'pixels'; id: number; rgba: ArrayBuffer; width: number; height: number }
+  | { type: 'pixels'; id: number; rgba: ArrayBuffer; width: number; height: number; maxPixels?: number | undefined }
   | { type: 'encode'; id: number; options: EncodeOptions }
   /** The image the worker holds, as a file every browser can show. */
   | { type: 'preview'; id: number };

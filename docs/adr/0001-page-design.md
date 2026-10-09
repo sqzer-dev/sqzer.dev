@@ -271,7 +271,7 @@ What to revisit: whether readers find the alternatives to the target and the Adv
 4. [x] A survey of design systems and headless component libraries against D10, and the record that picks them. (ADR-0003.)
 5. [x] Controls that were not touched send nothing (D3). Today the page always sends `target: 70`. (The score field starts empty and says `default`. The package states its default score in its docs only, so the page has no number to show there before a search.)
 6. [ ] The empty state of D1 and the full-screen comparison of D2: glass panels, corner labels, centred handle, synced zoom and pan, pixelated view, background toggle, bottom expander. (In two pull requests. The first has the empty state, the image over the whole screen, the panels, the corner labels in the corners of the screen, the centred handle, the background toggle and the bottom expander. Zoom and pan with the pixelated view came second, in the next pull request: the wheel, two fingers, a drag and the keys, with the zoom buttons in the view bar. The animated background waits for its form, under Open.)
-7. [ ] The target control and the Advanced expander of D3.
+7. [x] The target control and the Advanced expander of D3. (The controls became a form on `@tanstack/react-form`, ADR-0007, which also says where the untouched slider stands. Under `auto` the backend options of every encoder show, since the package takes them all.)
 8. [ ] The trial list, cancel and chart of D4.
 9. [ ] The result panel of D5, the alerts of D6 and the privacy note of D7.
 10. [ ] The wordmark of D8.
