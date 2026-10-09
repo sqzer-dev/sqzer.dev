@@ -10,6 +10,9 @@ import type { Picked } from './picked';
 // have moved on, before it is ended.
 const PATIENCE_MS = 300;
 
+/** A result, with what the search was asked: the output answers those options, and nothing else. */
+export type Searched = EncodeResult & { asked: EncodeOptions };
+
 type Context = {
   /** The version of `sqzer`, once a worker has loaded it. */
   version: string | null;
@@ -37,7 +40,7 @@ type Context = {
   decoded: Decoded | null;
   /** The trials of the running search, as they land. */
   trials: TrialProgress[];
-  result: EncodeResult | null;
+  result: Searched | null;
   error: string | null;
   /** The worker itself failed. The next search starts another. */
   broken: boolean;
@@ -228,7 +231,10 @@ export const searchMachine = setup({
                 done: [
                   // the controls moved while this one ran
                   { guard: 'outdated', target: 'starting', actions: 'keepPatience' },
-                  { target: '#search.open.result', actions: assign(({ event }) => ({ result: event.result })) },
+                  {
+                    target: '#search.open.result',
+                    actions: assign(({ context, event }) => ({ result: { ...event.result, asked: context.options } })),
+                  },
                 ],
               },
             },

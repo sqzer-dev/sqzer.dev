@@ -20,11 +20,17 @@ type Reported = number | 'lossless' | null;
 
 const WEB = PRESETS.find((preset) => preset.name === 'web')?.score ?? TARGET.min;
 
-/** The target the newest result reports, which is the package's default for that image, or that it went lossless. */
+/**
+ * The target the newest result reports, which is the package's default for that image, or that it
+ * went lossless. Only a search asked with no way of saying the quality reports a default: after
+ * one asked with a score, the result answers that score, and says nothing of the default.
+ */
 function useReported(): Reported {
   return useSearch((snapshot) => {
-    const output = snapshot.context.result?.output;
-    if (output === undefined) return null;
+    const { result } = snapshot.context;
+    if (result === null) return null;
+    const { asked, output } = result;
+    if (asked.target !== undefined || asked.quality !== undefined || asked.lossless !== undefined) return null;
     return output.lossless ? 'lossless' : (output.target ?? null);
   });
 }

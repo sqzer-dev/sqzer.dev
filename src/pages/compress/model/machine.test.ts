@@ -93,6 +93,8 @@ test('a picked image is read, then encoded, on the worker that is there', () => 
 
   expect(search.state()).toEqual({ open: 'result' });
   expect(search.asked()).toEqual([['read', 'encode']]);
+  // the result carries what it was asked, which is what its output answers
+  expect(search.actor.getSnapshot().context.result).toMatchObject({ asked: { target: 70 } });
 });
 
 test('the controls moving during a search end the worker once the patience runs out', () => {
