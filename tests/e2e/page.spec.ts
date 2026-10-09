@@ -143,6 +143,26 @@ test('a change of format during a search ends the worker and starts another', as
   expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
 });
 
+test('the target slider and an option behind Advanced reach the package', async ({ page }) => {
+  await open(page);
+  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
+  // the slider stands at the target the result reports, the package's default, and says so
+  const slider = page.getByRole('slider', { name: 'Target score' });
+  await expect(slider).toHaveValue('70');
+  await expect(page.getByText('default: 70, high: barely noticeable side by side')).toBeVisible();
+
+  await slider.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('71, high: barely noticeable side by side')).toBeVisible();
+  await expect(page.getByText(/target 71 (reached|not reached) in \d trials?:/u)).toBeVisible(SLOW);
+
+  // a limit the fixture is over: the package's refusal is the alert of ADR-0001 D6
+  await page.getByRole('button', { name: 'Advanced' }).click();
+  await page.getByLabel('Max pixels').fill('1');
+  await expect(page.getByRole('alert')).toHaveText(/image has 1536 pixels, limit is 1/u, SLOW);
+});
+
 test('the workspace is a chunk of its own, fetched once the empty state is up', async ({ page }) => {
   await open(page);
 

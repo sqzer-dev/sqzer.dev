@@ -23,6 +23,8 @@ type Read = {
   width: number;
   /** The package's words for having no decoder for the image, when it said so. */
   unreadable: string | null;
+  /** The limit to read it under: the package's own when the control was not touched. */
+  maxPixels: number | undefined;
 };
 
 /** What the machine asks of the actor. */
@@ -70,7 +72,8 @@ class Session {
       this.#id += 1;
       this.#read = command;
       if (command.onPage) void this.#drawOnPage(command, this.#id);
-      else this.#worker.send({ type: 'decode', id: this.#id, bytes: command.image.bytes });
+      else
+        this.#worker.send({ type: 'decode', id: this.#id, bytes: command.image.bytes, maxPixels: command.maxPixels });
     } else if (command.type === 'encode') {
       this.#startedAt = performance.now();
       this.#worker.send({ type: 'encode', id: this.#id, options: command.options });
@@ -125,12 +128,14 @@ class Session {
     this.#tell({ type: 'done', result: { output, file, seconds } });
   }
 
-  async #drawOnPage({ image, width, unreadable }: Read, drawing: number) {
+  async #drawOnPage({ image, width, unreadable, maxPixels }: Read, drawing: number) {
     const current = () => !this.#stopped && drawing === this.#id;
     try {
       const { data, width: w, height: h } = await draw(image, width);
       if (!current()) return;
-      this.#worker.send({ type: 'pixels', id: drawing, rgba: data.buffer, width: w, height: h }, [data.buffer]);
+      this.#worker.send({ type: 'pixels', id: drawing, rgba: data.buffer, width: w, height: h, maxPixels }, [
+        data.buffer,
+      ]);
     } catch (thrown) {
       if (!current()) return;
       this.#fail(unreadable === null ? `The browser could not read this image: ${reason(thrown)}.` : `${unreadable}.`);

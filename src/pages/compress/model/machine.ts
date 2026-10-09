@@ -25,6 +25,8 @@ type Context = {
   held: boolean;
   /** The width an image drawn on the page was last drawn at. */
   drawnWidth: number | null;
+  /** The `maxPixels` the held image was read under. The limit is the package's at the decode, so a new one reads again. */
+  heldLimit: number | undefined;
   /** The controls moved while the worker was busy with what they said before. */
   outdated: boolean;
   /** The browser cannot show the image itself, a TIFF say. */
@@ -74,7 +76,10 @@ export const searchMachine = setup({
     showable: ({ context }) => !context.unshowable,
     broken: ({ context }) => context.broken,
     outdated: ({ context }) => context.outdated,
-    needsReading: ({ context }) => !context.held || (onPage(context) && context.drawnWidth !== drawWidth(context)),
+    needsReading: ({ context }) =>
+      !context.held ||
+      context.heldLimit !== context.options.maxPixels ||
+      (onPage(context) && context.drawnWidth !== drawWidth(context)),
   },
   actions: {
     takeImage: assign(({ event }) => {
@@ -85,6 +90,7 @@ export const searchMachine = setup({
         unreadable: null,
         held: false,
         drawnWidth: null,
+        heldLimit: undefined,
         unshowable: false,
         previewAsked: false,
         preview: null,
@@ -105,6 +111,7 @@ export const searchMachine = setup({
         onPage: onPage(context),
         width: drawWidth(context),
         unreadable,
+        maxPixels: context.options.maxPixels,
       };
       enqueue.sendTo('encoder', command);
     }),
@@ -135,6 +142,7 @@ export const searchMachine = setup({
     unreadable: null,
     held: false,
     drawnWidth: null,
+    heldLimit: undefined,
     outdated: false,
     unshowable: false,
     previewAsked: false,
@@ -194,7 +202,12 @@ export const searchMachine = setup({
                   target: 'starting',
                   actions: [
                     'keepPatience',
-                    assign(({ event }) => ({ decoded: event.decoded, held: true, drawnWidth: event.drawnWidth })),
+                    assign(({ context, event }) => ({
+                      decoded: event.decoded,
+                      held: true,
+                      drawnWidth: event.drawnWidth,
+                      heldLimit: context.options.maxPixels,
+                    })),
                   ],
                 },
                 // the worker's canvas had no decoder either: the page's own `<img>` is the last one to ask

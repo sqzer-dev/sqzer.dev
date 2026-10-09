@@ -1,7 +1,12 @@
 import { Slider as SliderPrimitive } from '@base-ui/react/slider';
 import { cn } from 'cn';
 
-function Slider({ className, defaultValue, value, min = 0, max = 100, ...props }: SliderPrimitive.Root.Props) {
+type SliderProps = SliderPrimitive.Root.Props & {
+  /** What a screen reader says for a value, in place of the number. */
+  getAriaValueText?: SliderPrimitive.Thumb.Props['getAriaValueText'];
+};
+
+function Slider({ className, defaultValue, value, min = 0, max = 100, getAriaValueText, ...props }: SliderProps) {
   const values = Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max];
 
   return (
@@ -29,6 +34,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, ...props }
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}
+            getAriaValueText={getAriaValueText}
             className="relative block size-3 shrink-0 rounded-md border border-ring bg-background ring-ring transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden active:ring-2 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}

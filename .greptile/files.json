@@ -44,6 +44,11 @@
       "scope": ["src/**"]
     },
     {
+      "path": "docs/adr/0007-controls-as-a-form.md",
+      "description": "What holds what the controls say: one `@tanstack/react-form` form per page, held above the panels, its fields handed to the field components as props; `optionsOf` as the one place the form becomes the package's options and `applicable` as what decides which controls show and which values are sent; the untouched target slider at the reported target or the `web` mark, labelled `default`; the toaster at the top centre on a wide screen, since the column of panels reaches the top right; why not React Hook Form under the React Compiler",
+      "scope": ["src/**"]
+    },
+    {
       "path": "src/app/style.css",
       "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
       "scope": ["src/**"]

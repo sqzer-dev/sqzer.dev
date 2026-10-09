@@ -163,6 +163,20 @@ test('a vector image is drawn again when its width changes, and not when it stay
   expect(search.workers[0]?.asked.at(-1)).toMatchObject({ type: 'read', width: 200 });
 });
 
+test('a new limit on the pixels reads the image again under it, and the same limit does not', () => {
+  const search = encoding();
+  expect(search.workers[0]?.asked[0]).toMatchObject({ type: 'read', maxPixels: undefined });
+  search.tell(done);
+
+  search.actor.send({ type: 'options', options: { maxPixels: 1000 } });
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({ type: 'read', maxPixels: 1000 });
+  search.tell(decoded());
+  search.tell(done);
+  search.actor.send({ type: 'options', options: { maxPixels: 1000, quality: 50 } });
+
+  expect(search.asked()).toEqual([['read', 'encode', 'read', 'encode', 'encode']]);
+});
+
 test('an image the package cannot decode is drawn on the page', () => {
   const search = start();
   search.actor.send({ type: 'picked', image: picked('d.heic'), options: {} });

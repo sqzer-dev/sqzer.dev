@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 The page at `sqzer.dev`: a single-page application that runs the `sqzer` npm package in the browser. The package is built from `crates/sqzer-wasm` in `github.com/sqzer-dev/sqzer`, and its API is that crate's `README.md`. The decisions behind the page are in `docs/adr` here, on top of ADR-0011 D6 in that repository's `docs/adr/0011-browser-build.md`. This repository holds the page only.
 
-Solo-maintained. React 19 and TypeScript, built by Vite, with the search as an XState machine (ADR-0002, ADR-0004). The components are shadcn/ui's Base UI flavour, styled with Tailwind 4 on tokens from Radix Colors, in Geist (ADR-0003). The build is static files: no server, and no router until there is a second page.
+Solo-maintained. React 19 and TypeScript, built by Vite, with the search as an XState machine (ADR-0002, ADR-0004) and the controls as a TanStack Form (ADR-0007). The components are shadcn/ui's Base UI flavour, styled with Tailwind 4 on tokens from Radix Colors, in Geist (ADR-0003). The build is static files: no server, and no router until there is a second page.
 
 The page moves on its own cadence, apart from `sqzer`: the look, the controls, quality-of-life features and anything else on top of the package's public API happen here, in pull requests that deploy on merge. What the package cannot do, a format, an option, a decoder, is a change to `sqzer` first and a version bump here after its release. Never work around a gap in the package on the page.
 
@@ -18,10 +18,12 @@ vite.config.ts              the build, and the one place the policy is written
 components.json             what `shadcn add` reads: the Base UI base, the Mira style, where components go
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
 src/pages/compress/ui/      the page and its parts: the empty state, the workspace with its comparison,
-                            panels, bottom expander and view bar, the controls, the result, the failure
+                            panels, bottom expander and view bar, the controls as a form with its
+                            fields, the target slider and the Advanced expander, the result, the failure
 src/pages/compress/model/   the search machine, the worker actor, the picked image, the result,
                             what the controls say, the notices the toaster shows
-src/pages/compress/lib/     drawing on the page, codec lookups, the summary, reading the controls
+src/pages/compress/lib/     drawing on the page, codec lookups and which controls apply, the score's
+                            words, the summary, the controls as the package's options
 src/shared/api/sqzer/       the worker, its client and the message types. Every call into `sqzer`
 src/shared/ui/              the components, one file each, copied in by `shadcn add`. No barrel
 src/shared/lib/             small helpers, named by their domain
@@ -49,7 +51,8 @@ Vitest tests sit next to what they test, as `*.test.ts` and `*.test.tsx`.
 - A search cannot be interrupted. The machine's `restart` re-enters its `open` state, which ends the worker and starts another; keep that the only way an encode is cancelled. An idle worker is never ended: it holds the decoded image, so a change of the controls only pays for the encode (ADR-0004).
 - The package's decoder comes first, the browser's canvas decodes what the package cannot. An SVG is drawn on the page from an `<img>`, at the size asked for: `createImageBitmap` refuses an SVG blob inside a worker in Chrome and Firefox.
 - What the format list offers comes from `codecs()`. Do not hardcode formats or backends.
-- A control that was not touched sends nothing, so the defaults are the package's and the page does not restate them (ADR-0001 D3). A field with a default starts empty.
+- A control that was not touched sends nothing, so the defaults are the package's and the page does not restate them (ADR-0001 D3). A field with a default starts empty. A control shows only where it applies to what the others say, and one that is not shown sends nothing; `applicable` in `lib/codec.ts` decides both from `codecs()`. The untouched target slider stands at the target the newest result reports, or at the `web` mark until there is one, and says `default` (ADR-0007 D3).
+- What the controls say is one `@tanstack/react-form` form, held by the workspace above the panels so a change of layout keeps it and the empty state carries none of it; the page reaches it through one ref, and each field component takes its field as a prop (ADR-0007). `optionsOf` is the one place the form becomes the package's options; nothing else assembles an option. The form has no validators: the package validates, and `InvalidParams` is the alert of ADR-0001 D6.
 - What the page says in passing, the encoder loading, the image being read, the newest trial, the result's time, is a toast on shadcn's `toast`, derived from the machine's snapshot in `model/notices.ts`: one toast per concern, updated in place, none for the first 500 ms of a search (ADR-0005). A failure is the alert of ADR-0001 D6, in the panel, not a toast.
 - Never write a decoder, encoder, resampler or metric here. If the package lacks something, that is a change to `sqzer`.
 - Code sits in `src/pages/compress/` until a second place uses it, then it moves to the layer Feature-Sliced Design names for it (ADR-0004 D4). Imports go to lower layers, through a public `index.ts`.
