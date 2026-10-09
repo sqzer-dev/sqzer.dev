@@ -120,6 +120,13 @@ test('a moved slider reports its score, with the words SSIMULACRA2 gives it', as
   await screen.getByRole('button', { name: 'archive, 85' }).click();
   await expect.element(screen.getByText('85, excellent: not noticeable in place')).toBeVisible();
   expect(said('target')).toEqual({ target: 85 });
+
+  // and the way back to the package's default
+  await screen.getByRole('button', { name: 'use the default' }).click();
+  await expect.element(slider).toHaveValue('70');
+  await expect.element(screen.getByText('default')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: 'use the default' })).not.toBeInTheDocument();
+  expect(said('target')).toEqual({ target: null });
 });
 
 test('typing a fixed quality chooses it, and the slider chooses the target again', async () => {
@@ -143,10 +150,15 @@ test('each way to say the quality shows where `codecs()` says the chosen encoder
   await screen.getByRole('radio', { name: 'Lossless' }).click();
   expect(said('mode')).toEqual({ mode: 'lossless' });
 
-  // lossy only: no lossless
+  // lossy only: no lossless, and the lossless choice reads as the target, the package's default
   await pickFormat('JPEG (jpeg-rs)');
-  await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeInTheDocument();
+  await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeChecked();
   await expect.element(screen.getByRole('radio', { name: 'Lossless' })).not.toBeInTheDocument();
+  expect(said('mode')).toEqual({ mode: 'lossless' });
+
+  // and is there again for a format that has it
+  await pickFormat('chosen per image');
+  await expect.element(screen.getByRole('radio', { name: 'Lossless' })).toBeChecked();
 
   // lossless only: nothing to say
   await pickFormat('PNG, lossless (png-rs)');

@@ -78,7 +78,8 @@ function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
  * The target score (ADR-0001 D3): a slider from 30 to 100, with the words SSIMULACRA2 gives the
  * score next to it and the package's presets marked on the track. Until it is moved, it stands at
  * the target the newest result reports, which is the package's default for that image, or at the
- * `web` preset while there is none, and says so.
+ * `web` preset while there is none, and says so. Once moved, a button next to the words takes it
+ * back to the default.
  */
 export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   const chosen = field.state.value;
@@ -88,6 +89,10 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   const move = (score: number) => {
     onMove();
     field.handleChange(score);
+  };
+  const forget = () => {
+    onMove();
+    field.handleChange(null);
   };
 
   return (
@@ -108,7 +113,19 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
       />
       <PresetMarks onPress={move} />
       <p id={`${labelledBy}-words`} className="text-xs/relaxed text-muted-foreground">
-        {words}
+        <span>{words}</span>
+        {chosen !== null && (
+          <>
+            {' '}
+            <button
+              type="button"
+              className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={forget}
+            >
+              use the default
+            </button>
+          </>
+        )}
       </p>
     </div>
   );

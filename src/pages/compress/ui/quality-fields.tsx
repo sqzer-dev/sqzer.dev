@@ -85,7 +85,8 @@ export function QualityFields({ form, applies }: QualityFieldsProps) {
         {(mode) => (
           <RadioGroup
             className="flex w-auto flex-col gap-3"
-            value={mode.state.value}
+            // as the chosen encoder can take it: a lossless choice reads as the target under JPEG
+            value={applies.mode}
             aria-labelledby={legend}
             onValueChange={(value: unknown) => {
               if (value === 'target' || value === 'quality' || value === 'lossless') mode.handleChange(value);

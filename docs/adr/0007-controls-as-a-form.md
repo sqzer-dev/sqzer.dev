@@ -64,13 +64,13 @@ maxPixels            at the decode as well as the encode: the package's limit is
                      for a file over the default, as ADR-0001 D3 means it to be
 ```
 
-A control that does not apply is not shown, and a control that is not shown sends nothing. What was typed into it stays in the form, for when it applies again: the backend options of every encoder are kept by their key, and a format chosen back finds them as they were.
+A control that does not apply is not shown, and a control that is not shown sends nothing. What was typed into it stays in the form, for when it applies again: the backend options of every encoder are kept by their key, and a format chosen back finds them as they were. A way of saying the quality the chosen encoder has not, lossless under JPEG, reads as the target, which is the package's default, so the radios always describe what is sent; the choice stays in the form for a format that has it. The limit reaches the page's own drawing too: an SVG drawn for the package is checked against the `maxPixels` asked for, not a fixed number.
 
 ### D3. The untouched target stands at the reported target, or the `web` mark
 
 A slider has no empty. Until it is moved, the target slider stands at the target the newest result reports, which is the package's default for that image, read from the package at run time, and the words next to it say `default: 70, high: barely noticeable side by side`. While there is no result yet it stands at the `web` preset's mark, which ADR-0001 D3 puts on the track anyway, and says `default`; when the result says the package went lossless for the image, it says `default: lossless for this image`. Nothing is sent until the slider is moved or a preset pressed, and the slider's value text says the same to a screen reader.
 
-Moving the slider, pressing a preset or typing a fixed quality picks that way of saying the quality, as its radio does.
+Moving the slider, pressing a preset or typing a fixed quality picks that way of saying the quality, as its radio does. Once the slider is moved, a button next to the words, `use the default`, takes it back to the package's default, since a slider cannot be cleared as a field can.
 
 ### D4. The toaster at the top centre
 

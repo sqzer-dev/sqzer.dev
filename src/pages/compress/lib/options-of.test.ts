@@ -54,6 +54,11 @@ test('lossless is sent once it is chosen, with a format that has it or none', ()
     lossless: true,
   });
   expect(optionsOf({ ...UNTOUCHED, mode: 'lossless', format: 'jpeg' }, codecs)).toEqual({ format: 'jpeg' });
+  // and under JPEG the choice reads as the target, so `fast` goes with it
+  expect(optionsOf({ ...UNTOUCHED, mode: 'lossless', format: 'jpeg', fast: true }, codecs)).toEqual({
+    format: 'jpeg',
+    fast: true,
+  });
 });
 
 test('a format and a width are sent as they are said', () => {

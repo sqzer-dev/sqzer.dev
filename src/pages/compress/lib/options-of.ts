@@ -12,8 +12,9 @@ const typed = (value: string) => (value === '' ? undefined : Number(value));
  * defaults stay its own and it validates what it is given (ADR-0001 D3).
  */
 export function optionsOf(controls: Controls, codecs: Codec[]): EncodeOptions {
-  const { format, mode, target, quality, codecOpts } = controls;
+  const { format, target, quality, codecOpts } = controls;
   const applies = applicable(controls, codecs);
+  const { mode } = applies;
   const options: EncodeOptions = {
     // The list comes from `codecs()`, and the package validates what it is given.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion

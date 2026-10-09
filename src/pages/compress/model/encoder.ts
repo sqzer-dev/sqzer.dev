@@ -131,7 +131,7 @@ class Session {
   async #drawOnPage({ image, width, unreadable, maxPixels }: Read, drawing: number) {
     const current = () => !this.#stopped && drawing === this.#id;
     try {
-      const { data, width: w, height: h } = await draw(image, width);
+      const { data, width: w, height: h } = await draw(image, width, maxPixels);
       if (!current()) return;
       this.#worker.send({ type: 'pixels', id: drawing, rgba: data.buffer, width: w, height: h, maxPixels }, [
         data.buffer,
