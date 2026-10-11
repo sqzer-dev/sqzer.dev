@@ -1,62 +1,6 @@
-// The built page in a browser, with what only the built page has: the policy,
-// and every request staying on the page's own origin (ADR-0002 D6).
-import { fileURLToPath } from 'node:url';
-
-import { expect, test as base, type Page } from '@playwright/test';
-
-declare global {
-  interface Window {
-    report: (problem: string) => Promise<void>;
-    statuses: string[];
-  }
-}
-
-const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
-const PICK = 'Choose an image';
-const SLOW = { timeout: 120_000 };
-
-/** Every test fails on a page error, a console error, a refusal by the policy, or a request to another origin. */
-const test = base.extend<{ problems: string[] }>({
-  problems: [
-    async ({ page, baseURL }, use) => {
-      const problems: string[] = [];
-      const own = new URL(baseURL ?? '').origin;
-      page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
-      page.on('console', (message) => {
-        if (message.type() === 'error') problems.push(`console: ${message.text()}`);
-      });
-      page.on('request', (request) => {
-        // a `blob:` URL has the origin of the page that made it
-        if (new URL(request.url()).origin !== own) problems.push(`asked of another origin: ${request.url()}`);
-      });
-      await page.exposeFunction('report', (problem: string) => {
-        problems.push(problem);
-      });
-      await page.addInitScript(() => {
-        addEventListener('securitypolicyviolation', (event) => {
-          void window.report(`refused by the policy: ${event.violatedDirective} ${event.blockedURI}`);
-        });
-      });
-      await use(problems);
-      expect(problems).toEqual([]);
-    },
-    { auto: true },
-  ],
-});
-
-/** The toast that says `text` (ADR-0005): a dialog named by its title. */
-const said = (page: Page, text: string | RegExp) => page.getByRole('dialog', { name: text });
-
-async function open(page: Page) {
-  await page.goto('/');
-  await expect(said(page, 'Ready.')).toBeVisible(SLOW);
-}
-
-/** Picks from the format list, a Base UI select: its options are on the page only while it is open. */
-async function format(page: Page, name: RegExp) {
-  await page.getByRole('combobox', { name: 'Format' }).click();
-  await page.getByRole('option', { name }).click();
-}
+// The built page in a browser: the flow of a file through it, the panels, the
+// components under the policy, and the policy itself.
+import { expect, fixture, open, PICK, said, SLOW, test } from './harness';
 
 test('a JPEG goes through the page with the defaults', async ({ page }) => {
   await open(page);
@@ -65,7 +9,14 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
   // a search of the fixture is over within the quiet 500 ms of ADR-0005, and no toast tells of it
   await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
   await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
-  await expect(page.getByText(/target 70 reached in \d trials?:/u)).toBeVisible();
+  await expect(page.getByText(/target 70 reached in \d trials?$/u)).toBeVisible();
+  // each trial in the list, and the same number of points on the chart
+  const trials = page.getByRole('table', { name: 'Trials' });
+  const rows = await trials.getByRole('row').count();
+  expect(rows).toBeGreaterThan(1);
+  const chart = page.locator('[data-slot=search-chart]');
+  await expect(chart.locator('circle')).toHaveCount(rows - 1);
+  await expect(chart.locator('text')).toHaveText('target 70');
   // each side's size, in the corner of the screen over it
   await expect(page.getByText('Before: 48 × 32')).toBeVisible();
   await expect(page.getByText('After: 48 × 32')).toBeVisible();
@@ -102,67 +53,6 @@ test('the footer links the licences of what the page carries, the package in the
   expect(text).toContain('SIL Open Font License');
   expect(text).toMatch(/^## @radix-ui\/colors - \d/mu);
   expect(text).toMatch(/^## sqzer - \d+\.\d+\.\d+ \(MIT OR Apache-2\.0\)$/mu);
-});
-
-test('a change of format during a search ends the worker and starts another', async ({ page }) => {
-  await open(page);
-  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.svg'));
-  await expect(page.getByRole('link', { name: /^Download pattern-rgb\./u })).toBeVisible(SLOW);
-  await format(page, /^AVIF/u);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
-
-  // what the search toast says, each time it changes
-  await page.evaluate(() => {
-    const toaster = document.querySelector('[data-slot=toast-viewport]');
-    if (!toaster) throw new Error('the page has no toaster');
-    window.statuses = [];
-    new MutationObserver(() => {
-      for (const title of toaster.querySelectorAll('[data-slot=toast-title]')) {
-        const text = title.textContent;
-        if (text !== 'Ready.' && text !== window.statuses.at(-1)) window.statuses.push(text);
-      }
-    }).observe(toaster, {
-      childList: true,
-      characterData: true,
-      subtree: true,
-    });
-  });
-
-  // drawn large, so a search takes seconds
-  await page.getByRole('button', { name: 'Resize' }).click();
-  await page.getByLabel('Width').fill('2000');
-  await expect(said(page, 'Encoding pattern-rgb.svg.')).toHaveText(/Trial 1 of at most/u, SLOW);
-
-  await format(page, /^JPEG/u);
-  await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible(SLOW);
-
-  // a new worker holds nothing, so the image is read again after the trial that was cut short
-  const statuses = await page.evaluate(() => window.statuses);
-  const trial = statuses.indexOf('Encoding pattern-rgb.svg.');
-  expect(trial).toBeGreaterThan(-1);
-  expect(statuses.lastIndexOf('Reading pattern-rgb.svg.')).toBeGreaterThan(trial);
-});
-
-test('the target slider and an option behind Advanced reach the package', async ({ page }) => {
-  await open(page);
-  await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.jpg'));
-  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
-  // the slider stands at the target the result reports, the package's default, and says so
-  const slider = page.getByRole('slider', { name: 'Target score' });
-  await expect(slider).toHaveValue('70');
-  await expect(page.getByText('default: high: barely noticeable side by side')).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Target score: 70\./u })).toBeVisible();
-
-  await slider.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('button', { name: /^Target score: 71\./u })).toBeVisible();
-  await expect(page.getByText(/target 71 (reached|not reached) in \d trials?:/u)).toBeVisible(SLOW);
-
-  // a limit the fixture is over: the package's refusal is the alert of ADR-0001 D6
-  await page.getByRole('button', { name: 'Advanced' }).click();
-  await page.getByLabel('Max pixels').fill('1');
-  await expect(page.getByRole('alert')).toHaveText(/image has 1536 pixels, limit is 1/u, SLOW);
 });
 
 test('the workspace is a chunk of its own, fetched once the empty state is up', async ({ page }) => {

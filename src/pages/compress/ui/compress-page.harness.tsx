@@ -30,6 +30,11 @@ const output: Output = {
   // what the package searched for with no target asked: its default for this image
   target: 72,
   score: 72.5,
+  reached: true,
+  trials: [
+    { quality: 55, score: 68.2 },
+    { quality: 60, score: 72.5 },
+  ],
 };
 
 // What the stub worker says it writes: JPEG, with one backend option, so the controls have one to show.
@@ -94,7 +99,11 @@ export async function renderPage(fails: Fails = null) {
         const decoded = { width: 48, height: 32, format: 'jpeg', alpha: false, animated: false };
         sendBack({ type: 'decoded', decoded, drawnWidth: null });
       }
-      if (command.type === 'encode') sendBack({ type: 'done', result: { output, file, seconds: 1 } });
+      if (command.type === 'encode') {
+        for (const [index, trial] of output.trials?.entries() ?? [])
+          sendBack({ type: 'trial', trial: { n: index + 1, max: 6, ...trial } });
+        sendBack({ type: 'done', result: { output, file, seconds: 1 } });
+      }
     });
   });
   const screen = await render(

@@ -1,6 +1,6 @@
-import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup } from 'xstate';
+import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup, stateIn } from 'xstate';
 
-import type { Codec, Decoded, EncodeOptions, TrialProgress } from '@/shared/api';
+import type { Codec, Decoded, EncodeOptions, Trial, TrialProgress } from '@/shared/api';
 
 import { boxed } from '../lib/options-of';
 import type { EncodeResult } from './encode-result';
@@ -41,8 +41,10 @@ type Context = {
   previewAsked: boolean;
   preview: Blob | null;
   decoded: Decoded | null;
-  /** The trials of the running search, as they land. */
+  /** The trials of the running search as they land, and of the newest one after it. */
   trials: TrialProgress[];
+  /** The searches before that one, oldest first, each as far as it got: the subtle lines of the chart (ADR-0001 D4). They last as long as the tab. */
+  runs: Trial[][];
   result: Searched | null;
   error: string | null;
   /** The worker itself failed. The next search starts another. */
@@ -55,6 +57,8 @@ type SearchEvent =
   | { type: 'unshowable' }
   /** End the worker, start another and search again. */
   | { type: 'restart' }
+  /** End the worker, start another and search no further: the result before stays (ADR-0005 D4). */
+  | { type: 'cancel' }
   | EncoderEvent;
 
 /** Drawn by the page's own `<img>` instead of decoded in the worker. */
@@ -68,9 +72,10 @@ function drawWidth({ image, options: { width = 0 } }: Context) {
 /**
  * The search (ADR-0002 D10, ADR-0004). The worker lives as long as `open`
  * and keeps the decoded image between searches, so a change of the controls
- * only pays for the encode. A search cannot be interrupted: `restart`
- * re-enters `open`, which ends the worker and starts another, and that is
- * the only way an encode is cancelled.
+ * only pays for the encode. A search cannot be interrupted: `restart` and
+ * `cancel` re-enter `open`, which ends the worker and starts another, and
+ * that is the only way an encode is cancelled. `restart` searches again,
+ * `cancel` leaves the result before.
  */
 export const searchMachine = setup({
   // XState reads the two types off these values and nothing else.
@@ -82,6 +87,7 @@ export const searchMachine = setup({
     showable: ({ context }) => !context.unshowable,
     broken: ({ context }) => context.broken,
     outdated: ({ context }) => context.outdated,
+    searching: stateIn('#search.open.searching'),
     needsReading: ({ context }) =>
       !context.held ||
       context.heldLimit !== context.options.maxPixels ||
@@ -109,6 +115,11 @@ export const searchMachine = setup({
       assertEvent(event, 'options');
       return { options: event.options };
     }),
+    // the trials of the search before, as far as it got, become a run behind the one starting
+    keepRun: assign(({ context }) => ({
+      trials: [],
+      runs: context.trials.length === 0 ? context.runs : [...context.runs, context.trials],
+    })),
     read: enqueueActions(({ context, enqueue }) => {
       const { image, unreadable } = context;
       if (!image) return;
@@ -158,6 +169,7 @@ export const searchMachine = setup({
     preview: null,
     decoded: null,
     trials: [],
+    runs: [],
     result: null,
     error: null,
     broken: false,
@@ -171,6 +183,7 @@ export const searchMachine = setup({
       initial: 'empty',
       on: {
         restart: { target: '.searching', reenter: true },
+        cancel: { guard: 'searching', target: '.cancelled', reenter: true },
         ready: { actions: assign(({ event }) => ({ version: event.version, codecs: event.codecs })) },
         previewed: { actions: assign(({ event }) => ({ preview: event.preview })) },
         // the worker is idle: it takes the new image, or the new options for the one it holds
@@ -229,7 +242,7 @@ export const searchMachine = setup({
               },
             },
             encoding: {
-              entry: [assign({ trials: [], outdated: false }), 'askForPreview', 'encode'],
+              entry: ['keepRun', assign({ outdated: false }), 'askForPreview', 'encode'],
               on: {
                 trial: {
                   guard: not('outdated'),
@@ -249,6 +262,8 @@ export const searchMachine = setup({
         },
         result: {},
         failed: {},
+        /** The reader cancelled the search: the image stays, and the result before it, if any. */
+        cancelled: {},
       },
     },
   },

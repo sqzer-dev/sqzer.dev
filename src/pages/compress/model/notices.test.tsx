@@ -187,6 +187,25 @@ test('a search toast the reader closed stays closed until the search is done', a
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
 });
 
+test('the search toast is cancelled by its action, and the search with it', async () => {
+  const { screen, ready, pick, tell, toasts } = await renderNotices();
+  ready();
+  await pick();
+  tell(decoded);
+  await wait(SHOWN_MS);
+  tell(trial);
+  const encoding = screen.getByRole('dialog', { name: 'Encoding pattern-rgb.jpg.' });
+  await expect.element(encoding.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+  await encoding.getByRole('button', { name: 'Cancel' }).click();
+
+  await expect.element(encoding).not.toBeInTheDocument();
+  // no search is running to be done: a `done` landing now tells of nothing
+  tell(done);
+  await wait(SHOWN_MS);
+  expect(toasts()).toBe(0);
+});
+
 test('the ready toast goes once an image is on the page', async () => {
   const { screen, ready, pick } = await renderNotices();
   ready();

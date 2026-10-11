@@ -1,9 +1,9 @@
 // The messages between the page and the worker. The worker holds one image
 // at a time, and every message names it by `id`: a reply for an image that
 // was replaced since is dropped by whoever reads it.
-import type { Codec, CodecOption, Options, Output as Encoded, SqzerError, TrialProgress } from 'sqzer';
+import type { Codec, CodecOption, Options, Output as Encoded, SqzerError, Trial, TrialProgress } from 'sqzer';
 
-export type { Codec, CodecOption, TrialProgress };
+export type { Codec, CodecOption, Trial, TrialProgress };
 
 /** Bytes that crossed from the worker: transferred, so in a buffer of their own. */
 export type Bytes = Uint8Array<ArrayBuffer>;

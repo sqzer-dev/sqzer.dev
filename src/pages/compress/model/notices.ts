@@ -69,9 +69,11 @@ function encoderTeller({ add, close }: Toaster) {
 /**
  * Tells the `search` toast, updated in place. It appears once a search has run for the quiet 500 ms
  * and says done for that search alone: a search over sooner shows nothing, the result panel is its
- * message. One the reader closed stays closed until the search is done.
+ * message. One the reader closed stays closed until the search is done. While the search runs, its
+ * action is `cancel` (ADR-0005 D4), which closes the toast through the machine: a cancelled search
+ * is nothing to tell of.
  */
-function searchTeller({ add, close }: Toaster) {
+function searchTeller({ add, close }: Toaster, cancel: () => void) {
   let search: Notice | null = null;
   // whether the toast has told of the running search: only then does it tell of its end
   let told = false;
@@ -88,6 +90,7 @@ function searchTeller({ add, close }: Toaster) {
       // description left out would stay
       description: search.description,
       timeout: search.type === 'loading' ? 0 : undefined,
+      actionProps: search.type === 'loading' ? { children: 'Cancel', onClick: cancel } : undefined,
       // at the close, not after the slide out: a trial landing meanwhile would bring the toast back
       onClose: () => {
         if (search?.type === 'loading') dismissed = true;
@@ -129,9 +132,9 @@ function searchTeller({ add, close }: Toaster) {
 }
 
 /** Keeps the toaster saying what the machine says: two toasts, `encoder` and `search` (ADR-0005 D2). */
-function teller(toaster: Toaster) {
+function teller(toaster: Toaster, cancel: () => void) {
   const encoder = encoderTeller(toaster);
-  const search = searchTeller(toaster);
+  const search = searchTeller(toaster, cancel);
   return {
     tell: (snapshot: Snapshot) => {
       encoder(snapshot);
@@ -150,7 +153,9 @@ export function useNotices({ add, close }: Toaster) {
   const search = useSearchRef();
 
   useEffect(() => {
-    const { tell, stop } = teller({ add, close });
+    const { tell, stop } = teller({ add, close }, () => {
+      search.send({ type: 'cancel' });
+    });
     tell(search.getSnapshot());
     const subscription = search.subscribe(tell);
     return () => {
