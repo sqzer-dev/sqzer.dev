@@ -2,6 +2,7 @@ import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup } f
 
 import type { Codec, Decoded, EncodeOptions, TrialProgress } from '@/shared/api';
 
+import { boxed } from '../lib/options-of';
 import type { EncodeResult } from './encode-result';
 import { encoder, type EncoderCommand, type EncoderEvent } from './encoder';
 import type { Picked } from './picked';
@@ -9,6 +10,9 @@ import type { Picked } from './picked';
 // How long the worker may take to finish what it is doing, once the controls
 // have moved on, before it is ended.
 const PATIENCE_MS = 300;
+
+/** A result, with what the search was asked: the output answers those options, and nothing else. */
+export type Searched = EncodeResult & { asked: EncodeOptions };
 
 type Context = {
   /** The version of `sqzer`, once a worker has loaded it. */
@@ -25,6 +29,10 @@ type Context = {
   held: boolean;
   /** The width an image drawn on the page was last drawn at. */
   drawnWidth: number | null;
+  /** The image's own size: as decoded, or as drawn at its own size. A vector drawn at a width asked for keeps the one before. */
+  original: Decoded | null;
+  /** The `maxPixels` the held image was read under. The limit is the package's at the decode, so a new one reads again. */
+  heldLimit: number | undefined;
   /** The controls moved while the worker was busy with what they said before. */
   outdated: boolean;
   /** The browser cannot show the image itself, a TIFF say. */
@@ -35,7 +43,7 @@ type Context = {
   decoded: Decoded | null;
   /** The trials of the running search, as they land. */
   trials: TrialProgress[];
-  result: EncodeResult | null;
+  result: Searched | null;
   error: string | null;
   /** The worker itself failed. The next search starts another. */
   broken: boolean;
@@ -74,7 +82,10 @@ export const searchMachine = setup({
     showable: ({ context }) => !context.unshowable,
     broken: ({ context }) => context.broken,
     outdated: ({ context }) => context.outdated,
-    needsReading: ({ context }) => !context.held || (onPage(context) && context.drawnWidth !== drawWidth(context)),
+    needsReading: ({ context }) =>
+      !context.held ||
+      context.heldLimit !== context.options.maxPixels ||
+      (onPage(context) && context.drawnWidth !== drawWidth(context)),
   },
   actions: {
     takeImage: assign(({ event }) => {
@@ -85,6 +96,8 @@ export const searchMachine = setup({
         unreadable: null,
         held: false,
         drawnWidth: null,
+        heldLimit: undefined,
+        original: null,
         unshowable: false,
         previewAsked: false,
         preview: null,
@@ -105,11 +118,13 @@ export const searchMachine = setup({
         onPage: onPage(context),
         width: drawWidth(context),
         unreadable,
+        maxPixels: context.options.maxPixels,
       };
       enqueue.sendTo('encoder', command);
     }),
+    // the box of a fit that needs both sides is filled from the image held, which is this one's size
     encode: enqueueActions(({ context, enqueue }) => {
-      const command: EncoderCommand = { type: 'encode', options: context.options };
+      const command: EncoderCommand = { type: 'encode', options: boxed(context.options, context.original) };
       enqueue.sendTo('encoder', command);
     }),
     // Only an image the worker holds can be asked for, and only once.
@@ -135,6 +150,8 @@ export const searchMachine = setup({
     unreadable: null,
     held: false,
     drawnWidth: null,
+    heldLimit: undefined,
+    original: null,
     outdated: false,
     unshowable: false,
     previewAsked: false,
@@ -194,7 +211,13 @@ export const searchMachine = setup({
                   target: 'starting',
                   actions: [
                     'keepPatience',
-                    assign(({ event }) => ({ decoded: event.decoded, held: true, drawnWidth: event.drawnWidth })),
+                    assign(({ context, event }) => ({
+                      decoded: event.decoded,
+                      held: true,
+                      drawnWidth: event.drawnWidth,
+                      original: event.drawnWidth === null || event.drawnWidth === 0 ? event.decoded : context.original,
+                      heldLimit: context.options.maxPixels,
+                    })),
                   ],
                 },
                 // the worker's canvas had no decoder either: the page's own `<img>` is the last one to ask
@@ -215,7 +238,10 @@ export const searchMachine = setup({
                 done: [
                   // the controls moved while this one ran
                   { guard: 'outdated', target: 'starting', actions: 'keepPatience' },
-                  { target: '#search.open.result', actions: assign(({ event }) => ({ result: event.result })) },
+                  {
+                    target: '#search.open.result',
+                    actions: assign(({ context, event }) => ({ result: { ...event.result, asked: context.options } })),
+                  },
                 ],
               },
             },

@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 
 import { panel, renderPage, SETTLED_MS, swatch, wait } from './compress-page.harness';
 
@@ -119,6 +119,7 @@ test('at 768 px the view bar and the panels keep apart', async () => {
 test('a collapsed panel keeps what was typed into it', async () => {
   const { screen, encodes, drop } = await renderPage();
   await drop();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('1600');
 
@@ -130,7 +131,8 @@ test('a collapsed panel keeps what was typed into it', async () => {
 
   await expect.element(width).toHaveValue(1600);
   await wait(SETTLED_MS);
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  // the height followed, by the image's ratio
+  expect(encodes().at(-1)).toEqual({ width: 1600, height: 1067 });
 });
 
 test('the checkerboard under a transparent image can be a flat colour', async () => {
@@ -172,13 +174,14 @@ test('the controls rest before a search starts with what they say', async () => 
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
 
+  await screen.getByRole('button', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('16');
   await width.fill('1600');
   await wait(SETTLED_MS);
 
-  // one search for the two changes, on the worker that holds the image
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  // one search for the three changes, or two as the clock has it, on the worker that holds the image
+  expect(encodes().at(-1)).toEqual({ width: 1600, height: 1067 });
   expect(workers).toHaveLength(1);
 });
 
@@ -186,23 +189,31 @@ test('the controls rest before a search starts with what they say', async () => 
 test('a control changed just before another image is picked does not start the search twice', async () => {
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
   await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
   await wait(SETTLED_MS);
 
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  expect(encodes()).toEqual([{}, { width: 1600, height: 1067 }]);
   expect(workers).toHaveLength(1);
 });
 
 test('on a phone the panels are one bottom expander, and the controls keep what they say across the change', async () => {
   const { screen, drop } = await renderPage();
   await drop();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
 
   await page.viewport(390, 780);
 
   await expect.element(screen.getByRole('dialog', { name: 'Result and options' })).toBeInTheDocument();
   await expect.element(screen.getByRole('button', { name: 'Options' })).not.toBeInTheDocument();
+  // the expander is closed again in the new layout, what was typed into it is not. It sits in the
+  // sheet at rest, below the screen's edge, so the press is the element's own
+  screen
+    .getByRole('button', { name: 'Resize' })
+    .element()
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
   await expect.element(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(1600);
 
   // on the narrowest phone the view bar wraps, so every control stays within the screen
@@ -210,4 +221,50 @@ test('on a phone the panels are one bottom expander, and the controls keep what 
   const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]');
   await expect.poll(() => bar && bar.getBoundingClientRect().height).toBeGreaterThan(40);
   for (const control of bar?.children ?? []) expect(control.getBoundingClientRect().right).toBeLessThanOrEqual(320);
+});
+
+test('the untouched target stands at the score the result reports, and sends nothing until it is moved', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  const slider = screen.getByRole('slider', { name: 'Target score' });
+
+  await expect.element(slider).toHaveValue('72');
+  await expect.element(screen.getByText('default: high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: /^Target score: 72\./u })).toBeVisible();
+  // the format the package chose for this run, with the choice
+  await expect.element(screen.getByText('chosen per image: JPEG')).toBeVisible();
+  expect(encodes()).toEqual([{}]);
+
+  slider.element().focus();
+  await userEvent.keyboard('{ArrowRight}');
+  await expect.element(screen.getByRole('button', { name: /^Target score: 73\./u })).toBeVisible();
+  await wait(SETTLED_MS);
+  expect(encodes()).toEqual([{}, { target: 73 }]);
+});
+
+test('another image picked under `chosen per image` keeps the backend settings of the format the last run chose', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Advanced' }).click();
+  // the last run chose JPEG, so its options show, and one is flipped
+  await screen.getByRole('switch', { name: 'jpeg:progressive' }).click();
+  await wait(SETTLED_MS);
+  expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
+
+  await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
+  await wait(SETTLED_MS);
+
+  expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
+});
+
+test('an option behind Advanced reaches the search as the package spells it', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Advanced' }).click();
+  await screen.getByRole('spinbutton', { name: 'Max pixels' }).fill('1000');
+  await screen.getByRole('switch', { name: 'Keep metadata' }).click();
+  await wait(SETTLED_MS);
+
+  // one search or two, as the clock has it between the two changes: the last says both
+  expect(encodes().at(-1)).toEqual({ keepMetadata: true, maxPixels: 1000 });
 });

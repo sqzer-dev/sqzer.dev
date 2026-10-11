@@ -1,6 +1,7 @@
 # ADR-0005: What the page says in passing is a toast
 
 **Status:** Accepted   **Date:** 2026-10-07   **Deciders:** Vlad (sole maintainer)
+**Superseded by:** ADR-0007 D4 for where the viewport sits on a wide screen: at the top centre, since the column of panels reaches the top right once the Options panel holds every option
 **Scope:** Where the page says what it is doing: the encoder loading, the image being read, the trials as they land, the result's time. ADR-0001 D4 put that in the status panel, on a status line; this record moves it to toasts, and says how a toast is announced, what stays of the trial list, and where the toaster sits. Failures stay where ADR-0001 D6 puts them. Nothing else in ADR-0001 changes, and nothing in ADR-0002 to ADR-0004.
 
 ---

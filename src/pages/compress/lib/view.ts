@@ -64,6 +64,27 @@ export function pinched(was: [Point, Point], now: [Point, Point]): Change {
   return { dx: to.x - from.x, dy: to.y - from.y, factor: apart(now) / apart(was), origin: to };
 }
 
+/**
+ * The view is in the pixels of the moment the page loaded, so the picture holds its size on the
+ * device across the browser's zoom (ADR-0007 D8). `css` is CSS pixels to one of the view's: under
+ * 1 once the browser is zoomed in. The screen and a move come from CSS pixels into the view's, and
+ * the view goes back into CSS ones to be drawn.
+ */
+export const inView = (size: Size, css: number): Size => ({ width: size.width / css, height: size.height / css });
+
+/** A move, from CSS pixels into the view's. */
+export function moveInView({ dx, dy, origin, ...rest }: Change, css: number): Change {
+  return {
+    ...rest,
+    ...(dx !== undefined && { dx: dx / css }),
+    ...(dy !== undefined && { dy: dy / css }),
+    ...(origin && { origin: { x: origin.x / css, y: origin.y / css } }),
+  };
+}
+
+/** The view in CSS pixels, to be drawn. */
+export const inCss = (view: View, css: number): View => ({ scale: view.scale * css, x: view.x * css, y: view.y * css });
+
 /** The scale as the view bar prints it, in whole percent. */
 export function percent(scale: number) {
   return String(Math.round(scale * 100));

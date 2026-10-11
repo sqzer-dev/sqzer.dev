@@ -3,7 +3,7 @@ import { expect } from 'vitest';
 import { render } from 'vitest-browser-react';
 import { fromCallback } from 'xstate';
 
-import type { Output } from '@/shared/api';
+import type { Codec, Output } from '@/shared/api';
 import { Toaster } from '@/shared/ui/toast';
 
 import { SearchProvider } from '../model/context';
@@ -25,8 +25,35 @@ const output: Output = {
   outputHeight: 32,
   backend: 'mozjpeg-rs',
   tier: 'portable',
+  quality: 60,
   lossless: false,
+  // what the package searched for with no target asked: its default for this image
+  target: 72,
+  score: 72.5,
 };
+
+// What the stub worker says it writes: JPEG, with one backend option, so the controls have one to show.
+const CODECS: Codec[] = [
+  {
+    format: 'jpeg',
+    extension: 'jpg',
+    mime: 'image/jpeg',
+    decoderFeatures: [],
+    encoderFeatures: [],
+    encoder: {
+      backend: 'mozjpeg-rs',
+      tier: 'portable',
+      lossy: true,
+      lossless: false,
+      alpha: false,
+      animation: false,
+      exif: true,
+      xmp: true,
+      bitDepth: [8],
+      options: [{ key: 'jpeg:progressive', default: 'true', help: 'progressive scan order; `false` writes baseline' }],
+    },
+  },
+];
 
 // Longer than the controls rest and the machine waits for a busy worker, together.
 export const SETTLED_MS = 800;
@@ -34,6 +61,12 @@ export const SETTLED_MS = 800;
 export const wait = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
+  });
+
+/** A worker that only says what it has: for the controls on their own. */
+export const readyEncoder = (codecs: Codec[]) =>
+  fromCallback<EncoderCommand>(({ sendBack }) => {
+    sendBack({ type: 'ready', version: '0.0.0', codecs });
   });
 
 /** What the stub worker gets wrong, if anything: its start, or reading the image. */
@@ -50,7 +83,7 @@ export async function renderPage(fails: Fails = null) {
       sendBack({ type: 'failed', message: 'the worker did not start', broken: true });
       return;
     }
-    sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
+    sendBack({ type: 'ready', version: '0.0.0', codecs: CODECS });
     receive((command) => {
       asked.push(command);
       if (command.type === 'read' && fails === 'read') {

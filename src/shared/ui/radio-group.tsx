@@ -23,4 +23,21 @@ function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
   );
 }
 
-export { RadioGroup, RadioGroupItem };
+/**
+ * A radio without its circle: the title of a card whose look says which is checked, as Squoosh's
+ * sections do. The card around it carries the border and the dimming, from the group's value.
+ */
+function RadioGroupTitle({ className, ...props }: RadioPrimitive.Root.Props) {
+  return (
+    <RadioPrimitive.Root
+      data-slot="radio-group-title"
+      className={cn(
+        'flex w-full items-center gap-2 rounded-sm text-left text-xs/relaxed font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export { RadioGroup, RadioGroupItem, RadioGroupTitle };

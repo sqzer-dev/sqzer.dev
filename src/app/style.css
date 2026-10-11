@@ -51,7 +51,9 @@
 
 /* shadcn's tokens, from Radix `gray` (ADR-0003 D4). A line that marks where a control is takes `gray 10`,
    which holds 3:1 on `gray 2`; a line that only divides takes `gray 6`. Red is for alerts, blue for the
-   border of a drop target while a file is dragged (ADR-0006), and neither for anything else. */
+   border of a drop target while a file is dragged (ADR-0006), and the four `score` tokens are the bands
+   of the target slider's track, red to blue from worst to visually lossless (ADR-0007 D5). No hue
+   anywhere else. */
 :root {
   color-scheme: light dark;
 
@@ -78,6 +80,19 @@
   --alert-foreground: var(--red-12);
   --destructive: var(--red-9);
   --drop: var(--blue-9);
+  /* The four bands of the target's track (ADR-0007 D5, D9): one lightness and one chroma in OKLCH, so
+     the hues read as one brightness, which Radix's steps do not across hues. The thumb is the band's
+     hue at more chroma. */
+  --score-chroma: 0.13;
+  --score-lightness: 0.62;
+  --score-low: oklch(var(--score-lightness) var(--score-chroma) 25);
+  --score-good: oklch(var(--score-lightness) var(--score-chroma) 90);
+  --score-better: oklch(var(--score-lightness) var(--score-chroma) 145);
+  --score-best: oklch(var(--score-lightness) var(--score-chroma) 255);
+  --score-low-solid: oklch(var(--score-lightness) 0.2 25);
+  --score-good-solid: oklch(var(--score-lightness) 0.2 90);
+  --score-better-solid: oklch(var(--score-lightness) 0.2 145);
+  --score-best-solid: oklch(var(--score-lightness) 0.2 255);
 
   /* The tint is the lowest step of the scale that passes `glass.test.tsx`, not one chosen by eye. */
   --glass: var(--white-a11);
@@ -88,6 +103,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --glass: var(--black-a11);
+    --score-lightness: 0.74;
   }
 }
 

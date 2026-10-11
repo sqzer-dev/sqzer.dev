@@ -1,6 +1,18 @@
 import { expect, test } from 'vitest';
 
-import { changed, clamped, fitScale, fitted, percent, pinched, stepped, type Frame } from './view';
+import {
+  type Frame,
+  changed,
+  clamped,
+  fitScale,
+  fitted,
+  inCss,
+  inView,
+  moveInView,
+  percent,
+  pinched,
+  stepped,
+} from './view';
 
 // a 4:3 photo on a wide screen: fitted, it is 600 x 450, bound by the height
 const photo: Frame = { screen: { width: 1600, height: 450 }, picture: { width: 4000, height: 3000 } };
@@ -59,4 +71,23 @@ test('two fingers pan by their midpoint and zoom by their distance, about where 
   );
   expect(change).toEqual({ dx: 40, dy: 10, factor: 2, origin: { x: 40, y: 10 } });
   expect(percent(0.31)).toBe('31');
+});
+
+test("the view holds to the pixels of the moment the page loaded: a zoom of the browser changes what a CSS pixel is, not the picture's size on the device", () => {
+  // the browser zoomed to 125 %: a CSS pixel is 0.8 of what it was
+  const css = 0.8;
+  expect(inView({ width: 800, height: 400 }, css)).toEqual({ width: 1000, height: 500 });
+  expect(moveInView({ dx: 8, dy: -4, factor: 2, origin: { x: 16, y: 0 } }, css)).toEqual({
+    dx: 10,
+    dy: -5,
+    factor: 2,
+    origin: { x: 20, y: 0 },
+  });
+  expect(moveInView({ factor: 2 }, css)).toEqual({ factor: 2 });
+  expect(inCss({ scale: 1, x: 10, y: -10 }, css)).toEqual({ scale: 0.8, x: 8, y: -8 });
+  // a fitted picture stays fitted: the screen in the view's pixels is the same, zoomed or not
+  const picture = { width: 2000, height: 1000 };
+  expect(fitted({ screen: inView({ width: 800, height: 400 }, 1), picture })).toEqual(
+    fitted({ screen: inView({ width: 640, height: 320 }, css), picture }),
+  );
 });
