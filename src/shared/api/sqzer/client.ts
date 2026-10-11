@@ -19,10 +19,11 @@ export function startEncoder({ onMessage }: { onMessage: (reply: Reply) => void 
     },
     { signal },
   );
+  // The browser's own report of the event is left to the console, so a worker that stops for a
+  // reason the page cannot name, killed for memory say, still leaves a trace to read.
   worker.addEventListener(
     'error',
     (event) => {
-      event.preventDefault();
       // a script that did not load is a plain `Event`, with no message
       const message = event.message || 'this browser has no module workers';
       onMessage({ type: 'error', stage: 'start', kind: 'Other', message });
