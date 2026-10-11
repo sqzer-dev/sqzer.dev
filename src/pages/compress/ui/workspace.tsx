@@ -39,10 +39,12 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const viewer = useViewer(screen);
   const scale = viewer.view?.scale ?? null;
   // the column is the height of the screen: between its panels the pointer reaches the image. It is
-  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
-  // The result keeps its height, up to two fifths of the column: the options above it are what scrolls.
+  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again.
+  // The result keeps its height, up to two fifths of the column, and the options above it are what
+  // scrolls. The column hangs from the top, so a result growing as the trials land shortens the
+  // options from below and moves nothing under the pointer.
   const column = wide && (
-    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
+    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col gap-3">
       <Panel title="Options" className="pointer-events-auto">
         {controls}
       </Panel>

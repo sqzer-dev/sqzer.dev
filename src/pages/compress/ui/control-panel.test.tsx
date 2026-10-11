@@ -138,8 +138,8 @@ test('the resize is behind an expander, with the sides linked, and a control sho
   await expect.element(screen.getByRole('textbox', { name: 'Background' })).toBeVisible();
   expect(said('fit')).toEqual({ fit: 'contain' });
 
-  // the default chosen by hand is sent, which is the same to the package
+  // the default chosen by hand is the default again: nothing is said of it (ADR-0007 D6)
   await fit.click();
   await screen.getByRole('option', { name: 'inside' }).click();
-  expect(said('fit')).toEqual({ fit: 'inside' });
+  expect(said('fit')).toEqual({ fit: null });
 });

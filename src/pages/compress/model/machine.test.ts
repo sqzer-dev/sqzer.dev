@@ -208,6 +208,18 @@ test('a failure clears the result, and the next change of the controls searches 
   expect(search.asked()).toEqual([['read', 'encode', 'encode', 'encode']]);
 });
 
+test('the alert of a failure is dismissed by the reader, and the next failure brings it back', () => {
+  const search = encoding();
+  search.tell({ type: 'failed', message: 'no', stage: 'encode', broken: false });
+  search.actor.send({ type: 'dismiss' });
+
+  expect(search.state()).toEqual({ open: 'failed' });
+  expect(search.actor.getSnapshot().context.error).toBeNull();
+  search.actor.send({ type: 'options', options: { quality: 80 } });
+  search.tell({ type: 'failed', message: 'again', stage: 'encode', broken: false });
+  expect(search.actor.getSnapshot().context.error).toMatchObject({ message: 'again' });
+});
+
 test('a worker that failed is replaced by the next search', () => {
   const search = start();
   search.tell({ type: 'failed', message: 'offline', stage: 'load', broken: true });

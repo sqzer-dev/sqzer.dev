@@ -1,11 +1,9 @@
 import { XIcon } from 'lucide-react';
-import { useState } from 'react';
 
 import { Button } from '@/shared/ui/button';
 
 import { explain } from '../lib/failure';
-import { useSearch } from '../model/context';
-import type { Failure } from '../model/encoder';
+import { useSearch, useSearchRef } from '../model/context';
 
 type SearchFailureProps = {
   /**
@@ -20,8 +18,8 @@ type SearchFailureProps = {
  * Why the search failed, as the alert of ADR-0001 D6: one sentence that names the file and what to
  * do, the package's or the browser's own words under it, a button that dismisses it, and nothing
  * while the search has not failed. Where the search is otherwise, the loading, the reading, the
- * trials and the result, is a toast (ADR-0005). The machine makes a new failure of each one, so
- * the next is shown however the last was dismissed.
+ * trials and the result, is a toast (ADR-0005). The dismissal is the machine's, so the panel
+ * that held the alert can go with it.
  */
 export function SearchFailure({ of }: SearchFailureProps) {
   const failure = useSearch((snapshot) => {
@@ -32,9 +30,9 @@ export function SearchFailure({ of }: SearchFailureProps) {
   const name = useSearch((snapshot) => snapshot.context.image?.name ?? null);
   const format = useSearch((snapshot) => snapshot.context.options.format);
   const maxPixels = useSearch((snapshot) => snapshot.context.options.maxPixels);
-  const [dismissed, setDismissed] = useState<Failure | null>(null);
+  const search = useSearchRef();
 
-  if (failure === null || failure === dismissed) return null;
+  if (failure === null) return null;
   const { sentence, detail } = explain(failure, { name, format, maxPixels });
   return (
     <div
@@ -54,7 +52,7 @@ export function SearchFailure({ of }: SearchFailureProps) {
         aria-label="Dismiss"
         className="shrink-0"
         onClick={() => {
-          setDismissed(failure);
+          search.send({ type: 'dismiss' });
         }}
       >
         <XIcon />

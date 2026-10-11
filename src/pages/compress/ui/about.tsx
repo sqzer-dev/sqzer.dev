@@ -20,7 +20,7 @@ function TrustNote() {
           Don&apos;t trust us?
         </CollapsibleTrigger>
       </p>
-      <CollapsibleContent className="mx-auto flex w-full max-w-lg flex-col gap-2 py-1 text-left">
+      <CollapsibleContent className="mx-auto flex w-full max-w-3xl flex-col gap-2 py-1 text-left">
         {POLICY === null ? (
           <p>
             This copy of the page carries no <code>Content-Security-Policy</code>: the development server leaves it out,

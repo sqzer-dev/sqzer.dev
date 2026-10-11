@@ -51,7 +51,7 @@ type Context = {
   /** The newest `RUNS_KEPT` searches before that one, oldest first, each as far as it got: the subtle lines of the chart (ADR-0001 D4). They last as long as the tab. */
   runs: Trial[][];
   result: Searched | null;
-  /** Why the newest search failed, while `failed`. A new object for each failure, so a dismissed alert tells the next apart. */
+  /** Why the newest search failed, while `failed` and until the reader dismisses it. */
   error: Failure | null;
   /** The worker itself failed. The next search starts another. */
   broken: boolean;
@@ -65,6 +65,8 @@ type SearchEvent =
   | { type: 'restart' }
   /** End the worker, start another and search no further: the result before stays (ADR-0005 D4). */
   | { type: 'cancel' }
+  /** The reader dismissed the alert of a failure (ADR-0001 D6). */
+  | { type: 'dismiss' }
   | EncoderEvent;
 
 /** Drawn by the page's own `<img>` instead of decoded in the worker. */
@@ -280,7 +282,9 @@ export const searchMachine = setup({
           },
         },
         result: {},
-        failed: {},
+        failed: {
+          on: { dismiss: { actions: assign({ error: null }) } },
+        },
         /** The reader cancelled the search: the image stays, and the result before it, if any. */
         cancelled: {},
       },
