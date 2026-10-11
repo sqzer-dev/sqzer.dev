@@ -8,8 +8,13 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
 
   // a search of the fixture is over within the quiet 500 ms of ADR-0005, and no toast tells of it
   await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
-  await expect(page.getByText(/pattern-rgb\.jpg -> pattern-rgb\.avif\s+673 B -> \d+ B/u)).toBeVisible();
-  await expect(page.getByText(/target 70 reached in \d trials?$/u)).toBeVisible();
+  // the size and the difference lead, the chips under them, the details behind their expander (ADR-0001 D5)
+  await expect(page.locator('[data-slot=result-size]')).toHaveText(/^\d+ B\d+ % smaller$/u);
+  await expect(page.getByRole('button', { name: /^reached: the target of 70 at a score of \d+\.\d$/u })).toBeVisible();
+  await page.getByRole('button', { name: 'Details' }).click();
+  await expect(page.getByText(/^pattern-rgb\.jpg, 673 B, jpeg, (photo|graphic)$/u)).toBeVisible();
+  await expect(page.getByText(/^pattern-rgb\.avif, \d+ B, avif by ravif \(\w+\)$/u)).toBeVisible();
+  await expect(page.getByText(/^70, reached in \d trials?$/u)).toBeVisible();
   // each trial in the list, and the same number of points on the chart
   const trials = page.getByRole('table', { name: 'Trials' });
   const rows = await trials.getByRole('row').count();
@@ -121,7 +126,13 @@ test('the components and the fonts hold under the policy', async ({ page }) => {
   await page.getByRole('button', { name: 'Checkerboard under a transparent image' }).hover();
   await expect(page.getByText('Checkerboard under a transparent image')).toBeVisible();
   await page.getByRole('button', { name: 'About this page' }).click();
-  await expect(page.getByRole('dialog').getByText(/nothing is sent anywhere/u)).toBeVisible();
+  const about = page.getByRole('dialog');
+  await expect(about.getByText(/nothing is sent anywhere/u)).toBeVisible();
+  // the note quotes the policy the page is served with, as it is (ADR-0001 D7)
+  await about.getByRole('button', { name: "Don't trust us?" }).click();
+  const policy = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+  await expect(about.locator('pre')).toHaveText(policy ?? 'no policy');
+  await page.keyboard.press('Escape');
 
   // Geist comes from the page's own origin, under `font-src 'self'`
   const fonts = await page.evaluate(async () => {

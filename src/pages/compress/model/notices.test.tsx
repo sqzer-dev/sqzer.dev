@@ -161,7 +161,7 @@ test('a failure closes the search toast', async () => {
   await wait(SHOWN_MS);
   await expect.element(screen.getByText('Encoding pattern-rgb.jpg.')).toBeVisible();
 
-  tell({ type: 'failed', message: 'no', broken: false });
+  tell({ type: 'failed', message: 'no', stage: 'encode', broken: false });
 
   await expect.element(screen.getByText('Encoding pattern-rgb.jpg.')).not.toBeInTheDocument();
 });
@@ -221,7 +221,7 @@ test('an encoder that failed to load no longer says it is loading', async () => 
   const { screen, tell, toasts } = await renderNotices();
   await expect.element(screen.getByText('Loading the encoder.')).toBeVisible();
 
-  tell({ type: 'failed', message: 'the worker did not start', broken: true });
+  tell({ type: 'failed', message: 'the worker did not start', stage: 'start', broken: true });
 
   await expect.element(screen.getByText('Loading the encoder.')).not.toBeInTheDocument();
   expect(toasts()).toBe(0);

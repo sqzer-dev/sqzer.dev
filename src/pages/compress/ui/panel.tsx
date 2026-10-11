@@ -27,7 +27,8 @@ export function Panel({ title, pinned, className, children }: PanelProps) {
           <ChevronDownIcon className="size-4 transition-transform group-data-panel-open:rotate-180" />
         </CollapsibleTrigger>
       </h2>
-      {pinned !== undefined && <div className="px-(--card-spacing) select-text">{pinned}</div>}
+      {/* and takes no room while it renders nothing */}
+      {pinned !== undefined && <div className="px-(--card-spacing) select-text empty:hidden">{pinned}</div>}
       {/* The hit area of a switch reaches 0.5rem below it, and a scroll container counts it: the padding
           makes room for it at the bottom, and the margin gives the room back. */}
       <CollapsibleContent

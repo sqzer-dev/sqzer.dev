@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { Slider } from '@/shared/ui/slider';
 
 import { DEFAULTS } from '../lib/defaults';
-import { BANDS, describe, PRESETS, share, TARGET } from '../lib/score';
+import { BANDS, describe, PRESETS, share, TARGET, words } from '../lib/score';
 import { useSearch } from '../model/context';
 import { EditableValue } from './editable-value';
 import type { FieldOf } from './form';
@@ -34,9 +34,6 @@ function useReported(): Reported {
     return output.lossless ? 'lossless' : (output.target ?? null);
   });
 }
-
-/** The words of a score, without its number, which stands at the title row. */
-const words = (score: number) => describe(score).replace(/^\d+, /u, '');
 
 /** The words under the slider: what the chosen score looks like, or what the default is. */
 function wordsFor(chosen: number | null, reported: Reported) {

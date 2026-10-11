@@ -5,9 +5,10 @@ import { fromCallback } from 'xstate';
 
 import type { Codec, Output } from '@/shared/api';
 import { Toaster } from '@/shared/ui/toast';
+import { TooltipProvider } from '@/shared/ui/tooltip';
 
 import { SearchProvider } from '../model/context';
-import type { EncoderCommand } from '../model/encoder';
+import type { EncoderCommand, EncoderEvent } from '../model/encoder';
 import { searchMachine } from '../model/machine';
 import { CompressPage } from './compress-page';
 
@@ -15,6 +16,7 @@ const fixture = new URL('../../../../tests/fixtures/pattern-rgb.jpg', import.met
 
 const output: Output = {
   bytes: new Uint8Array(1),
+  inputFormat: 'jpeg',
   animated: false,
   width: 48,
   height: 32,
@@ -74,6 +76,16 @@ export const readyEncoder = (codecs: Codec[]) =>
     sendBack({ type: 'ready', version: '0.0.0', codecs });
   });
 
+// The failure of a read the stub worker gets wrong: the package's, naming the build that has the decoder.
+const UNREADABLE: EncoderEvent = {
+  type: 'failed',
+  message: 'no decoder for HEIC in this build',
+  kind: 'DecoderUnavailable',
+  availableIn: ['native-heic'],
+  stage: 'read',
+  broken: false,
+};
+
 /** What the stub worker gets wrong, if anything: its start, or reading the image. */
 type Fails = 'start' | 'read' | null;
 
@@ -85,14 +97,14 @@ export async function renderPage(fails: Fails = null) {
     const asked: EncoderCommand[] = [];
     workers.push(asked);
     if (fails === 'start') {
-      sendBack({ type: 'failed', message: 'the worker did not start', broken: true });
+      sendBack({ type: 'failed', message: 'the worker did not start', stage: 'start', broken: true });
       return;
     }
     sendBack({ type: 'ready', version: '0.0.0', codecs: CODECS });
     receive((command) => {
       asked.push(command);
       if (command.type === 'read' && fails === 'read') {
-        sendBack({ type: 'failed', message: 'no decoder for HEIC in this build', broken: false });
+        sendBack(UNREADABLE);
         return;
       }
       if (command.type === 'read') {
@@ -106,12 +118,15 @@ export async function renderPage(fails: Fails = null) {
       }
     });
   });
+  // under the providers of `main.tsx`: the tooltips open at once, as on the page
   const screen = await render(
-    <Toaster>
-      <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
-        <CompressPage />
-      </SearchProvider>
-    </Toaster>,
+    <TooltipProvider>
+      <Toaster>
+        <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
+          <CompressPage />
+        </SearchProvider>
+      </Toaster>
+    </TooltipProvider>,
   );
   const encodes = () => workers.flat().flatMap((command) => (command.type === 'encode' ? [command.options] : []));
   const drop = async () => {

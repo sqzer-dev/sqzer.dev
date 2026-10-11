@@ -8,7 +8,7 @@ import { Comparison } from './comparison';
 import { ControlPanel } from './control-panel';
 import { useControlsForm, type ControlsNow } from './form';
 import { Panel } from './panel';
-import { DownloadButton, ResultPanel, useHasResult } from './result-panel';
+import { ResultHeadline, ResultPanel, useHasResult, useImageFailed } from './result-panel';
 import { ViewBar } from './view-bar';
 
 type WorkspaceProps = {
@@ -31,6 +31,8 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const form = useControlsForm(now);
   const [flat, setFlat] = useState(false);
   const hasResult = useHasResult();
+  // an image's failure lifts the bottom expander, so its alert is seen (ADR-0001 D6)
+  const failed = useImageFailed();
   const controls = <ControlPanel form={form} />;
   // the screen the comparison fills is the page itself
   const screen = useRef<HTMLElement>(null);
@@ -45,8 +47,8 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
         {controls}
       </Panel>
       {hasResult && (
-        <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto max-h-2/5 shrink-0">
-          <ResultPanel />
+        <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto max-h-2/5 shrink-0">
+          <ResultPanel expander />
         </Panel>
       )}
     </div>
@@ -66,9 +68,9 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
           <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
         </>
       ) : (
-        <BottomExpander>
-          <DownloadButton />
-          <ResultPanel />
+        <BottomExpander raise={failed}>
+          <ResultHeadline />
+          <ResultPanel expander={false} />
           <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
           {controls}
         </BottomExpander>

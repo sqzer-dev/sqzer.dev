@@ -5,6 +5,7 @@ import {
   type Codec,
   type Decoded,
   type EncodeOptions,
+  type FailureKind,
   type Output,
   type Reply,
   type TrialProgress,
@@ -15,6 +16,22 @@ import { draw } from '../lib/draw';
 import { rename, type EncodeResult } from './encode-result';
 import type { Picked } from './picked';
 
+/** The package has no decoder for the image: its words, and the builds of `sqzer` that have one. */
+export type Unreadable = { message: string; availableIn: string[] | undefined };
+
+/**
+ * Why a search failed: the package's or the browser's own words, which failure where the package
+ * threw it, and where in the search. The alert of ADR-0001 D6 makes its sentence from them.
+ */
+export type Failure = {
+  message: string;
+  kind?: FailureKind | undefined;
+  /** For `DecoderUnavailable` and `EncoderUnavailable`: the Cargo features of a build that has the backend. */
+  availableIn?: string[] | undefined;
+  /** The worker's start or load, the reading of the image, or its encode. */
+  stage: 'start' | 'load' | 'read' | 'encode';
+};
+
 /** Give the worker the image: decoded there, or drawn here at `width` when it is `onPage`. */
 type Read = {
   type: 'read';
@@ -22,7 +39,7 @@ type Read = {
   onPage: boolean;
   width: number;
   /** The package's words for having no decoder for the image, when it said so. */
-  unreadable: string | null;
+  unreadable: Unreadable | null;
   /** The limit to read it under: the package's own when the control was not touched. */
   maxPixels: number | undefined;
 };
@@ -37,14 +54,14 @@ export type EncoderCommand =
 /** What the actor tells the machine. */
 export type EncoderEvent =
   | { type: 'ready'; version: string; codecs: Codec[] }
-  | { type: 'unreadable'; message: string }
+  | ({ type: 'unreadable' } & Unreadable)
   /** `drawnWidth` is the width an image drawn on the page was drawn at, null for one the worker decoded. */
   | { type: 'decoded'; decoded: Decoded; drawnWidth: number | null }
   | { type: 'trial'; trial: TrialProgress }
   | { type: 'previewed'; preview: Blob }
   | { type: 'done'; result: EncodeResult }
   /** `broken` when the worker itself failed, and has to be replaced before anything else is asked. */
-  | { type: 'failed'; message: string; broken: boolean };
+  | ({ type: 'failed'; broken: boolean } & Failure);
 
 const reason = (thrown: unknown) => (thrown instanceof Error ? thrown.message : String(thrown));
 
@@ -87,9 +104,8 @@ class Session {
     this.#worker.terminate();
   }
 
-  #fail(text: string, broken = false) {
-    // a browser's own message may end in a full stop already
-    this.#tell({ type: 'failed', message: text.replace(/\.+$/u, '.'), broken });
+  #fail(failure: Failure, broken = false) {
+    this.#tell({ type: 'failed', broken, ...failure });
   }
 
   #answer(reply: Reply) {
@@ -97,19 +113,18 @@ class Session {
     if (reply.type === 'ready') {
       this.#codecs = reply.codecs;
       this.#tell(reply);
-    } else if (reply.type === 'error' && reply.stage === 'start') {
-      this.#fail(`The encoder could not start: ${reply.message}.`, true);
-    } else if (reply.type === 'error' && reply.stage === 'load') {
-      this.#fail(`The encoder could not load: ${reply.message}.`, true);
+    } else if (reply.type === 'error' && (reply.stage === 'start' || reply.stage === 'load')) {
+      this.#fail({ message: reply.message, kind: reply.kind, stage: reply.stage }, true);
     } else if (reply.id !== this.#id || !read) {
       // about an image that was replaced since
     } else if (reply.type === 'error') {
-      if (reply.stage === 'preview') return;
+      const { message, kind, availableIn, stage } = reply;
+      if (stage === 'preview') return;
       // the package has no decoder and the worker's canvas had none
       // either. the machine asks again, for the page's own `<img>`
-      if (reply.stage === 'decode' && reply.kind === 'DecoderUnavailable') {
-        this.#tell({ type: 'unreadable', message: reply.message });
-      } else this.#fail(`${reply.message}.`);
+      if (stage === 'decode' && kind === 'DecoderUnavailable') {
+        this.#tell({ type: 'unreadable', message, availableIn });
+      } else this.#fail({ message, kind, availableIn, stage: stage === 'encode' ? 'encode' : 'read' });
     } else if (reply.type === 'decoded') {
       this.#tell({ type: 'decoded', decoded: reply.image, drawnWidth: read.onPage ? read.width : null });
     } else if (reply.type === 'trial') {
@@ -138,7 +153,12 @@ class Session {
       ]);
     } catch (thrown) {
       if (!current()) return;
-      this.#fail(unreadable === null ? `The browser could not read this image: ${reason(thrown)}.` : `${unreadable}.`);
+      // the package's own refusal is the one to explain, where it refused first
+      this.#fail(
+        unreadable === null
+          ? { message: reason(thrown), stage: 'read' }
+          : { ...unreadable, kind: 'DecoderUnavailable', stage: 'read' },
+      );
     }
   }
 }

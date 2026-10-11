@@ -7,7 +7,7 @@ test('a change of format during a search ends the worker and starts another', as
   await page.getByLabel(PICK).setInputFiles(fixture('pattern-rgb.svg'));
   await expect(page.getByRole('link', { name: /^Download pattern-rgb\./u })).toBeVisible(SLOW);
   await format(page, /^AVIF/u);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
 
   // what the search toast says, each time it changes
   await page.evaluate(() => {
@@ -33,7 +33,7 @@ test('a change of format during a search ends the worker and starts another', as
 
   await format(page, /^JPEG/u);
   await expect(said(page, /^Done in/u)).toBeVisible(SLOW);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.jpg/u)).toBeVisible(SLOW);
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.jpg' })).toBeVisible(SLOW);
 
   // a new worker holds nothing, so the image is read again after the trial that was cut short
   const statuses = await page.evaluate(() => window.statuses);
@@ -48,8 +48,9 @@ test('cancelling a search ends the worker and leaves the result before it', asyn
   await expect(page.getByRole('link', { name: /^Download pattern-rgb\./u })).toBeVisible(SLOW);
   // a format that is searched: the package goes lossless for a graphic on its own
   await format(page, /^AVIF/u);
-  await expect(page.getByText(/pattern-rgb\.svg -> pattern-rgb\.avif/u)).toBeVisible(SLOW);
-  const before = await page.getByText(/^pattern-rgb\.svg -> /u).textContent();
+  await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeVisible(SLOW);
+  const size = page.locator('[data-slot=result-size]');
+  const before = await size.textContent();
 
   // drawn large, so a search takes seconds
   await page.getByRole('button', { name: 'Resize' }).click();
@@ -59,7 +60,7 @@ test('cancelling a search ends the worker and leaves the result before it', asyn
   await encoding.getByRole('button', { name: 'Cancel' }).click();
 
   await expect(encoding).toBeHidden();
-  await expect(page.getByText(/^pattern-rgb\.svg -> /u)).toHaveText(before ?? '');
+  await expect(size).toHaveText(before ?? '');
   // the next change searches again, on a worker that reads the image anew
   await page.getByLabel('Width').fill('40');
   await expect(page.getByText('After: 40 × 27')).toBeVisible(SLOW);
@@ -78,10 +79,17 @@ test('the target slider and an option behind Advanced reach the package', async 
   await slider.focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('button', { name: /^Target score: 71\./u })).toBeVisible();
-  await expect(page.getByText(/target 71 (reached|not reached) in \d trials?$/u)).toBeVisible(SLOW);
+  await expect(page.getByRole('button', { name: /^(reached|missed): the target of 71 at a score of /u })).toBeVisible(
+    SLOW,
+  );
 
   // a limit the fixture is over: the package's refusal is the alert of ADR-0001 D6
   await page.getByRole('button', { name: 'Advanced' }).click();
   await page.getByLabel('Max pixels').fill('1');
-  await expect(page.getByRole('alert')).toHaveText(/image has 1536 pixels, limit is 1/u, SLOW);
+  const alert = page.getByRole('alert');
+  await expect(alert).toHaveText(
+    /^pattern-rgb\.jpg has more pixels than the limit of 1 pixel\. Raise Max pixels under Advanced/u,
+    SLOW,
+  );
+  await expect(alert).toHaveText(/image has 1536 pixels, limit is 1/u);
 });

@@ -36,8 +36,8 @@ export const BANDS = [
 /** Where a score sits on the track, as a share of its length. */
 export const share = (score: number) => ((score - TARGET.min) / (TARGET.max - TARGET.min)) * 100;
 
+/** The words for a score, `high: barely noticeable side by side`, without its number. */
+export const words = (score: number) => WORDS.find(([from]) => score >= from)?.[1] ?? LOW;
+
 /** What a score looks like, as `70, high: barely noticeable side by side`. */
-export function describe(score: number) {
-  const words = WORDS.find(([from]) => score >= from)?.[1] ?? LOW;
-  return `${score}, ${words}`;
-}
+export const describe = (score: number) => `${score}, ${words(score)}`;
