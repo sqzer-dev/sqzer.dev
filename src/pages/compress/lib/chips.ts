@@ -43,23 +43,31 @@ function sent(key: string, value: unknown, fallback: string | number | undefined
   return { word: key, meaning: fallback === undefined ? said : `${said}, default ${fallback}` };
 }
 
-/** The chips of the options that were sent, in the order they were, with the backend options last. */
+/** Whether `value` is the default the page knows: chosen by hand, it is sent (ADR-0007 D7), and it is no chip. */
+const isDefault = (value: unknown, fallback: string | number | undefined) =>
+  fallback !== undefined && String(value) === String(fallback);
+
+/** The chips of the options sent away from their default, in the order they were, with the backend options last. */
 function optionChips(asked: EncodeOptions, codecs: Codec[]): Chip[] {
   const chips: Chip[] = [];
   for (const [key, value] of Object.entries(asked)) {
     if (SAID_ELSEWHERE.has(key) || key === 'codecOpts') continue;
-    chips.push(sent(key, value, defaults.get(key)));
+    const fallback = defaults.get(key);
+    if (!isDefault(value, fallback)) chips.push(sent(key, value, fallback));
   }
-  for (const [key, value] of asked.codecOpts ?? []) chips.push(sent(key, value, backendDefault(codecs, key)));
+  for (const [key, value] of asked.codecOpts ?? []) {
+    const fallback = backendDefault(codecs, key);
+    if (!isDefault(value, fallback)) chips.push(sent(key, value, fallback));
+  }
   return chips;
 }
 
 /**
  * The chips under the size (ADR-0001 D5), one word each: the booleans of the output that applied,
  * `lossless`, `reached` or `missed`, `resized`, `animated`, then what was kept of the input,
- * `metadata` and `icc`, then the name of every other option that was sent, which is every Advanced
- * option set away from its default, since an untouched control sends nothing (D3). A result with no
- * chips is the package's defaults. The full meaning of a chip is its tooltip and its name.
+ * `metadata` and `icc`, then the name of every other option sent away from its default: an untouched
+ * control sends nothing (D3), and a default chosen by hand is sent (ADR-0007 D7) and is no chip. A
+ * result with no chips is the package's defaults. The full meaning of a chip is its tooltip and its name.
  */
 export function chipsOf({ output, asked }: Searched, codecs: Codec[]): Chip[] {
   const chips: Chip[] = [];

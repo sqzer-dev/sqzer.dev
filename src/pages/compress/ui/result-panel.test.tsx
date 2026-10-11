@@ -1,6 +1,6 @@
 // The result panel (ADR-0001 D4, D5), on the page over its stub worker: the size and the difference with
 // the chips, the chart and the list of the trials, and the details behind their expander.
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 
 import { renderPage, SETTLED_MS, wait } from './compress-page.harness';
@@ -139,4 +139,28 @@ test('the chips past the first line collapse into a last chip that expands them'
     { word: 'maxPixels', meaning: 'maxPixels 1000, default 24000000' },
     { word: 'jpeg:progressive', meaning: 'jpeg:progressive false, default true' },
   ]);
+});
+
+test('the record is copied by its button, which says so for a moment, and stays as it was when the clipboard refuses', async () => {
+  const { screen, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Details' }).click();
+  const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+  const copy = screen.getByRole('button', { name: 'Copy the record' });
+
+  await copy.click();
+
+  expect(write).toHaveBeenCalledOnce();
+  const text = write.mock.calls[0]?.[0] ?? '';
+  expect(text).toMatch(/^\{\n {2}"inputFormat": "jpeg",\n/u);
+  expect(text).not.toContain('"bytes"');
+  await expect.element(screen.getByRole('button', { name: 'Copied' })).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: 'Copy the record' })).toBeVisible();
+
+  // a clipboard the browser refuses: the button stays as it was, and nothing is thrown
+  write.mockRejectedValue(new Error('not allowed'));
+  await screen.getByRole('button', { name: 'Copy the record' }).click();
+  await wait(100);
+  expect(screen.getByRole('button', { name: 'Copied' }).elements()).toHaveLength(0);
+  await expect.element(screen.getByRole('button', { name: 'Copy the record' })).toBeVisible();
 });

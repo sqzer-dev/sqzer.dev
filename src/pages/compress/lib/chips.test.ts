@@ -116,6 +116,15 @@ test('the format, the quality and the box are said elsewhere, and get no chip', 
   ]);
 });
 
+test('a default chosen by hand is sent, and is no chip', () => {
+  const asked: EncodeOptions = {
+    subsampling: 'auto',
+    fit: 'inside',
+    codecOpts: new Map([['jpeg:progressive', 'true']]),
+  };
+  expect(words(chipsOf(searched(asked), codecs))).toEqual(['reached']);
+});
+
 test('an option the page knows the default of says it, and one it does not says the value alone', () => {
   const chips = chipsOf(searched({ maxPixels: 1000, background: 'white', enlarge: true }), codecs);
   expect(chips.slice(1)).toEqual([

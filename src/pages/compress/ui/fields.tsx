@@ -164,9 +164,8 @@ export function SelectField<Value extends string>({
       <Select
         items={options}
         value={field.state.value ?? fallback ?? null}
-        // the default chosen by hand is the default again, and sends nothing (ADR-0007 D6)
         onValueChange={(value: Value | null) => {
-          field.handleChange(value === fallback ? null : value);
+          field.handleChange(value);
         }}
       >
         <SelectTrigger id={id} className="w-full" aria-describedby={describedBy}>
