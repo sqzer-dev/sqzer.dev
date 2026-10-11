@@ -15,7 +15,9 @@ function drawing(screen: Awaited<ReturnType<typeof renderPage>>['screen']) {
   return {
     svg,
     points: svg.querySelectorAll('circle').length,
-    paths: [...svg.querySelectorAll('path')].map((path) => path.getAttribute('d')),
+    score: svg.querySelector('[data-series=score]')?.getAttribute('d'),
+    quality: svg.querySelector('[data-series=quality]')?.getAttribute('d'),
+    runs: [...svg.querySelectorAll('[data-run] path')].map((path) => path.getAttribute('d')),
     label: svg.querySelector('text')?.textContent,
   };
 }
@@ -34,25 +36,26 @@ test('the trials are a list with their quality and score, and a chart of the sam
   expect(drawn.label).toBe('target 72');
   // hidden from a screen reader: the list carries the numbers
   expect(drawn.svg.getAttribute('aria-hidden')).toBe('true');
-  // the one run is at full weight, and nothing stands behind it yet
-  expect(drawn.paths).toHaveLength(1);
-  expect(drawn.paths[0]).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
+  // the one run is at full weight, its score and its quality, and nothing stands behind it yet
+  expect(drawn.score).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
+  expect(drawn.quality).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
+  expect(drawn.runs).toEqual([]);
 });
 
 test('the search before stays behind the next as a subtle line', async () => {
   const { screen, drop } = await renderPage();
   await drop();
   await expect.poll(() => drawing(screen).points).toBe(2);
-  const [first] = drawing(screen).paths;
+  const first = drawing(screen).score;
 
   await screen.getByRole('button', { name: 'archive, 85' }).click();
   await wait(SETTLED_MS);
 
-  await expect.poll(() => drawing(screen).paths).toHaveLength(2);
-  const { paths, points } = drawing(screen);
-  expect(paths[0]).toBe(first);
+  await expect.poll(() => drawing(screen).runs).toHaveLength(1);
+  const { runs, points } = drawing(screen);
+  expect(runs[0]).toBe(first);
   expect(points).toBe(2);
   // the next image keeps the runs of the one before: they last as long as the tab
   await screen.getByLabelText('New image').upload(new File(['bytes'], 'other.jpg', { type: 'image/jpeg' }));
-  await expect.poll(() => drawing(screen).paths).toHaveLength(3);
+  await expect.poll(() => drawing(screen).runs).toHaveLength(2);
 });

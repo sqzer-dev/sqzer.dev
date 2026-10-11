@@ -1,56 +1,55 @@
-// The chart of the search (ADR-0001 D4): the score across and the quality up, each trial a point
-// and consecutive trials joined, over plain rules every twenty points of quality, with no ticks and
-// no background. The target is one labelled rule. The runs before stay behind as subtle lines. The
-// chart comes from the numbers and draws nothing that did not happen. Arithmetic only.
+// The chart of the search (ADR-0001 D4): the trials across in their order, and one scale of 0 to
+// 100 up, which holds the score and the quality as two lines, each trial a point on the score's,
+// over plain horizontal rules every twenty points, with no ticks and no background. The target is
+// one labelled rule. The runs before stay behind as subtle lines of their score. The chart comes
+// from the numbers and draws nothing that did not happen. Arithmetic only.
 import type { Trial } from '@/shared/api';
 
-import { TARGET } from './score';
 import type { Point, Size } from './view';
 
 export type Chart = {
-  /** The rules, from the quality of 0 at the bottom up, one every twenty points. */
+  /** The rules, from 0 at the bottom up, one every twenty points. */
   rules: number[];
-  /** Where the target stands across, once a score is searched for. */
+  /** Where the target's rule stands, once a score is searched for. */
   target: number | null;
-  /** The runs before, each as the `d` of a path, and as a lone point where it has one trial: a path of one point draws nothing. */
+  /** The runs before, each its score as the `d` of a path, and as a lone point where it has one trial: a path of one point draws nothing. */
   previous: { path: string; lone: Point | null }[];
-  /** The running or newest search: its path, and its points. */
-  current: { path: string; points: Point[] };
-  /** The score at the left edge: the slider's lowest, or a lower ten a trial fell under. */
-  low: number;
+  /** The running or newest search: its score as a path and its points, and its quality as a path. */
+  score: { path: string; points: Point[] };
+  quality: { path: string };
+  /** How many trials stand across: the longest run drawn, and room for two. */
+  slots: number;
 };
 
 const RULE_STEP = 20;
-/** Room above the top rule for the target's label. */
+/** Room above the top rule for the target's label, when the target is near 100. */
 export const TOP = 14;
 /** Room at each side for a point's radius. */
 export const SIDE = 4;
 
-/** The ten under the lowest score of `trials`, or the slider's lowest, whichever is lower. */
-function lowest(trials: Trial[]) {
-  const scores = trials.map((trial) => trial.score);
-  return Math.min(TARGET.min, Math.floor(Math.min(...scores) / 10) * 10);
-}
-
 /** A number as an attribute says it: short, and the same in every browser. */
 const at = (n: number) => String(Math.round(n * 10) / 10);
+const scores = (trials: Trial[]) => trials.map((trial) => trial.score);
 
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
 export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
-  const low = lowest([...current, ...previous.flat()]);
+  const slots = Math.max(2, current.length, ...previous.map((run) => run.length));
   const bottom = size.height - 1;
-  const x = (score: number) => SIDE + ((Math.min(score, 100) - low) / (100 - low)) * (size.width - 2 * SIDE);
-  const y = (quality: number) => bottom - (Math.min(Math.max(quality, 0), 100) / 100) * (bottom - TOP);
-  const point = (trial: Trial): Point => ({ x: x(trial.score), y: y(trial.quality) });
-  const path = (trials: Trial[]) =>
-    trials.map((trial, index) => `${index === 0 ? 'M' : 'L'}${at(x(trial.score))} ${at(y(trial.quality))}`).join(' ');
+  const x = (index: number) => SIDE + (index / (slots - 1)) * (size.width - 2 * SIDE);
+  const y = (value: number) => bottom - (Math.min(Math.max(value, 0), 100) / 100) * (bottom - TOP);
+  const path = (values: number[]) =>
+    values.map((value, index) => `${index === 0 ? 'M' : 'L'}${at(x(index))} ${at(y(value))}`).join(' ');
   const rules = [];
-  for (let quality = 0; quality <= 100; quality += RULE_STEP) rules.push(Math.round(y(quality)) + 0.5);
+  for (let value = 0; value <= 100; value += RULE_STEP) rules.push(Math.round(y(value)) + 0.5);
   return {
     rules,
-    target: target === null ? null : x(target),
-    previous: previous.map((run) => ({ path: path(run), lone: run.length === 1 && run[0] ? point(run[0]) : null })),
-    current: { path: path(current), points: current.map((trial) => point(trial)) },
-    low,
+    target: target === null ? null : Math.round(y(target)) + 0.5,
+    previous: previous.map((run) => ({
+      path: path(scores(run)),
+      lone: run.length === 1 && run[0] ? { x: x(0), y: y(run[0].score) } : null,
+    })),
+    score: { path: path(scores(current)), points: current.map((trial, index) => ({ x: x(index), y: y(trial.score) })) },
+    quality: { path: path(current.map((trial) => trial.quality)) },
+    slots,
   };
 }
