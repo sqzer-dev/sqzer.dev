@@ -20,7 +20,7 @@ export type CodecOptions = { format: string; options: CodecOption[] };
  * of the format the newest result says it chose, `chosen`, until then none.
  */
 export function applicable(
-  { format, mode, fit, resize }: Pick<Controls, 'format' | 'mode' | 'fit' | 'resize'>,
+  { format, mode, fit }: Pick<Controls, 'format' | 'mode' | 'fit'>,
   codecs: Codec[],
   chosen: string | null = null,
 ) {
@@ -42,11 +42,9 @@ export function applicable(
     subsampling: lossy,
     /** One encode at the seed quality of a target: the package refuses it with a quality or lossless. */
     fast: lossy && effective === 'target',
-    /** The resize section is on: off, none of its controls is sent. */
-    resize,
     /** Where `cover` crops and `contain` places, as the package's README states. */
-    position: resize && (fit === 'cover' || fit === 'contain'),
-    background: resize && fit === 'contain',
+    position: fit === 'cover' || fit === 'contain',
+    background: fit === 'contain',
     /** The backend options of the encoder in use, as `codecs()` lists them with their default and help. */
     codecOpts:
       used !== null && backend !== undefined && backend.options.length > 0

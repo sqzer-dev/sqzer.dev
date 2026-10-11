@@ -12,10 +12,6 @@
 @import '@radix-ui/colors/red-dark.css';
 @import '@radix-ui/colors/blue.css';
 @import '@radix-ui/colors/blue-dark.css';
-@import '@radix-ui/colors/yellow.css';
-@import '@radix-ui/colors/yellow-dark.css';
-@import '@radix-ui/colors/green.css';
-@import '@radix-ui/colors/green-dark.css';
 @import '@radix-ui/colors/black-alpha.css';
 @import '@radix-ui/colors/white-alpha.css';
 
@@ -84,10 +80,19 @@
   --alert-foreground: var(--red-12);
   --destructive: var(--red-9);
   --drop: var(--blue-9);
-  --score-low: var(--red-8);
-  --score-good: var(--yellow-8);
-  --score-better: var(--green-8);
-  --score-best: var(--blue-8);
+  /* The four bands of the target's track (ADR-0007 D5, D9): one lightness and one chroma in OKLCH, so
+     the hues read as one brightness, which Radix's steps do not across hues. The thumb is the band's
+     hue at more chroma. */
+  --score-chroma: 0.13;
+  --score-lightness: 0.62;
+  --score-low: oklch(var(--score-lightness) var(--score-chroma) 25);
+  --score-good: oklch(var(--score-lightness) var(--score-chroma) 90);
+  --score-better: oklch(var(--score-lightness) var(--score-chroma) 145);
+  --score-best: oklch(var(--score-lightness) var(--score-chroma) 255);
+  --score-low-solid: oklch(var(--score-lightness) 0.2 25);
+  --score-good-solid: oklch(var(--score-lightness) 0.2 90);
+  --score-better-solid: oklch(var(--score-lightness) 0.2 145);
+  --score-best-solid: oklch(var(--score-lightness) 0.2 255);
 
   /* The tint is the lowest step of the scale that passes `glass.test.tsx`, not one chosen by eye. */
   --glass: var(--white-a11);
@@ -98,6 +103,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --glass: var(--black-a11);
+    --score-lightness: 0.74;
   }
 }
 
@@ -155,12 +161,6 @@
   }
   html {
     @apply font-sans;
-  }
-  /* the controls scale up on a 2K screen, where 16 px type reads small: everything is in rem (ADR-0007 D6) */
-  @media (min-width: 128rem) {
-    html {
-      font-size: 112.5%;
-    }
   }
   body {
     @apply bg-background text-foreground;

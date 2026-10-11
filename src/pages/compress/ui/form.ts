@@ -10,6 +10,10 @@ import { UNTOUCHED } from '../model/controls';
 // How long the controls rest before a search starts with what they say.
 const TYPING_MS = 250;
 
+/** The options as a string, to tell a change that changes nothing: the link between the sides, say, or a value typed back. */
+const said = (options: EncodeOptions) =>
+  JSON.stringify(options, (_, value: unknown) => (value instanceof Map ? [...value] : value));
+
 /**
  * What the controls say now, for a pick made above the workspace: the options as they stand, and
  * the change still at rest, dropped. A picked image starts its search with what the controls say at
@@ -30,17 +34,19 @@ export type ControlsNow = {
 export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
   const search = useSearchRef();
   const resting = useRef(0);
+  // what the newest search was asked, so a change that changes nothing starts none (ADR-0007 D8)
+  const sent = useRef(said({}));
   const form = useForm({
     defaultValues: UNTOUCHED,
     listeners: {
       onChange: ({ formApi }) => {
         clearTimeout(resting.current);
         resting.current = window.setTimeout(() => {
-          const { codecs, result } = search.getSnapshot().context;
-          search.send({
-            type: 'options',
-            options: optionsOf(formApi.state.values, codecs, result?.output.format ?? null),
-          });
+          const { codecs, result, original } = search.getSnapshot().context;
+          const options = optionsOf(formApi.state.values, codecs, result?.output.format ?? null, original);
+          if (said(options) === sent.current) return;
+          sent.current = said(options);
+          search.send({ type: 'options', options });
         }, TYPING_MS);
       },
     },
@@ -49,8 +55,10 @@ export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
   useEffect(() => {
     nowRef.current = {
       options: () => {
-        const { codecs, result } = search.getSnapshot().context;
-        return optionsOf(form.state.values, codecs, result?.output.format ?? null);
+        const { codecs, result, original } = search.getSnapshot().context;
+        const options = optionsOf(form.state.values, codecs, result?.output.format ?? null, original);
+        sent.current = said(options);
+        return options;
       },
       settle: () => {
         clearTimeout(resting.current);

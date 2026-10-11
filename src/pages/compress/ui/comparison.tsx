@@ -57,7 +57,7 @@ export function Comparison({ flat, viewer }: ComparisonProps) {
   const [after, afterShown, afterLoaded] = useAfterSide(result?.file ?? null, image);
 
   const output = result && { width: result.output.outputWidth, height: result.output.outputHeight };
-  const properties = drawn(split, viewer.picture, viewer.view);
+  const properties = drawn(split, viewer.picture, viewer.view, viewer.css);
   // the same ground under both pictures, so a transparent area of the one shows nothing of the other.
   // Each `<img>` is pinned to the box's edges and keeps its own aspect inside them, as on Squoosh: a
   // resized output's height is rounded, so stretched into the input's box it would be a pixel off
@@ -117,14 +117,15 @@ function useAfterSide(file: Blob | null, image: Picked | null) {
 }
 
 /** What the stylesheet draws from: where the line stands, the picture's own size, and where it stands on the screen. */
-function drawn(split: number, size: Size | null, view: View | null) {
+/** The view as CSS, `css` CSS pixels to one of the view's: the picture holds its size on the device across the browser's zoom. */
+function drawn(split: number, size: Size | null, view: View | null, css: number) {
   return {
     '--split': `${split}%`,
     '--width': size ? `${size.width}px` : undefined,
     '--aspect': size ? String(size.width / size.height) : undefined,
-    '--scale': view ? String(view.scale) : undefined,
-    '--x': view ? `${view.x}px` : undefined,
-    '--y': view ? `${view.y}px` : undefined,
+    '--scale': view ? String(view.scale * css) : undefined,
+    '--x': view ? `${view.x * css}px` : undefined,
+    '--y': view ? `${view.y * css}px` : undefined,
   };
 }
 

@@ -28,6 +28,8 @@ type Context = {
   held: boolean;
   /** The width an image drawn on the page was last drawn at. */
   drawnWidth: number | null;
+  /** The image's own size: as decoded, or as drawn at its own size. A vector drawn at a width asked for keeps the one before. */
+  original: Decoded | null;
   /** The `maxPixels` the held image was read under. The limit is the package's at the decode, so a new one reads again. */
   heldLimit: number | undefined;
   /** The controls moved while the worker was busy with what they said before. */
@@ -94,6 +96,7 @@ export const searchMachine = setup({
         held: false,
         drawnWidth: null,
         heldLimit: undefined,
+        original: null,
         unshowable: false,
         previewAsked: false,
         preview: null,
@@ -146,6 +149,7 @@ export const searchMachine = setup({
     held: false,
     drawnWidth: null,
     heldLimit: undefined,
+    original: null,
     outdated: false,
     unshowable: false,
     previewAsked: false,
@@ -209,6 +213,7 @@ export const searchMachine = setup({
                       decoded: event.decoded,
                       held: true,
                       drawnWidth: event.drawnWidth,
+                      original: event.drawnWidth === null || event.drawnWidth === 0 ? event.decoded : context.original,
                       heldLimit: context.options.maxPixels,
                     })),
                   ],

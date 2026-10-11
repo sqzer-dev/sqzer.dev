@@ -19,15 +19,11 @@ export type Controls = {
   target: number | null;
   /** The package has no default for a fixed quality, so the slider starts at one. */
   quality: number;
-  /** The resize section is on. Off, nothing of it is sent, as on Squoosh. */
-  resize: boolean;
   /** The box, typed. Empty shows the image's own size and sends nothing. */
   width: string;
   height: string;
   /** A side typed sets the other by the image's ratio. */
   ratio: boolean;
-  /** A share of the image's size the box was set to, in percent, or empty once a side was typed. */
-  preset: string;
   fit: Choice<'fit'>;
   position: Choice<'position'>;
   background: string;
@@ -49,11 +45,9 @@ export const UNTOUCHED: Controls = {
   mode: 'target',
   target: null,
   quality: 80,
-  resize: false,
   width: '',
   height: '',
   ratio: true,
-  preset: '',
   fit: null,
   position: null,
   background: '',

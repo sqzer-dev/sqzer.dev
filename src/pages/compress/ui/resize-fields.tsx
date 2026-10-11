@@ -1,13 +1,15 @@
+import { ChevronRightIcon } from 'lucide-react';
+
 import type { EncodeOptions } from '@/shared/api';
-import { Field, FieldLabel, FieldSet } from '@/shared/ui/field';
-import { Switch } from '@/shared/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible';
 
 import type { Applicable } from '../lib/codec';
 import { DEFAULTS } from '../lib/defaults';
 import { useSearch } from '../model/context';
 import { NumberField, SelectField, SwitchField, TextField } from './fields';
-import type { ControlsForm } from './form';
+import type { ControlsForm, FieldOf } from './form';
 import { choices, HELP } from './help';
+import { RatioLink } from './ratio-link';
 
 /** The values an option takes, in the package's spelling, each with its label. Every value of the package's type, or `tsc` says which is missing. */
 type Choices<Key extends 'fit' | 'position' | 'filter'> = Record<NonNullable<EncodeOptions[Key]>, string>;
@@ -33,97 +35,118 @@ const FILTER: Choices<'filter'> = {
   nearest: 'nearest',
 };
 /** Shares of the image's size the box can be set to, as Squoosh offers them. */
-const PRESETS = ['25', '50', '75', '100'].map((value) => ({ value, label: `${value} %` }));
+const PRESETS = ['25', '33.33', '50', '100', '200', '300', '400'].map((value) => ({ value, label: `${value} %` }));
+
+type Size = { width: number; height: number };
+
+/** What a side shows: as typed, or the image's own size. */
+const shown = (field: FieldOf<string>, size: number) => (field.state.value === '' ? String(size) : field.state.value);
+
+/** A side of the box, from the image's size and a share of it. */
+const side = (size: number, share: number) => String(Math.max(1, Math.round((size * share) / 100)));
+
+type BoxProps = {
+  form: ControlsForm;
+  /** The image's own size, which the sides show until typed. */
+  image: Size | null;
+  width: FieldOf<string>;
+  height: FieldOf<string>;
+};
+
+/** A side of the box. Typed, it sets the other by the image's ratio while the sides are linked. */
+function SideField({
+  form,
+  image,
+  which,
+  own,
+  other,
+}: Omit<BoxProps, 'width' | 'height'> & { which: 'width' | 'height'; own: FieldOf<string>; other: FieldOf<string> }) {
+  return (
+    <NumberField
+      label={which === 'width' ? 'Width' : 'Height'}
+      min={1}
+      inputClassName="w-full"
+      fallback={image === null ? undefined : String(image[which])}
+      placeholder="original"
+      field={{
+        state: { value: own.state.value },
+        handleBlur: own.handleBlur,
+        handleChange: (value) => {
+          if (form.state.values.ratio && image !== null) {
+            const factor = which === 'width' ? image.height / image.width : image.width / image.height;
+            other.handleChange(value === '' ? '' : String(Math.max(1, Math.round(Number(value) * factor))));
+          }
+          own.handleChange(value);
+        },
+      }}
+    />
+  );
+}
+
+/**
+ * A share of the image's size, which sets both sides, and shows when the sides stand at one; else
+ * `Custom`. A share above 100 % allows enlarging, since nothing scales up without it.
+ */
+function PresetField({ form, image, width, height }: BoxProps) {
+  const current =
+    image === null
+      ? null
+      : (PRESETS.find(
+          ({ value }) =>
+            side(image.width, Number(value)) === shown(width, image.width) &&
+            side(image.height, Number(value)) === shown(height, image.height),
+        )?.value ?? null);
+  return (
+    <SelectField
+      label="Preset"
+      options={PRESETS}
+      placeholder="Custom"
+      help={HELP.preset}
+      field={{
+        state: { value: current },
+        handleBlur: width.handleBlur,
+        handleChange: (value) => {
+          if (value === null || image === null) return;
+          if (Number(value) > 100) form.setFieldValue('enlarge', true);
+          height.handleChange(side(image.height, Number(value)));
+          width.handleChange(side(image.width, Number(value)));
+        },
+      }}
+    />
+  );
+}
+
+/** The box: width and height on one line with the link at their end, at their height, and the preset under them. */
+function BoxFields({ form }: { form: ControlsForm }) {
+  const image = useSearch((snapshot) => snapshot.context.original);
+  return (
+    <form.Field name="width">
+      {(width) => (
+        <form.Field name="height">
+          {(height) => (
+            <>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <SideField form={form} image={image} which="width" own={width} other={height} />
+                </div>
+                <div className="flex-1">
+                  <SideField form={form} image={image} which="height" own={height} other={width} />
+                </div>
+                <form.Field name="ratio">{(ratio) => <RatioLink field={ratio} />}</form.Field>
+              </div>
+              <PresetField form={form} image={image} width={width} height={height} />
+            </>
+          )}
+        </form.Field>
+      )}
+    </form.Field>
+  );
+}
 
 type ResizeFieldsProps = {
   form: ControlsForm;
   applies: Applicable;
 };
-
-/** A side of the box, from the image's size and a share of it. */
-const side = (size: number, share: number) => String(Math.max(1, Math.round((size * share) / 100)));
-
-type SideFieldProps = {
-  form: ControlsForm;
-  which: 'width' | 'height';
-  /** The image's size, shown until a side is typed. */
-  image: { width: number; height: number } | null;
-};
-
-/** A side of the box. Typed, it sets the other by the image's ratio while the lock is on, and the preset no longer holds. */
-function SideField({ form, which, image }: SideFieldProps) {
-  const other = which === 'width' ? 'height' : 'width';
-  const type = (value: string) => {
-    if (form.state.values.ratio && image !== null) {
-      const factor = which === 'width' ? image.height / image.width : image.width / image.height;
-      form.setFieldValue(other, value === '' ? '' : String(Math.max(1, Math.round(Number(value) * factor))));
-    }
-    form.setFieldValue('preset', '');
-  };
-  return (
-    <form.Field name={which}>
-      {(field) => (
-        <NumberField
-          label={which === 'width' ? 'Width' : 'Height'}
-          min={1}
-          fallback={image === null ? undefined : String(image[which])}
-          placeholder="original"
-          field={{
-            state: { value: field.state.value },
-            handleBlur: field.handleBlur,
-            handleChange: (value) => {
-              type(value);
-              field.handleChange(value);
-            },
-          }}
-        />
-      )}
-    </form.Field>
-  );
-}
-
-/** A share of the image's size, which sets both sides. */
-function PresetField({ form, image }: Pick<SideFieldProps, 'form' | 'image'>) {
-  return (
-    <form.Field name="preset">
-      {(field) => (
-        <SelectField
-          label="Preset"
-          options={PRESETS}
-          help={HELP.preset}
-          field={{
-            state: { value: field.state.value === '' ? null : field.state.value },
-            handleBlur: field.handleBlur,
-            handleChange: (value) => {
-              if (value !== null && image !== null) {
-                form.setFieldValue('width', side(image.width, Number(value)));
-                form.setFieldValue('height', side(image.height, Number(value)));
-              }
-              field.handleChange(value ?? '');
-            },
-          }}
-        />
-      )}
-    </form.Field>
-  );
-}
-
-/** The box: width and height side by side, the lock between them, and a preset that sets both. */
-function BoxFields({ form }: { form: ControlsForm }) {
-  const image = useSearch((snapshot) => snapshot.context.decoded);
-  return (
-    <>
-      <div className="flex gap-3">
-        <SideField form={form} which="width" image={image} />
-        <SideField form={form} which="height" image={image} />
-      </div>
-      <form.Field name="ratio">
-        {(field) => <SwitchField field={field} label="Keep the ratio" help={HELP.ratio} />}
-      </form.Field>
-      <PresetField form={form} image={image} />
-    </>
-  );
-}
 
 /** How the image meets the box, and where and with what, then whether anything scales up, and the filter. */
 function FitFields({ form, applies }: ResizeFieldsProps) {
@@ -171,34 +194,19 @@ function FitFields({ form, applies }: ResizeFieldsProps) {
 }
 
 /**
- * The resize, as one section under a switch, as on Squoosh (ADR-0007 D6, D7): the row names it and
- * the switch at its end opens it. Off, nothing of it is sent and the image keeps its size.
+ * The resize, behind an expander like Advanced (ADR-0007 D8): the box, how the image meets it, and
+ * the filter. The sides show the image's own size until typed, and send nothing then.
  */
 export function ResizeFields({ form, applies }: ResizeFieldsProps) {
   return (
-    <FieldSet className="gap-3">
-      <form.Field name="resize">
-        {(field) => (
-          <Field orientation="horizontal" className="justify-between">
-            <FieldLabel htmlFor="resize" className="text-sm">
-              Resize
-            </FieldLabel>
-            <Switch
-              id="resize"
-              checked={field.state.value}
-              onCheckedChange={(checked) => {
-                field.handleChange(checked);
-              }}
-            />
-          </Field>
-        )}
-      </form.Field>
-      {applies.resize && (
-        <div className="flex flex-col gap-4">
-          <BoxFields form={form} />
-          <FitFields form={form} applies={applies} />
-        </div>
-      )}
-    </FieldSet>
+    <Collapsible>
+      <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-xs/relaxed font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <ChevronRightIcon className="size-3.5 transition-transform group-data-panel-open:rotate-90" /> Resize
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-4 pt-3">
+        <BoxFields form={form} />
+        <FitFields form={form} applies={applies} />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

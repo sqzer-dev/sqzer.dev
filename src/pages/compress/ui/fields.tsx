@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { useId, type ReactNode } from 'react';
 
 import { Field, FieldContent, FieldDescription, FieldLabel } from '@/shared/ui/field';
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/shared/ui/slider';
 import { Switch } from '@/shared/ui/switch';
 
+import { EditableValue } from './editable-value';
 import type { FieldOf } from './form';
 
 // The field components, each over a field of the form (`form.ts`), and each saying what the package
@@ -51,6 +53,8 @@ function Labelled({
 }
 
 type NumberFieldProps = FieldProps<string> & {
+  /** On the input: `w-full` for a side of the box, say. */
+  inputClassName?: string | undefined;
   /** What the empty field shows as its value: the package's default, or the image's own size. */
   fallback?: string | undefined;
   /** What the empty field says when there is no value to show. */
@@ -62,7 +66,17 @@ type NumberFieldProps = FieldProps<string> & {
 };
 
 /** A number, typed, or stepped from the default it shows. Empty until it is, which leaves the package its default. */
-export function NumberField({ field, label, help, fallback, placeholder, min, max, step = 1 }: NumberFieldProps) {
+export function NumberField({
+  field,
+  label,
+  help,
+  fallback,
+  placeholder,
+  min,
+  max,
+  step = 1,
+  inputClassName,
+}: NumberFieldProps) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
   return (
@@ -73,7 +87,7 @@ export function NumberField({ field, label, help, fallback, placeholder, min, ma
       control={
         <Input
           id={id}
-          className="w-28 font-mono"
+          className={cn('w-28 font-mono', inputClassName)}
           type="number"
           inputMode={step === 1 ? 'numeric' : 'decimal'}
           min={min}
@@ -129,13 +143,21 @@ type SelectFieldProps<Value extends string> = FieldProps<Value | null> & {
   options: { value: Value; label: string }[];
   /** The package's default, which the select opens on until one is chosen. */
   fallback?: Value;
+  /** What the select says with nothing chosen and no default. */
+  placeholder?: string;
 };
 
 /** One of the values the package lists. It shows the package's default until one is chosen, and sends nothing then. */
-export function SelectField<Value extends string>({ field, label, help, options, fallback }: SelectFieldProps<Value>) {
+export function SelectField<Value extends string>({
+  field,
+  label,
+  help,
+  options,
+  fallback,
+  placeholder = 'default',
+}: SelectFieldProps<Value>) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
-  const placeholder = 'default';
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -199,7 +221,7 @@ type RangeFieldProps = FieldProps<number | null> & {
   words?: (value: number) => string;
 };
 
-/** A number in a range, as a slider with its value at the right. Null, the default, until it is moved. */
+/** A number in a range, as a slider with its value at the right, where it can be typed too. Null, the default, until it is moved. */
 export function RangeField({ field, label, help, min, max, step = 1, fallback, words }: RangeFieldProps) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
@@ -216,9 +238,15 @@ export function RangeField({ field, label, help, min, max, step = 1, fallback, w
         <FieldLabel htmlFor={id} id={`${id}-label`}>
           {label}
         </FieldLabel>
-        <output htmlFor={id} className="font-mono text-xs/relaxed text-muted-foreground tabular-nums">
-          {text}
-        </output>
+        <EditableValue
+          text={text}
+          start={chosen ?? (typeof fallback === 'number' ? fallback : null)}
+          min={min}
+          max={max}
+          step={step}
+          label={label}
+          onCommit={field.handleChange}
+        />
       </div>
       <Slider
         aria-labelledby={`${id}-label`}

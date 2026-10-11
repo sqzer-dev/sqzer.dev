@@ -57,13 +57,36 @@ test('lossless is sent once it is chosen, with a format that has it or none', ()
   });
 });
 
-test('a format is sent as it is said, and a width once the resize is on', () => {
-  expect(optionsOf({ ...UNTOUCHED, format: 'jpeg', resize: true, width: '1600' }, codecs)).toEqual({
-    format: 'jpeg',
-    width: 1600,
+test("a format and a side of the box are sent as they are said, and an empty side, the image's own size, is not", () => {
+  expect(optionsOf({ ...UNTOUCHED, format: 'jpeg', width: '1600' }, codecs)).toEqual({ format: 'jpeg', width: 1600 });
+  expect(optionsOf({ ...UNTOUCHED, ratio: false }, codecs)).toEqual({});
+});
+
+test("with a fit that needs both sides, a side left as the image's own is sent as such; with `inside`, it is not", () => {
+  const image = { width: 48, height: 32 };
+  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'cover' }, codecs, null, image)).toEqual({
+    width: 24,
+    height: 32,
+    fit: 'cover',
   });
-  // off, the resize sends nothing, whatever was typed into it
-  expect(optionsOf({ ...UNTOUCHED, width: '1600', fit: 'cover', enlarge: true, filter: 'box' }, codecs)).toEqual({});
+  expect(optionsOf({ ...UNTOUCHED, height: '16', fit: 'contain' }, codecs, null, image)).toEqual({
+    width: 48,
+    height: 16,
+    fit: 'contain',
+  });
+  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'inside' }, codecs, null, image)).toEqual({
+    width: 24,
+    fit: 'inside',
+  });
+  expect(optionsOf({ ...UNTOUCHED, width: '24' }, codecs, null, image)).toEqual({ width: 24 });
+  // both sides as shown: the box is the image's own, which the fit takes as it is
+  expect(optionsOf({ ...UNTOUCHED, fit: 'cover' }, codecs, null, image)).toEqual({
+    width: 48,
+    height: 32,
+    fit: 'cover',
+  });
+  // before the image is read there is no size to send, and the package says what it needs
+  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'cover' }, codecs)).toEqual({ width: 24, fit: 'cover' });
 });
 
 test('a format that is lossless only takes no score and no quality', () => {
@@ -81,7 +104,6 @@ test('every option behind Advanced and the resize is sent as the package spells 
         fast: true,
         keepIcc: true,
         keepMetadata: true,
-        resize: true,
         height: '900',
         fit: 'contain',
         position: 'top-left',
@@ -110,17 +132,13 @@ test('every option behind Advanced and the resize is sent as the package spells 
 
 test('a control that does not apply sends nothing: the package would refuse the combination', () => {
   // `position` and `background` go with a fit that crops or pads
-  expect(
-    optionsOf({ ...UNTOUCHED, resize: true, fit: 'inside', position: 'top', background: 'white' }, codecs),
-  ).toEqual({
+  expect(optionsOf({ ...UNTOUCHED, fit: 'inside', position: 'top', background: 'white' }, codecs)).toEqual({
     fit: 'inside',
   });
-  expect(optionsOf({ ...UNTOUCHED, resize: true, fit: 'cover', position: 'top', background: 'white' }, codecs)).toEqual(
-    {
-      fit: 'cover',
-      position: 'top',
-    },
-  );
+  expect(optionsOf({ ...UNTOUCHED, fit: 'cover', position: 'top', background: 'white' }, codecs)).toEqual({
+    fit: 'cover',
+    position: 'top',
+  });
   // `fast` goes with a target
   expect(optionsOf({ ...UNTOUCHED, mode: 'quality', fast: true }, codecs)).toEqual({ quality: 80 });
   // subsampling means nothing to a lossless encoder

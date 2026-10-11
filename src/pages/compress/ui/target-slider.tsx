@@ -6,6 +6,7 @@ import { Slider } from '@/shared/ui/slider';
 import { DEFAULTS } from '../lib/defaults';
 import { BANDS, describe, PRESETS, share, TARGET } from '../lib/score';
 import { useSearch } from '../model/context';
+import { EditableValue } from './editable-value';
 import type { FieldOf } from './form';
 
 type TargetSliderProps = {
@@ -34,13 +35,40 @@ function useReported(): Reported {
   });
 }
 
-/** The words next to the slider: what the chosen score looks like, or what the default is. */
+/** The words of a score, without its number, which stands at the title row. */
+const words = (score: number) => describe(score).replace(/^\d+, /u, '');
+
+/** The words under the slider: what the chosen score looks like, or what the default is. */
 function wordsFor(chosen: number | null, reported: Reported) {
   if (chosen === null) {
     if (reported === 'lossless') return 'default: lossless for this image';
-    return `default: ${describe(reported ?? DEFAULTS.target)}`;
+    return `default: ${words(reported ?? DEFAULTS.target)}`;
   }
-  return describe(chosen);
+  return words(chosen);
+}
+
+/** The score the slider stands at: what was chosen, else what the result reports, else the package's documented default. */
+const standing = (chosen: number | null, reported: Reported) =>
+  chosen ?? (typeof reported === 'number' ? reported : DEFAULTS.target);
+
+/** The target's number, at the title row, typed where it is shown. */
+export function TargetValue({ field, onMove }: Pick<TargetSliderProps, 'field' | 'onMove'>) {
+  const chosen = field.state.value;
+  const reported = useReported();
+  const shown = standing(chosen, reported);
+  return (
+    <EditableValue
+      text={String(shown)}
+      start={shown}
+      min={TARGET.min}
+      max={TARGET.max}
+      label="Target score"
+      onCommit={(score) => {
+        onMove();
+        field.handleChange(score);
+      }}
+    />
+  );
 }
 
 /** Where a score sits on the track, as a custom property the mark is placed by. */
@@ -64,14 +92,14 @@ const TRACK: CSSProperties = {
   }).join(', ')})`,
 };
 
-/** The ticks of the presets, crossing the track under the thumb, each in the colour of the band to its left, dimmed. */
+/** The ticks of the presets, crossing the track, over it and under the thumb, each in the colour of the band to its left. */
 function Ticks() {
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-1.5 left-1.5">
+    <div className="pointer-events-none absolute inset-0">
       {PRESETS.map(({ name, score }) => (
         <span
           key={name}
-          className="absolute top-1/2 left-(--at) h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-(--tick) opacity-60"
+          className="absolute top-1/2 left-(--at) h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-(--tick)"
           style={{ ...at(score), '--tick': `var(--score-${bandOf(score)})` }}
         />
       ))}
@@ -135,8 +163,8 @@ function Forget({ onPress }: { onPress: () => void }) {
 export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   const chosen = field.state.value;
   const reported = useReported();
-  const shown = chosen ?? (typeof reported === 'number' ? reported : DEFAULTS.target);
-  const words = wordsFor(chosen, reported);
+  const shown = standing(chosen, reported);
+  const said = wordsFor(chosen, reported);
   const move = (score: number) => {
     onMove();
     field.handleChange(score);
@@ -149,29 +177,30 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   return (
     <div className="flex flex-col gap-1">
       <div className="relative">
-        <Ticks />
         <Slider
           aria-labelledby={labelledBy}
           aria-describedby={`${labelledBy}-words`}
           className="px-1.5"
-          style={{ ...TRACK, '--thumb': `var(--score-${bandAt(shown)})` }}
+          style={{ ...TRACK, '--thumb': `var(--score-${bandAt(shown)}-solid)` }}
           trackClassName="bg-(image:--track)"
           indicatorClassName="bg-transparent"
-          thumbClassName="bg-(--thumb)"
+          thumbClassName="border-foreground bg-(--thumb)"
           thumbAlignment="center"
           min={TARGET.min}
           max={TARGET.max}
           step={1}
           value={[shown]}
-          getAriaValueText={(_, value) => (chosen === null ? words : describe(value))}
+          getAriaValueText={(_, value) => (chosen === null ? said : describe(value))}
           onValueChange={(value: number | readonly number[]) => {
             move(typeof value === 'number' ? value : (value[0] ?? shown));
           }}
-        />
+        >
+          <Ticks />
+        </Slider>
       </div>
       <PresetNames onPress={move} />
       <p id={`${labelledBy}-words`} className="text-xs/relaxed text-muted-foreground">
-        <span>{words}</span>
+        <span>{said}</span>
         {chosen !== null && <Forget onPress={forget} />}
       </p>
     </div>

@@ -1,92 +1,7 @@
-import { useForm } from '@tanstack/react-form';
-import { expect, test, vi } from 'vitest';
-import { render } from 'vitest-browser-react';
+import { expect, test } from 'vitest';
 import { userEvent } from 'vitest/browser';
 
-import type { Codec, CodecOption } from '@/shared/api';
-
-import { SearchProvider } from '../model/context';
-import { UNTOUCHED, type Controls } from '../model/controls';
-import { searchMachine } from '../model/machine';
-import { readyEncoder } from './compress-page.harness';
-import { ControlPanel } from './control-panel';
-
-const codec = (format: string, lossy?: boolean, options: CodecOption[] = []): Codec => ({
-  format,
-  extension: format,
-  mime: `image/${format}`,
-  decoderFeatures: [],
-  encoderFeatures: [],
-  ...(lossy !== undefined && {
-    encoder: {
-      backend: `${format}-rs`,
-      tier: 'portable',
-      lossy,
-      lossless: !lossy,
-      alpha: false,
-      animation: false,
-      exif: false,
-      xmp: false,
-      bitDepth: [8],
-      options,
-    },
-  }),
-});
-// what a build could list: one lossy encoder, one that is lossless only, one format it only reads. The
-// backend options are of every kind the help can say: a switch, a range, a select, and plain text
-const codecs = [
-  codec('jpeg', true, [
-    { key: 'jpeg:progressive', default: 'true', help: 'progressive scan order; `false` writes baseline' },
-    { key: 'jpeg:smoothing', default: '0', help: 'input smoothing `0..=100`, hides dithering noise' },
-    { key: 'jpeg:model', default: 'ycbcr', help: '`ycbcr` or `rgb`; `rgb` is larger' },
-    { key: 'jpeg:comment', default: '', help: 'a comment to write' },
-  ]),
-  codec('png', false, [{ key: 'png:interlace', default: 'false', help: 'write Adam7 interlaced output' }]),
-  codec('tiff'),
-];
-
-/** What the form says on a change: every field, as it is then. */
-type OnChange = (values: Controls) => void;
-
-/** The workspace's part: it holds the form the controls are the fields of, as `useControlsForm` makes it. */
-function Held({ onChange }: { onChange: OnChange }) {
-  const form = useForm({
-    defaultValues: UNTOUCHED,
-    listeners: {
-      onChange: ({ formApi }) => {
-        onChange(formApi.state.values);
-      },
-    },
-  });
-  return <ControlPanel form={form} />;
-}
-
-/** The controls over a worker that only says what it has. */
-async function renderPanel() {
-  const encoder = readyEncoder(codecs);
-  const onChange = vi.fn<OnChange>();
-  const screen = await render(
-    <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
-      <Held onChange={onChange} />
-    </SearchProvider>,
-  );
-  const format = screen.getByRole('combobox', { name: 'Format' });
-  const pickFormat = async (name: string | RegExp) => {
-    await format.click();
-    await screen.getByRole('option', { name }).click();
-  };
-  /** What the newest change said, for the fields named. */
-  const said = (...keys: (keyof Controls)[]) => {
-    const values = onChange.mock.lastCall?.[0];
-    return values && Object.fromEntries(keys.map((key) => [key, values[key]]));
-  };
-  /** A step to the right on a slider. */
-  const step = async (name: string) => {
-    screen.getByRole('slider', { name }).element().focus();
-    await userEvent.keyboard('{ArrowRight}');
-  };
-  return { screen, onChange, format, pickFormat, said, step };
-}
+import { renderPanel } from './control-panel.harness';
 
 test('the format list is what `codecs()` can write', async () => {
   const { screen, format } = await renderPanel();
@@ -104,13 +19,14 @@ test("the target starts untouched: at the package's default, saying so, and noth
 
   await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeChecked();
   await expect.element(slider).toHaveValue('70');
-  await expect.element(slider).toHaveAttribute('aria-valuetext', 'default: 70, high: barely noticeable side by side');
-  await expect.element(screen.getByText('default: 70, high: barely noticeable side by side')).toBeVisible();
+  await expect.element(slider).toHaveAttribute('aria-valuetext', 'default: high: barely noticeable side by side');
+  await expect.element(screen.getByText('default: high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: /^Target score: 70\./u })).toBeVisible();
   // the track is the scale, in the four `score` tokens as the browser paints them
   const track = slider.element().closest('[data-slot=slider]')?.querySelector('[data-slot=slider-track]');
   const painted = track && getComputedStyle(track).backgroundImage;
   expect(painted).toMatch(/^linear-gradient\(/u);
-  expect(new Set(painted?.match(/rgb\([^)]*\)/gu)).size).toBe(4);
+  expect(new Set(painted?.match(/(?:rgb|oklch)\([^)]*\)/gu)).size).toBe(4);
   // the presets, named under their ticks
   await Promise.all(
     ['thumbnail, 60', 'web, 70', 'archive, 85'].map((mark) =>
@@ -127,23 +43,33 @@ test('a moved slider reports its score, with the words SSIMULACRA2 gives it, and
 
   await expect.element(slider).toHaveValue('71');
   await expect.element(slider).toHaveAttribute('aria-valuetext', '71, high: barely noticeable side by side');
-  await expect.element(screen.getByText('71, high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByText('high: barely noticeable side by side')).toBeVisible();
   expect(said('mode', 'target')).toEqual({ mode: 'target', target: 71 });
 
   await screen.getByRole('button', { name: 'archive, 85' }).click();
-  await expect.element(screen.getByText('85, excellent: not noticeable in place')).toBeVisible();
+  await expect.element(screen.getByText('excellent: not noticeable in place')).toBeVisible();
   expect(said('target')).toEqual({ target: 85 });
+
+  // the number stands at the title row, typed where it is shown
+  await screen.getByRole('button', { name: /^Target score: 85\./u }).click();
+  await screen.getByRole('spinbutton', { name: 'Target score' }).fill('95');
+  await userEvent.keyboard('{Enter}');
+  await expect.element(slider).toHaveValue('95');
+  expect(said('target')).toEqual({ target: 95 });
 
   await screen.getByRole('button', { name: 'use the default' }).click();
   await expect.element(slider).toHaveValue('70');
-  await expect.element(screen.getByText(/^default: 70/u)).toBeVisible();
+  await expect.element(screen.getByText(/^default: high/u)).toBeVisible();
   await expect.element(screen.getByRole('button', { name: 'use the default' })).not.toBeInTheDocument();
   expect(said('target')).toEqual({ target: null });
 });
 
 test('the ways to say the quality are cards: the active one bordered, the others dimmed, and a slider picks its card', async () => {
   const { screen, said, step } = await renderPanel();
-  const card = (title: string) => screen.getByRole('radio', { name: title }).element().parentElement;
+  const card = (title: string) => {
+    const found = screen.getByRole('radio', { name: title }).element().closest('[data-choice]');
+    return found instanceof HTMLElement ? found : null;
+  };
   expect(card('Target score')?.dataset['active']).toBe('true');
   expect(card('Fixed quality')?.dataset['active']).toBeUndefined();
   expect(getComputedStyle(card('Fixed quality') ?? document.body).opacity).toBe('0.6');
@@ -185,21 +111,23 @@ test('each way to say the quality shows where `codecs()` says the chosen encoder
   expect(said('format')).toEqual({ format: 'png' });
 });
 
-test('the resize is one section with a switch: off, its controls are away; on, a control shows only where it applies', async () => {
+test('the resize is behind an expander, with the sides linked, and a control shows only where it applies', async () => {
   const { screen, said } = await renderPanel();
-  const resize = screen.getByRole('switch', { name: 'Resize' });
   await expect.element(screen.getByRole('spinbutton', { name: 'Width' })).not.toBeInTheDocument();
 
-  await resize.click();
-  await expect.element(screen.getByRole('spinbutton', { name: 'Width' })).toBeVisible();
+  await screen.getByRole('button', { name: 'Resize' }).click();
+  const width = screen.getByRole('spinbutton', { name: 'Width' });
+  await expect.element(width).toBeVisible();
   await expect.element(screen.getByRole('spinbutton', { name: 'Height' })).toBeVisible();
+  // no image here: the sides are empty, the link is on, and no preset stands
+  await expect.element(width).toHaveAttribute('placeholder', 'original');
+  await expect.element(screen.getByRole('button', { name: 'Keep the ratio' })).toHaveAttribute('aria-pressed', 'true');
+  await expect.element(screen.getByText('Custom').first()).toBeVisible();
   await expect.element(screen.getByRole('combobox', { name: 'Position' })).not.toBeInTheDocument();
-  expect(said('resize')).toEqual({ resize: true });
 
   // the fit's select opens on the package's default until one is chosen, and nothing is said of it
   const fit = screen.getByRole('combobox', { name: 'Fit' });
   await expect.element(screen.getByText('inside', { exact: true })).toBeVisible();
-  expect(said('fit')).toEqual({ fit: null });
   // `position` with a fit that crops or pads, `background` with the one that pads
   await fit.click();
   await screen.getByRole('option', { name: 'cover' }).click();
@@ -214,72 +142,4 @@ test('the resize is one section with a switch: off, its controls are away; on, a
   await fit.click();
   await screen.getByRole('option', { name: 'inside' }).click();
   expect(said('fit')).toEqual({ fit: 'inside' });
-});
-
-test('Advanced stays closed until opened, with sliders for ranges and the defaults shown', async () => {
-  const { screen, said, step } = await renderPanel();
-  const effort = screen.getByRole('slider', { name: 'Effort' });
-  await expect.element(effort).not.toBeInTheDocument();
-  // a press anywhere on a quality card picks it
-  screen.getByRole('radio', { name: 'Lossless' }).element().parentElement?.click();
-  await expect.element(screen.getByRole('radio', { name: 'Lossless' })).toBeChecked();
-  screen.getByRole('radio', { name: 'Target score' }).element().parentElement?.click();
-  await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeChecked();
-
-  await screen.getByRole('button', { name: 'Advanced' }).click();
-  // the package states no default effort: the slider rests on a notch left of its range that says so
-  await expect.element(effort).toHaveAttribute('aria-valuetext', 'default');
-  await expect.element(screen.getByText("default: the package's")).toBeVisible();
-  await step('Effort');
-  await expect.element(effort).toHaveValue('0');
-  expect(said('effort')).toEqual({ effort: 0 });
-  await screen.getByRole('switch', { name: 'Fast' }).click();
-  expect(said('fast')).toEqual({ fast: true });
-
-  const maxPixels = screen.getByRole('spinbutton', { name: 'Max pixels' });
-  // the default is the value shown, so the field steps from it, and nothing is sent until it is typed
-  await expect.element(maxPixels).toHaveValue(24000000);
-  await expect.element(maxPixels).toHaveAccessibleDescription(/The tab may run out of memory above the default/u);
-  await maxPixels.fill('1000000');
-  expect(said('maxPixels')).toEqual({ maxPixels: '1000000' });
-
-  // `fast` with a target only
-  await screen.getByRole('radio', { name: 'Fixed quality' }).click();
-  await expect.element(screen.getByRole('switch', { name: 'Fast' })).not.toBeInTheDocument();
-});
-
-test("the backend options are the chosen encoder's, from `codecs()`, each as the control its help says", async () => {
-  const { screen, pickFormat, said, step } = await renderPanel();
-  await screen.getByRole('button', { name: 'Advanced' }).click();
-  // chosen per image, and no result yet: none to show
-  await expect.element(screen.getByRole('switch', { name: 'jpeg:progressive' })).not.toBeInTheDocument();
-
-  await pickFormat('JPEG (jpeg-rs)');
-  // `true` or `false`: a switch at its default, and flipped back it is the default again
-  const progressive = screen.getByRole('switch', { name: 'jpeg:progressive' });
-  await expect.element(progressive).toBeChecked();
-  await expect.element(progressive).toHaveAccessibleDescription('progressive scan order; `false` writes baseline');
-  await progressive.click();
-  expect(said('codecOpts')).toEqual({ codecOpts: { 'jpeg:progressive': 'false' } });
-  await progressive.click();
-  expect(said('codecOpts')).toEqual({ codecOpts: { 'jpeg:progressive': '' } });
-
-  // a range: a slider resting at its default
-  const smoothing = screen.getByRole('slider', { name: 'jpeg:smoothing' });
-  await expect.element(smoothing).toHaveValue('0');
-  await expect.element(smoothing).toHaveAttribute('aria-valuetext', 'default');
-  await step('jpeg:smoothing');
-  expect(said('codecOpts')).toEqual({ codecOpts: { 'jpeg:progressive': '', 'jpeg:smoothing': '1' } });
-
-  // listed values: a select showing the default
-  const model = screen.getByRole('combobox', { name: 'jpeg:model' });
-  await expect.element(screen.getByText('ycbcr', { exact: true })).toBeVisible();
-  await model.click();
-  await screen.getByRole('option', { name: 'rgb' }).click();
-  expect(said('codecOpts')).toMatchObject({ codecOpts: { 'jpeg:model': 'rgb' } });
-
-  // anything else: typed
-  await screen.getByRole('textbox', { name: 'jpeg:comment' }).fill('hi');
-  expect(said('codecOpts')).toMatchObject({ codecOpts: { 'jpeg:comment': 'hi' } });
-  await expect.element(screen.getByRole('switch', { name: 'png:interlace' })).not.toBeInTheDocument();
 });

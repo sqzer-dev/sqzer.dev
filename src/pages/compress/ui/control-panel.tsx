@@ -17,12 +17,11 @@ import { SolidPanels } from './solid-panels';
 export function ControlPanel({ form }: { form: ControlsForm }) {
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
   const chosen = useSearch((snapshot) => snapshot.context.result?.output.format ?? null);
-  // what the others say decides which controls apply, and only these four do
+  // what the others say decides which controls apply, and only these three do
   const format = useSelector(form.store, (state) => state.values.format);
   const mode = useSelector(form.store, (state) => state.values.mode);
   const fit = useSelector(form.store, (state) => state.values.fit);
-  const resize = useSelector(form.store, (state) => state.values.resize);
-  const applies = applicable({ format, mode, fit, resize }, codecs, chosen);
+  const applies = applicable({ format, mode, fit }, codecs, chosen);
 
   return (
     <form

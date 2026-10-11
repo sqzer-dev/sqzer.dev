@@ -7,7 +7,7 @@ import type { Applicable } from '../lib/codec';
 import type { Controls } from '../model/controls';
 import { RangeField } from './fields';
 import type { ControlsForm } from './form';
-import { TargetSlider } from './target-slider';
+import { TargetSlider, TargetValue } from './target-slider';
 
 type ChoiceProps = {
   /** The way of saying the quality this card is. */
@@ -17,6 +17,8 @@ type ChoiceProps = {
   active: boolean;
   /** The id the title carries, for the control under it to be named by. */
   titleId?: string;
+  /** At the end of the title row: the value, where a slider has one. */
+  aside?: ReactNode;
   children?: ReactNode;
 };
 
@@ -25,19 +27,41 @@ type ChoiceProps = {
  * look says which is chosen, the border on the active one and the others dimmed. A press anywhere
  * on the card picks it, which the group hears by `data-choice`, and so does moving its control.
  */
-function Choice({ value, title, active, titleId, children }: ChoiceProps) {
+function Choice({ value, title, active, titleId, aside, children }: ChoiceProps) {
   return (
     <div
       data-choice={value}
       data-active={active || undefined}
       className="flex flex-col gap-2 rounded-md border border-transparent p-2 transition-[border-color,opacity] not-data-active:opacity-60 data-active:border-input"
     >
-      <RadioGroupTitle value={value}>
-        {/* the id is on the text: the radio gives its own id to its parts */}
-        <span id={titleId}>{title}</span>
-      </RadioGroupTitle>
+      <div className="flex items-baseline justify-between gap-2">
+        <RadioGroupTitle value={value}>
+          {/* the id is on the text: the radio gives its own id to its parts */}
+          <span id={titleId}>{title}</span>
+        </RadioGroupTitle>
+        {aside}
+      </div>
       {children}
     </div>
+  );
+}
+
+type TargetChoiceProps = QualityChoiceProps & { titleId: string };
+
+/** The target score, as the first card: its number at the title row, the slider under it. */
+function TargetChoice({ form, active, titleId, pick }: TargetChoiceProps) {
+  return (
+    <Choice
+      value="target"
+      title="Target score"
+      active={active}
+      titleId={titleId}
+      aside={<form.Field name="target">{(score) => <TargetValue field={score} onMove={pick} />}</form.Field>}
+    >
+      <form.Field name="target">
+        {(score) => <TargetSlider field={score} labelledBy={titleId} onMove={pick} />}
+      </form.Field>
+    </Choice>
   );
 }
 
@@ -111,13 +135,12 @@ export function QualityFields({ form, applies }: QualityFieldsProps) {
             }}
           >
             {applies.target && (
-              <Choice value="target" title="Target score" active={mode === 'target'} titleId={titleId}>
-                <form.Field name="target">
-                  {(score) => (
-                    <TargetSlider field={score} labelledBy={titleId} onMove={() => field.handleChange('target')} />
-                  )}
-                </form.Field>
-              </Choice>
+              <TargetChoice
+                form={form}
+                active={mode === 'target'}
+                titleId={titleId}
+                pick={() => field.handleChange('target')}
+              />
             )}
             {applies.quality && (
               <QualityChoice form={form} active={mode === 'quality'} pick={() => field.handleChange('quality')} />

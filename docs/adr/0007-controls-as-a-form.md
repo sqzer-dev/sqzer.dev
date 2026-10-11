@@ -1,7 +1,7 @@
 # ADR-0007: The controls are a form
 
 **Status:** Accepted   **Date:** 2026-10-08   **Deciders:** Vlad (sole maintainer)
-**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. D6 is the maintainer's design review of the controls: the kinds of control, the quality as cards, the resize as a section, the defaults shown, the type scaled on a 2K screen. Nothing else in ADR-0001 to ADR-0006 changes.
+**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. D6 to D8 are the maintainer's design review of the controls, in three rounds: the kinds of control, the quality as cards, the resize as a section, the defaults shown, the values typed where they are shown, and the picture holding its size on the device across the browser's zoom. Nothing else in ADR-0001 to ADR-0006 changes.
 
 ---
 
@@ -114,8 +114,9 @@ format      with the format chosen per image, the trigger names the format the n
             there are none to show
 result      the result panel keeps its height, up to two fifths of the column, and the options panel
             above it is what scrolls, so a tall list of options no longer squeezes the result
-scale       on a screen 2048 px wide or more the root type is 18 px, so everything, in rem, grows by
-            an eighth: the controls read small on a 2K screen at 16 px
+scale       on a screen 2048 px wide or more the root type was 18 px, so the controls read larger on
+            a 2K screen. Taken back in D8: the browser's own zoom does that, once the picture holds
+            its size through it
 ```
 
 What stays: a hidden control sends nothing, `optionsOf` is the one translation, and the package validates.
@@ -144,6 +145,38 @@ asked       the package has no call that reports its defaults, effort's among th
             call is asked of sqzer-dev/sqzer (the issue is linked under Sources); when it lands,
             lib/defaults.ts goes
 ```
+
+### D8. The third round
+
+```text
+resize      behind an expander like Advanced, with no switch: the sides show the image's own size
+            until typed and send nothing then, so nothing was needed to say the resize is off. The
+            image's own size is kept apart from the size it was drawn at, which for a vector is the
+            width asked for
+box         width and height on one line, with the link between them as an icon button, as in
+            Blender: linked, a side typed sets the other by the image's ratio. The preset under them
+            is read off the sides, 25, 33.33, 50, 100, 200, 300 or 400 %, or Custom, as Squoosh
+            lists them; one chosen sets both sides, and one above 100 % allows enlarging too, since
+            nothing scales up without it
+values      the value of every slider is typed where it is shown: the number at the right of the
+            row, dotted under, opens a field in its place on a press, with the number to go to on
+            Enter or on leaving it, kept within the range, and nothing on Escape. The target's
+            number stands at the title row of its card, where the fixed quality's does, and the
+            words under the slider say the reading alone
+thumb       a step more vibrant than the band it stands in, step 9 to the track's 8, with the
+            foreground as its border
+zoom        the type no longer scales on a 2K screen: the browser's zoom does that. The picture
+            holds its size on the device through it: the view is in the pixels of the moment the
+            page loaded, the screen and every move are brought into them by the device pixel ratio
+            of the moment, and the comparison takes the view back into CSS pixels. 100 % stays the
+            picture's own pixels as they were at load, and the fit stays the fit
+```
+
+### D9. The bands at one brightness
+
+Radix's steps are tuned per hue for contrast against the backgrounds of its scales, not for one brightness across hues: at step 8 in dark, the yellow reads dim and the blue bright. The four `score` tokens are OKLCH colours instead, one lightness and one chroma with the hue alone changing, 25 for red, 90 for yellow, 145 for green and 255 for blue, lighter in dark than in light; the thumb is the band's hue at more chroma, with the foreground as its border. The `yellow` and `green` scales leave the stylesheet again. The ticks cross the track over it and under the thumb, opaque, in the colour of the band to their left. The link between the sides carries a tooltip, as the view bar's buttons do.
+
+Two more from the same look. With a fit that needs both sides, every fit but `inside`, a side of the box left at the image's own size is sent as such, since that is what the field shows: `cover` with the width typed alone no longer comes back as the package's refusal. And a value's field closes on leaving it, not on the window losing the focus to another window or frame, which the radio group's own focus handling and a test runner's parallel frames both do; the field's presses and focus stay its own, since the group selects the text of any input that gains focus inside it, which a number input refuses.
 
 ---
 

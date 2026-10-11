@@ -150,6 +150,25 @@ test('another image after a result goes to the worker that is there', () => {
   expect(search.actor.getSnapshot().context.result).toBeNull();
 });
 
+test("an image's own size is kept apart from the size it was drawn at", () => {
+  const raster = encoding();
+  expect(raster.actor.getSnapshot().context.original).toMatchObject({ width: 48, height: 32 });
+
+  const vector = start();
+  vector.actor.send({ type: 'picked', image: picked('c.svg', true), options: {} });
+  vector.tell(decoded(0));
+  expect(vector.actor.getSnapshot().context.original).toMatchObject({ width: 48, height: 32 });
+  vector.tell(done);
+  vector.actor.send({ type: 'options', options: { width: 24 } });
+  vector.tell({
+    type: 'decoded',
+    decoded: { width: 24, height: 16, format: 'svg', alpha: false, animated: false },
+    drawnWidth: 24,
+  });
+  expect(vector.actor.getSnapshot().context.decoded).toMatchObject({ width: 24 });
+  expect(vector.actor.getSnapshot().context.original).toMatchObject({ width: 48 });
+});
+
 test('a vector image is drawn again when its width changes, and not when it stays', () => {
   const search = start();
   search.actor.send({ type: 'picked', image: picked('c.svg', true), options: { width: 100 } });

@@ -119,7 +119,7 @@ test('at 768 px the view bar and the panels keep apart', async () => {
 test('a collapsed panel keeps what was typed into it', async () => {
   const { screen, encodes, drop } = await renderPage();
   await drop();
-  await screen.getByRole('switch', { name: 'Resize' }).click();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('1600');
 
@@ -174,7 +174,7 @@ test('the controls rest before a search starts with what they say', async () => 
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
 
-  await screen.getByRole('switch', { name: 'Resize' }).click();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('16');
   await width.fill('1600');
@@ -189,26 +189,31 @@ test('the controls rest before a search starts with what they say', async () => 
 test('a control changed just before another image is picked does not start the search twice', async () => {
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
-  await screen.getByRole('switch', { name: 'Resize' }).click();
-  await wait(SETTLED_MS);
+  await screen.getByRole('button', { name: 'Resize' }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
   await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
   await wait(SETTLED_MS);
 
-  expect(encodes()).toEqual([{}, {}, { width: 1600, height: 1067 }]);
+  expect(encodes()).toEqual([{}, { width: 1600, height: 1067 }]);
   expect(workers).toHaveLength(1);
 });
 
 test('on a phone the panels are one bottom expander, and the controls keep what they say across the change', async () => {
   const { screen, drop } = await renderPage();
   await drop();
-  await screen.getByRole('switch', { name: 'Resize' }).click();
+  await screen.getByRole('button', { name: 'Resize' }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
 
   await page.viewport(390, 780);
 
   await expect.element(screen.getByRole('dialog', { name: 'Result and options' })).toBeInTheDocument();
   await expect.element(screen.getByRole('button', { name: 'Options' })).not.toBeInTheDocument();
+  // the expander is closed again in the new layout, what was typed into it is not. It sits in the
+  // sheet at rest, below the screen's edge, so the press is the element's own
+  screen
+    .getByRole('button', { name: 'Resize' })
+    .element()
+    .dispatchEvent(new MouseEvent('click', { bubbles: true }));
   await expect.element(screen.getByRole('spinbutton', { name: 'Width' })).toHaveValue(1600);
 
   // on the narrowest phone the view bar wraps, so every control stays within the screen
@@ -224,14 +229,15 @@ test('the untouched target stands at the score the result reports, and sends not
   const slider = screen.getByRole('slider', { name: 'Target score' });
 
   await expect.element(slider).toHaveValue('72');
-  await expect.element(screen.getByText('default: 72, high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByText('default: high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: /^Target score: 72\./u })).toBeVisible();
   // the format the package chose for this run, with the choice
   await expect.element(screen.getByText('chosen per image: JPEG')).toBeVisible();
   expect(encodes()).toEqual([{}]);
 
   slider.element().focus();
   await userEvent.keyboard('{ArrowRight}');
-  await expect.element(screen.getByText('73, high: barely noticeable side by side')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: /^Target score: 73\./u })).toBeVisible();
   await wait(SETTLED_MS);
   expect(encodes()).toEqual([{}, { target: 73 }]);
 });
@@ -249,36 +255,6 @@ test('another image picked under `chosen per image` keeps the backend settings o
   await wait(SETTLED_MS);
 
   expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
-});
-
-test("the box shows the image's own size, a side typed sets the other by its ratio, and a preset sets both", async () => {
-  const { screen, encodes, drop } = await renderPage();
-  await drop();
-  await screen.getByRole('switch', { name: 'Resize' }).click();
-  const width = screen.getByRole('spinbutton', { name: 'Width' });
-  const height = screen.getByRole('spinbutton', { name: 'Height' });
-  await expect.element(width).toHaveValue(48);
-  await expect.element(height).toHaveValue(32);
-  await wait(SETTLED_MS);
-  // the image's own size is what the package does with nothing: nothing was sent
-  expect(encodes().at(-1)).toEqual({});
-
-  await width.fill('24');
-  await expect.element(height).toHaveValue(16);
-  await wait(SETTLED_MS);
-  expect(encodes().at(-1)).toEqual({ width: 24, height: 16 });
-
-  await screen.getByRole('combobox', { name: 'Preset' }).click();
-  await screen.getByRole('option', { name: '50 %' }).click();
-  await expect.element(width).toHaveValue(24);
-  await expect.element(height).toHaveValue(16);
-
-  // the lock off, a side typed leaves the other
-  await screen.getByRole('switch', { name: 'Keep the ratio' }).click();
-  await width.fill('12');
-  await expect.element(height).toHaveValue(16);
-  await wait(SETTLED_MS);
-  expect(encodes().at(-1)).toEqual({ width: 12, height: 16 });
 });
 
 test('an option behind Advanced reaches the search as the package spells it', async () => {
