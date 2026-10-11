@@ -69,7 +69,17 @@ async function settled(surface: HTMLElement) {
       resolve();
     });
   });
-  await Promise.all(surface.getAnimations({ subtree: true }).map((animation) => animation.finished));
+  await ended(surface);
+}
+
+/** Once every animation under the surface has ended, those started in the meantime included. */
+async function ended(surface: HTMLElement): Promise<void> {
+  const running = surface.getAnimations({ subtree: true }).filter((animation) => animation.playState !== 'finished');
+  if (running.length === 0) return;
+  // a transition cut short by a later change of the same property is over too: its `finished` rejects
+  // with an `AbortError`. What replaced it is waited for next
+  await Promise.allSettled(running.map((animation) => animation.finished));
+  await ended(surface);
 }
 
 /** The colours of everything on the surface that has to be told from it, read before it is emptied. */
