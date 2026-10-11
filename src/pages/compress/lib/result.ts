@@ -21,11 +21,16 @@ export function difference(before: number, after: number) {
 /** One line of the details: what it is of, and what it says. */
 export type Detail = { term: string; said: string };
 
-/** What the search did about the target, after the number of trials: reached, missed, or stopped at the encoder's ceiling. */
+/**
+ * What the search did about the target, after the number of trials: reached, missed, or stopped at
+ * the encoder's ceiling. With `fast` there was no search: one encode at the seed quality, and the
+ * package says nothing of the target being reached.
+ */
 function searched({ reached, capped, iterations, trials }: Output) {
+  if (reached === undefined) return 'no search: one encode at the seed quality';
   const count = iterations ?? trials?.length ?? 0;
   const trial = count === 1 ? '1 trial' : `${count} trials`;
-  if (reached === true) return `reached in ${trial}`;
+  if (reached) return `reached in ${trial}`;
   if (capped === true) return `not reached in ${trial}; this is the best quality the encoder has`;
   return `not reached in ${trial}`;
 }

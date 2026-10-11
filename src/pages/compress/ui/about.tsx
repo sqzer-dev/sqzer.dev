@@ -30,7 +30,8 @@ function TrustNote() {
           <>
             <p>
               The page is served with this <code>Content-Security-Policy</code>, which the browser enforces. Nothing in
-              it names another origin: the page can load its own files, and send a request nowhere.
+              it names another origin: the browser blocks a connection to any site but this one. That the page sends
+              nothing to this site either is what the Network panel shows.
             </p>
             <pre className="rounded-md border px-2 py-1 font-mono text-[0.625rem]/relaxed break-all whitespace-pre-wrap">
               {POLICY}
@@ -38,8 +39,8 @@ function TrustNote() {
           </>
         )}
         <p>
-          To check it, open the browser&apos;s developer tools at the Network panel and drop an image: every request is
-          to this origin, and none is made while the image is encoded. The policy is in the page&apos;s source, in the{' '}
+          To check, open the browser&apos;s developer tools at the Network panel and drop an image: the page fetches its
+          own files, and makes no request while the image is encoded. The policy is in the page&apos;s source, in the{' '}
           <code>meta</code> tag at its top.
         </p>
       </CollapsibleContent>

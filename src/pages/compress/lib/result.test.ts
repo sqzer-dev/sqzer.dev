@@ -72,6 +72,18 @@ test('a search that stopped short says so in its target line', () => {
   );
 });
 
+test('a fast result had no search: the target line says so, instead of a target missed in no trials', () => {
+  const fast: Output = { ...output, quality: 62 };
+  delete fast.score;
+  delete fast.reached;
+  delete fast.capped;
+  delete fast.iterations;
+  delete fast.trials;
+  const details = detailsOf(source, { ...searched(), output: fast, asked: { fast: true } });
+  expect(details.map((detail) => detail.term)).toEqual(['input', 'output', 'quality', 'target', 'time']);
+  expect(details[3]?.said).toBe('70, no search: one encode at the seed quality');
+});
+
 test('a lossless result has no quality, score or target to tell of, and an image drawn by the browser says so', () => {
   const drawn: Output = { ...output, lossless: true, target: 70 };
   delete drawn.inputFormat;

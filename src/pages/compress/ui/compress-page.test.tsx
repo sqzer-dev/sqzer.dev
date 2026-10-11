@@ -18,7 +18,7 @@ test('with no file, the page is the name at the top and one drop target with the
   // the way to check the claim (ADR-0001 D7): the policy is the build's, and this copy has none to quote
   await screen.getByRole('button', { name: "Don't trust us?" }).click();
   await expect.element(screen.getByText(/^This copy of the page carries no Content-Security-Policy/u)).toBeVisible();
-  await expect.element(screen.getByText(/^To check it, open the browser's developer tools/u)).toBeVisible();
+  await expect.element(screen.getByText(/^To check, open the browser's developer tools/u)).toBeVisible();
   // the target fills the page between the name and the footer
   const target = screen.getByRole('main').element().firstElementChild?.getBoundingClientRect();
   expect(target?.height).toBeGreaterThan(400);

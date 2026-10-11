@@ -46,7 +46,8 @@ export function ResultHeadline() {
   const { file } = result;
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-4">
+      {/* the button drops under the numbers where the two do not share the line, a large size under a finger */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p data-slot="result-size" className="flex items-baseline gap-2 whitespace-nowrap">
           <span className="text-xl/tight font-semibold tabular-nums">{bytes(file.size)}</span>
           <span className="text-muted-foreground">{difference(before, file.size)}</span>

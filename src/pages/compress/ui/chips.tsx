@@ -9,6 +9,7 @@ import type { Chip } from '../lib/chips';
 /**
  * How many chips of `row` fit on its first line, with the `+N` chip after them when not all do.
  * Every chip is laid out, the ones past the line invisible, so each has its width to measure.
+ * The row has no padding, so its `clientWidth` is the room the chips have.
  */
 function fitting(row: HTMLElement) {
   const widths = [...row.querySelectorAll('[data-chip]')].map((chip) => chip.getBoundingClientRect().width);
@@ -84,33 +85,35 @@ export function Chips({ chips }: { chips: Chip[] }) {
   const shown = expanded || fit === null ? chips.length : fit;
   const hidden = chips.length - shown;
   return (
-    // room for a focus ring inside the clip, which is one line of chips
-    <div ref={row} className={cn('-m-1 flex flex-wrap gap-1 p-1', !expanded && 'max-h-7 overflow-hidden')}>
-      {chips.slice(0, shown).map((chip) => (
-        <ChipItem key={chip.word} chip={chip} shown />
-      ))}
-      {!expanded && (
-        <Badge
-          variant="outline"
-          data-more=""
-          inert={hidden === 0}
-          className={cn('min-w-8 text-foreground', hidden === 0 && 'invisible')}
-          render={
-            <button
-              type="button"
-              aria-label={`${hidden} more`}
-              onClick={() => {
-                setExpanded(true);
-              }}
-            />
-          }
-        >
-          +{hidden}
-        </Badge>
-      )}
-      {chips.slice(shown).map((chip) => (
-        <ChipItem key={chip.word} chip={chip} shown={false} />
-      ))}
+    // the clip is one line of chips, with room for a focus ring inside it; the row measured is the one without padding
+    <div className={cn('-m-1 p-1', !expanded && 'max-h-7 overflow-hidden')}>
+      <div ref={row} className="flex flex-wrap gap-1">
+        {chips.slice(0, shown).map((chip) => (
+          <ChipItem key={chip.word} chip={chip} shown />
+        ))}
+        {!expanded && (
+          <Badge
+            variant="outline"
+            data-more=""
+            inert={hidden === 0}
+            className={cn('min-w-8 text-foreground', hidden === 0 && 'invisible')}
+            render={
+              <button
+                type="button"
+                aria-label={`${hidden} more`}
+                onClick={() => {
+                  setExpanded(true);
+                }}
+              />
+            }
+          >
+            +{hidden}
+          </Badge>
+        )}
+        {chips.slice(shown).map((chip) => (
+          <ChipItem key={chip.word} chip={chip} shown={false} />
+        ))}
+      </div>
     </div>
   );
 }
