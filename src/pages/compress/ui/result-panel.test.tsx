@@ -15,9 +15,12 @@ function drawing(screen: Awaited<ReturnType<typeof renderPage>>['screen']) {
   return {
     svg,
     points: svg.querySelectorAll('circle').length,
-    score: svg.querySelector('[data-series=score]')?.getAttribute('d'),
-    quality: svg.querySelector('[data-series=quality]')?.getAttribute('d'),
-    runs: [...svg.querySelectorAll('[data-run] path')].map((path) => path.getAttribute('d')),
+    score: svg.querySelector(':scope > [data-series=score]')?.getAttribute('d'),
+    quality: svg.querySelector(':scope > [data-series=quality]')?.getAttribute('d'),
+    runs: [...svg.querySelectorAll('[data-run]')].map((run) => ({
+      score: run.querySelector('[data-series=score]')?.getAttribute('d'),
+      quality: run.querySelector('[data-series=quality]')?.getAttribute('d'),
+    })),
     label: svg.querySelector('text')?.textContent,
   };
 }
@@ -46,14 +49,15 @@ test('the search before stays behind the next as a subtle line', async () => {
   const { screen, drop } = await renderPage();
   await drop();
   await expect.poll(() => drawing(screen).points).toBe(2);
-  const first = drawing(screen).score;
+  const { score: first, quality: firstQuality } = drawing(screen);
 
   await screen.getByRole('button', { name: 'archive, 85' }).click();
   await wait(SETTLED_MS);
 
   await expect.poll(() => drawing(screen).runs).toHaveLength(1);
   const { runs, points } = drawing(screen);
-  expect(runs[0]).toBe(first);
+  // the run before keeps both its lines
+  expect(runs[0]).toEqual({ score: first, quality: firstQuality });
   expect(points).toBe(2);
   // the next image keeps the runs of the one before: they last as long as the tab
   await screen.getByLabelText('New image').upload(new File(['bytes'], 'other.jpg', { type: 'image/jpeg' }));

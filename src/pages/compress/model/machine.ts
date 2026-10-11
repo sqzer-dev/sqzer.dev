@@ -10,6 +10,9 @@ import type { Picked } from './picked';
 // How long the worker may take to finish what it is doing, once the controls
 // have moved on, before it is ended.
 const PATIENCE_MS = 300;
+// How many searches gone by the chart keeps behind the current one: enough to
+// weave a pattern, and not so many that it is a grey field.
+const RUNS_KEPT = 5;
 
 /** A result, with what the search was asked: the output answers those options, and nothing else. */
 export type Searched = EncodeResult & { asked: EncodeOptions };
@@ -45,7 +48,7 @@ type Context = {
   decoded: Decoded | null;
   /** The trials of the running search as they land, and of the newest one after it. */
   trials: TrialProgress[];
-  /** The searches before that one, oldest first, each as far as it got: the subtle lines of the chart (ADR-0001 D4). They last as long as the tab. */
+  /** The newest `RUNS_KEPT` searches before that one, oldest first, each as far as it got: the subtle lines of the chart (ADR-0001 D4). They last as long as the tab. */
   runs: Trial[][];
   result: Searched | null;
   error: string | null;
@@ -121,7 +124,7 @@ export const searchMachine = setup({
     // start of a search, and at an encode that follows one the controls outdated
     keepRun: assign(({ context }) => ({
       trials: [],
-      runs: context.trials.length === 0 ? context.runs : [...context.runs, context.trials],
+      runs: context.trials.length === 0 ? context.runs : [...context.runs, context.trials].slice(-RUNS_KEPT),
     })),
     read: enqueueActions(({ context, enqueue }) => {
       const { image, unreadable } = context;

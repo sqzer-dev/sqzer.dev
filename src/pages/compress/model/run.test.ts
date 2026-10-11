@@ -53,6 +53,20 @@ test('the trials of every search gone by stay as runs, as far as each got', () =
   expect(search.actor.getSnapshot().context.runs).toHaveLength(2);
 });
 
+test('the chart keeps the newest five runs, and the oldest goes as another lands', () => {
+  const search = encoding();
+  for (let n = 1; n <= 7; n++) {
+    search.tell({ type: 'trial', trial: { n: 1, max: 6, quality: n, score: 50 } });
+    search.tell(done);
+    search.actor.send({ type: 'options', options: { target: 50 + n } });
+  }
+
+  const { runs } = search.actor.getSnapshot().context;
+  expect(runs).toHaveLength(5);
+  expect(runs[0]?.[0]?.quality).toBe(3);
+  expect(runs.at(-1)?.[0]?.quality).toBe(7);
+});
+
 test('the chart draws the running search as it lands, then the result as the package reports it', () => {
   const search = encoding();
   expect(currentTrials(search.actor.getSnapshot())).toEqual([]);
