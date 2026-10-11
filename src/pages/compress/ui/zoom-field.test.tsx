@@ -74,3 +74,23 @@ test('a click whose wait is left by the focus opens nothing', async () => {
   await expect.element(screen.getByRole('textbox', { name: 'Zoom' })).not.toBeInTheDocument();
   await expect.element(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
 });
+
+test('the window going leaves the field open with what was typed, for when the window comes back', async () => {
+  const onZoom = vi.fn<(scale: number) => void>();
+  const screen = await render(<ZoomField scale={1} onZoom={onZoom} />);
+  await screen.getByRole('button', { name: 'Zoom 100 %' }).click();
+  const zoom = screen.getByRole('textbox', { name: 'Zoom' });
+  await expect.element(zoom).toHaveFocus();
+  await zoom.fill('50');
+
+  // what Firefox and Chromium send the focused element as the window goes: a blur that leaves it the
+  // document's active element. A test cannot take the window away itself
+  zoom.element().dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+
+  await expect.element(zoom).toHaveValue('50');
+  await expect.element(zoom).toHaveFocus();
+  expect(onZoom).not.toHaveBeenCalled();
+  // and leaving it for real still applies
+  await userEvent.tab();
+  expect(onZoom).toHaveBeenLastCalledWith(0.5);
+});
