@@ -83,7 +83,8 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
   return (
     <ToastPrimitive.Title
       data-slot="toast-title"
-      className={cn('text-xs/relaxed font-medium tabular-nums', className)}
+      // a file's name has no space to break at, and must not run under the buttons
+      className={cn('text-xs/relaxed font-medium tabular-nums [overflow-wrap:anywhere]', className)}
       {...props}
     />
   );
@@ -94,7 +95,7 @@ function ToastDescription({ className, ...props }: ToastPrimitive.Description.Pr
   return (
     <ToastPrimitive.Description
       data-slot="toast-description"
-      className={cn('font-mono text-xs/relaxed text-muted-foreground', className)}
+      className={cn('font-mono text-xs/relaxed text-muted-foreground [overflow-wrap:anywhere]', className)}
       {...props}
     />
   );
