@@ -1,7 +1,7 @@
 # ADR-0007: The controls are a form
 
 **Status:** Accepted   **Date:** 2026-10-08   **Deciders:** Vlad (sole maintainer)
-**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. Nothing else in ADR-0001 to ADR-0006 changes.
+**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. D6 is the maintainer's design review of the controls: the kinds of control, the quality as cards, the resize as a section, the defaults shown, the type scaled on a 2K screen. Nothing else in ADR-0001 to ADR-0006 changes.
 
 ---
 
@@ -82,6 +82,44 @@ The maintainer's review of the slider asked for a coloured track: red, yellow, g
 
 Red on the track is not an alert, and blue on it is not a drop target: the tokens are different, and the rules in `.greptile/config.json` and `CLAUDE.md` name the track as the one place for the four.
 
+The maintainer's second look asked for the colours paler and the track thinner: the tokens are step 8 of each scale, the track is 2 px, and the ticks of the presets are 2 px thick, cross the track under the thumb, and take the colour of the band to their left, dimmed. The names of the end presets are drawn in by two characters so neither hangs past the track.
+
+### D6. The controls, after the maintainer's review
+
+The maintainer reviewed the controls on 2026-10-11 against Squoosh, and this is what they became:
+
+```text
+kinds       a range is a slider, with its value at the right: the target, the fixed quality, the
+            effort, and a backend option whose help says `a..=b`. A backend option whose default is
+            `true` or `false` is a switch. One whose help lists its values in backticks, with the
+            default among them, is a select. Anything else is typed. The kind is read from what
+            codecs() says of the option, in lib/option-kind.ts, and a help the page cannot read
+            falls back to a field, so a new option in a release of sqzer is always reachable
+defaults    a control shows the package's default until it is touched (ADR-0001 D3): a field as its
+            placeholder, a select as its muted value, a switch at its state, a slider resting at it.
+            A slider whose default is not a number of its range, auto or unstated, has a notch left
+            of the range that means the default. Where the README states a default it is in
+            lib/defaults.ts, the one copy, read again at a version bump; what it does not state
+            says `default` with no number. Nothing of this is sent: an untouched control sends
+            nothing, and a backend option set back to its default is empty again
+quality     three cards, the title of each a radio without its circle, the active one bordered in
+            gray 10 and the others dimmed to 60 %, still one radio group for the keyboard. Moving
+            the slider of a card picks it
+resize      one section under a switch, as on Squoosh: width and height side by side, the fit, the
+            position and background where the fit takes them, a factor, enlarging and the filter.
+            Off, nothing of it is sent, and the image keeps its size. ADR-0001 D3 put the width after
+            the format on its own; it is in this section now
+format      with the format chosen per image, the trigger names the format the newest result says the
+            package chose, and the backend options behind Advanced are that format's. Before a result
+            there are none to show
+result      the result panel keeps its height, up to two fifths of the column, and the options panel
+            above it is what scrolls, so a tall list of options no longer squeezes the result
+scale       on a screen 2048 px wide or more the root type is 18 px, so everything, in rem, grows by
+            an eighth: the controls read small on a 2K screen at 16 px
+```
+
+What stays: a hidden control sends nothing, `optionsOf` is the one translation, and the package validates.
+
 ---
 
 ## 3. Options considered
@@ -93,6 +131,10 @@ Red on the track is not an alert, and blue on it is not a drop target: the token
 **The search machine.** XState already holds state. Rejected: ADR-0002 D10 keeps the machine to the search, and the controls are not the search.
 
 **`createFormHook` and field contexts.** TanStack's composition: tried, and dropped for the chunk it costs the first paint, as D1 says.
+
+**A resize section without a switch, open from the start.** Keeps the width one click closer. Rejected by the review: Squoosh's switch says at a glance whether the image is resized at all, and off it sends nothing, which is what an untouched control does here.
+
+**Parsing the help text for the kind of a backend option.** The alternative is a kind in `codecs()` itself, which is a change to `sqzer`. The help has a fixed shape at 0.3.0, and the fallback is a field, so the page loses nothing when the shape changes; asked of `sqzer` if it does.
 
 **The column of panels starting lower, under the toaster.** Keeps ADR-0005 as it is. Rejected: the stack is up to three toasts tall and the Options panel would lose that height to scrolling for the whole search, while the top centre is free.
 
@@ -114,6 +156,7 @@ Red on the track is not an alert, and blue on it is not a drop target: the token
 
 - `CLAUDE.md` gets the form and `optionsOf` under its rules, and the `codecs-drive-the-controls` rule in `.greptile/config.json` names them.
 - ADR-0005 gets a `Superseded by` line for the viewport's place; its row in `docs/adr/README.md` and its entry in `.greptile/files.json` stay as they are, since the record still says what it says.
+- `lib/defaults.ts` is the one copy of the defaults the package's README states, and a version bump reads it again.
 - ADR-0003 gets a `Superseded by` line for the four `score` tokens of D5, next to the one for ADR-0006 that it was missing. The `yellow` and `green` scales join the stylesheet's imports, light and dark, and the `one-styling-system` rule in `.greptile/config.json` and the palette line of `CLAUDE.md` name the track as the one place for them.
 - `@tanstack/react-form` is a dependency at an exact version, with `@tanstack/form-core`, `@tanstack/store`, `@tanstack/react-store`, `@tanstack/pacer-lite` and `@tanstack/devtools-event-client` under it, all MIT. Vite lists their licences.
 - Validation, if the page ever wants to say something before the package does, has a place: the form's validators. ADR-0001 D3 says not to, and this record changes nothing there.

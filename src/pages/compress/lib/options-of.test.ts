@@ -1,15 +1,11 @@
 import { expect, test } from 'vitest';
 
-import type { Codec } from '@/shared/api';
+import type { Codec, CodecOption } from '@/shared/api';
 
 import { UNTOUCHED } from '../model/controls';
 import { optionsOf } from './options-of';
 
-const codec = (
-  format: string,
-  lossy: boolean,
-  options: Codec['encoder'] extends infer E ? (E extends { options: infer O } ? O : never) : never = [],
-): Codec => ({
+const codec = (format: string, lossy: boolean, options: CodecOption[] = []): Codec => ({
   format,
   extension: format,
   mime: `image/${format}`,
@@ -61,8 +57,15 @@ test('lossless is sent once it is chosen, with a format that has it or none', ()
   });
 });
 
-test('a format and a width are sent as they are said', () => {
-  expect(optionsOf({ ...UNTOUCHED, format: 'jpeg', width: '1600' }, codecs)).toEqual({ format: 'jpeg', width: 1600 });
+test('a format is sent as it is said, and a width once the resize is on', () => {
+  expect(optionsOf({ ...UNTOUCHED, format: 'jpeg', resize: true, width: '1600' }, codecs)).toEqual({
+    format: 'jpeg',
+    width: 1600,
+  });
+  // off, the resize sends nothing, whatever was typed into it
+  expect(
+    optionsOf({ ...UNTOUCHED, width: '1600', fit: 'cover', scale: '2', enlarge: true, filter: 'box' }, codecs),
+  ).toEqual({});
 });
 
 test('a format that is lossless only takes no score and no quality', () => {
@@ -70,16 +73,17 @@ test('a format that is lossless only takes no score and no quality', () => {
   expect(optionsOf({ ...UNTOUCHED, format: 'png', mode: 'quality' }, codecs)).toEqual({ format: 'png' });
 });
 
-test('every option behind Advanced is sent as the package spells it, and nothing that was left empty', () => {
+test('every option behind Advanced and the resize is sent as the package spells it, and nothing that was left empty', () => {
   expect(
     optionsOf(
       {
         ...UNTOUCHED,
-        effort: '9',
+        effort: 9,
         subsampling: '420',
         fast: true,
         keepIcc: true,
         keepMetadata: true,
+        resize: true,
         height: '900',
         fit: 'contain',
         position: 'top-left',
@@ -110,37 +114,37 @@ test('every option behind Advanced is sent as the package spells it, and nothing
 
 test('a control that does not apply sends nothing: the package would refuse the combination', () => {
   // `position` and `background` go with a fit that crops or pads
-  expect(optionsOf({ ...UNTOUCHED, fit: 'inside', position: 'top', background: 'white' }, codecs)).toEqual({
+  expect(
+    optionsOf({ ...UNTOUCHED, resize: true, fit: 'inside', position: 'top', background: 'white' }, codecs),
+  ).toEqual({
     fit: 'inside',
   });
-  expect(optionsOf({ ...UNTOUCHED, fit: 'cover', position: 'top', background: 'white' }, codecs)).toEqual({
-    fit: 'cover',
-    position: 'top',
-  });
+  expect(optionsOf({ ...UNTOUCHED, resize: true, fit: 'cover', position: 'top', background: 'white' }, codecs)).toEqual(
+    {
+      fit: 'cover',
+      position: 'top',
+    },
+  );
   // `fast` goes with a target
   expect(optionsOf({ ...UNTOUCHED, mode: 'quality', fast: true }, codecs)).toEqual({ quality: 80 });
   // subsampling means nothing to a lossless encoder
   expect(optionsOf({ ...UNTOUCHED, format: 'png', subsampling: '444' }, codecs)).toEqual({ format: 'png' });
 });
 
-test("the chosen encoder's backend options are sent as a map, and the other encoders' are kept but not sent", () => {
-  const typed = {
+test("the backend options of the encoder in use are sent as a map, and the other encoders' are kept but not sent", () => {
+  const set = {
     ...UNTOUCHED,
     codecOpts: { 'jpeg:progressive': 'false', 'png:interlace': 'true', 'png:optimize_alpha': '' },
   };
-  expect(optionsOf({ ...typed, format: 'jpeg' }, codecs)).toEqual({
+  expect(optionsOf({ ...set, format: 'jpeg' }, codecs)).toEqual({
     format: 'jpeg',
     codecOpts: new Map([['jpeg:progressive', 'false']]),
   });
-  expect(optionsOf({ ...typed, format: 'png' }, codecs)).toEqual({
+  expect(optionsOf({ ...set, format: 'png' }, codecs)).toEqual({
     format: 'png',
     codecOpts: new Map([['png:interlace', 'true']]),
   });
-  // with the format chosen per image, every encoder's options are sent: the package takes them all
-  expect(optionsOf(typed, codecs)).toEqual({
-    codecOpts: new Map([
-      ['png:interlace', 'true'],
-      ['jpeg:progressive', 'false'],
-    ]),
-  });
+  // with the format chosen per image, the options of the format the newest result says it chose, and none before one
+  expect(optionsOf(set, codecs)).toEqual({});
+  expect(optionsOf(set, codecs, 'png')).toEqual({ codecOpts: new Map([['png:interlace', 'true']]) });
 });

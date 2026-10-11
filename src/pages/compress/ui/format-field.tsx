@@ -4,8 +4,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSearch } from '../model/context';
 import type { FieldOf } from './form';
 
+type FormatFieldProps = {
+  field: FieldOf<string>;
+  /** The format the newest result says the package chose, shown with `chosen per image`. */
+  chosen: string | null;
+};
+
 /** Every format the package can write, as `codecs()` lists them, or the one it chooses per image. */
-export function FormatField({ field }: { field: FieldOf<string> }) {
+export function FormatField({ field, chosen }: FormatFieldProps) {
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
   const items = [
     { value: 'auto', label: 'chosen per image' },
@@ -15,6 +21,10 @@ export function FormatField({ field }: { field: FieldOf<string> }) {
         : [],
     ),
   ];
+  const shown = (value: string) => {
+    const label = items.find((item) => item.value === value)?.label;
+    return value === 'auto' && chosen !== null ? `${label}: ${chosen.toUpperCase()}` : label;
+  };
 
   return (
     <Field>
@@ -27,7 +37,7 @@ export function FormatField({ field }: { field: FieldOf<string> }) {
         }}
       >
         <SelectTrigger id="format" className="w-full">
-          <SelectValue />
+          <SelectValue>{shown}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {items.map(({ value, label }) => (

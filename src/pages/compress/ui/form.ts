@@ -36,9 +36,10 @@ export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
       onChange: ({ formApi }) => {
         clearTimeout(resting.current);
         resting.current = window.setTimeout(() => {
+          const { codecs, result } = search.getSnapshot().context;
           search.send({
             type: 'options',
-            options: optionsOf(formApi.state.values, search.getSnapshot().context.codecs),
+            options: optionsOf(formApi.state.values, codecs, result?.output.format ?? null),
           });
         }, TYPING_MS);
       },

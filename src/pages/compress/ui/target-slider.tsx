@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { Slider } from '@/shared/ui/slider';
 
+import { DEFAULTS } from '../lib/defaults';
 import { BANDS, describe, PRESETS, share, TARGET } from '../lib/score';
 import { useSearch } from '../model/context';
 import type { FieldOf } from './form';
@@ -17,8 +18,6 @@ type TargetSliderProps = {
 
 /** What the newest result says the package did without a target: the score it searched for, or lossless. */
 type Reported = number | 'lossless' | null;
-
-const WEB = PRESETS.find((preset) => preset.name === 'web')?.score ?? TARGET.min;
 
 /**
  * The target the newest result reports, which is the package's default for that image, or that it
@@ -38,14 +37,17 @@ function useReported(): Reported {
 /** The words next to the slider: what the chosen score looks like, or what the default is. */
 function wordsFor(chosen: number | null, reported: Reported) {
   if (chosen === null) {
-    if (reported === null) return 'default';
-    return reported === 'lossless' ? 'default: lossless for this image' : `default: ${describe(reported)}`;
+    if (reported === 'lossless') return 'default: lossless for this image';
+    return `default: ${describe(reported ?? DEFAULTS.target)}`;
   }
   return describe(chosen);
 }
 
 /** Where a score sits on the track, as a custom property the mark is placed by. */
 const at = (score: number): CSSProperties => ({ '--at': `${share(score)}%` });
+
+/** The band a score is in, which is the one to the left of a tick drawn at it. */
+const bandOf = (score: number) => BANDS.toReversed().find((band) => band.from < score)?.token ?? BANDS[0].token;
 
 /**
  * The track as a scale: four bands, red to blue from worst to visually lossless, in the `score`
@@ -59,32 +61,46 @@ const TRACK: CSSProperties = {
   }).join(', ')})`,
 };
 
+/** The ticks of the presets, crossing the track under the thumb, each in the colour of the band to its left, dimmed. */
+function Ticks() {
+  return (
+    <div className="pointer-events-none absolute inset-y-0 right-1.5 left-1.5">
+      {PRESETS.map(({ name, score }) => (
+        <span
+          key={name}
+          className="absolute top-1/2 left-(--at) h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-(--tick) opacity-60"
+          style={{ ...at(score), '--tick': `var(--score-${bandOf(score)})` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 /**
- * The package's presets, marked on the track: a tick crossing the track at each score, and its name
- * under the tick. Each goes to its score when pressed. The first name ends at its tick and the last
- * starts at it, so two presets ten points apart keep their names apart.
+ * The names of the presets under their ticks, each a button that goes to its score. The first and
+ * the last are drawn in from the ends by a couple of characters, so two presets ten points apart
+ * keep their names apart and none hangs past the track.
  */
-function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
+function PresetNames({ onPress }: { onPress: (score: number) => void }) {
   const last = PRESETS.length - 1;
   return (
-    <div className="relative mx-1.5 h-5 text-[0.625rem]/4 text-muted-foreground">
+    <div className="relative mx-1.5 h-4 text-[0.625rem]/4 text-muted-foreground">
       {PRESETS.map(({ name, score }, index) => (
-        <span key={name} className="absolute left-(--at) flex flex-col items-center" style={at(score)}>
-          <span className="pointer-events-none absolute -top-3 h-4 w-px bg-foreground" />
-          <button
-            type="button"
-            className={cn(
-              'absolute top-1 rounded-sm px-0.5 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
-              index === 0 ? 'right-0 pl-0' : index === last ? 'left-0 pr-0' : 'left-1/2 -translate-x-1/2',
-            )}
-            aria-label={`${name}, ${score}`}
-            onClick={() => {
-              onPress(score);
-            }}
-          >
-            {name}
-          </button>
-        </span>
+        <button
+          key={name}
+          type="button"
+          className={cn(
+            'absolute top-0 left-(--at) rounded-sm px-0.5 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+            index === 0 ? 'translate-x-[calc(2ch-100%)]' : index === last ? '-translate-x-[2ch]' : '-translate-x-1/2',
+          )}
+          style={at(score)}
+          aria-label={`${name}, ${score}`}
+          onClick={() => {
+            onPress(score);
+          }}
+        >
+          {name}
+        </button>
       ))}
     </div>
   );
@@ -110,13 +126,13 @@ function Forget({ onPress }: { onPress: () => void }) {
  * The target score (ADR-0001 D3): a slider from 30 to 100, with the words SSIMULACRA2 gives the
  * score next to it and the package's presets marked on the track. Until it is moved, it stands at
  * the target the newest result reports, which is the package's default for that image, or at the
- * `web` preset while there is none, and says so. Once moved, a button next to the words takes it
- * back to the default.
+ * package's documented default while there is none, and says so. Once moved, a button next to the
+ * words takes it back to the default.
  */
 export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   const chosen = field.state.value;
   const reported = useReported();
-  const shown = chosen ?? (typeof reported === 'number' ? reported : WEB);
+  const shown = chosen ?? (typeof reported === 'number' ? reported : DEFAULTS.target);
   const words = wordsFor(chosen, reported);
   const move = (score: number) => {
     onMove();
@@ -128,25 +144,28 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   };
 
   return (
-    <div className="flex flex-col gap-1 pl-6">
-      <Slider
-        aria-labelledby={labelledBy}
-        aria-describedby={`${labelledBy}-words`}
-        className="px-1.5"
-        style={TRACK}
-        trackClassName="bg-(image:--track)"
-        indicatorClassName="bg-transparent"
-        thumbAlignment="center"
-        min={TARGET.min}
-        max={TARGET.max}
-        step={1}
-        value={[shown]}
-        getAriaValueText={(_, value) => (chosen === null ? words : describe(value))}
-        onValueChange={(value: number | readonly number[]) => {
-          move(typeof value === 'number' ? value : (value[0] ?? shown));
-        }}
-      />
-      <PresetMarks onPress={move} />
+    <div className="flex flex-col gap-1">
+      <div className="relative">
+        <Ticks />
+        <Slider
+          aria-labelledby={labelledBy}
+          aria-describedby={`${labelledBy}-words`}
+          className="px-1.5"
+          style={TRACK}
+          trackClassName="bg-(image:--track)"
+          indicatorClassName="bg-transparent"
+          thumbAlignment="center"
+          min={TARGET.min}
+          max={TARGET.max}
+          step={1}
+          value={[shown]}
+          getAriaValueText={(_, value) => (chosen === null ? words : describe(value))}
+          onValueChange={(value: number | readonly number[]) => {
+            move(typeof value === 'number' ? value : (value[0] ?? shown));
+          }}
+        />
+      </div>
+      <PresetNames onPress={move} />
       <p id={`${labelledBy}-words`} className="text-xs/relaxed text-muted-foreground">
         <span>{words}</span>
         {chosen !== null && <Forget onPress={forget} />}

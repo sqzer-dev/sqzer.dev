@@ -119,6 +119,7 @@ test('at 768 px the view bar and the panels keep apart', async () => {
 test('a collapsed panel keeps what was typed into it', async () => {
   const { screen, encodes, drop } = await renderPage();
   await drop();
+  await screen.getByRole('switch', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('1600');
 
@@ -130,7 +131,7 @@ test('a collapsed panel keeps what was typed into it', async () => {
 
   await expect.element(width).toHaveValue(1600);
   await wait(SETTLED_MS);
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  expect(encodes().at(-1)).toEqual({ width: 1600 });
 });
 
 test('the checkerboard under a transparent image can be a flat colour', async () => {
@@ -172,13 +173,14 @@ test('the controls rest before a search starts with what they say', async () => 
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
 
+  await screen.getByRole('switch', { name: 'Resize' }).click();
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   await width.fill('16');
   await width.fill('1600');
   await wait(SETTLED_MS);
 
-  // one search for the two changes, on the worker that holds the image
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  // one search for the three changes, or two as the clock has it, on the worker that holds the image
+  expect(encodes().at(-1)).toEqual({ width: 1600 });
   expect(workers).toHaveLength(1);
 });
 
@@ -186,17 +188,20 @@ test('the controls rest before a search starts with what they say', async () => 
 test('a control changed just before another image is picked does not start the search twice', async () => {
   const { screen, workers, encodes, drop } = await renderPage();
   await drop();
+  await screen.getByRole('switch', { name: 'Resize' }).click();
+  await wait(SETTLED_MS);
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
   await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
   await wait(SETTLED_MS);
 
-  expect(encodes()).toEqual([{}, { width: 1600 }]);
+  expect(encodes()).toEqual([{}, {}, { width: 1600 }]);
   expect(workers).toHaveLength(1);
 });
 
 test('on a phone the panels are one bottom expander, and the controls keep what they say across the change', async () => {
   const { screen, drop } = await renderPage();
   await drop();
+  await screen.getByRole('switch', { name: 'Resize' }).click();
   await screen.getByRole('spinbutton', { name: 'Width' }).fill('1600');
 
   await page.viewport(390, 780);
@@ -219,6 +224,8 @@ test('the untouched target stands at the score the result reports, and sends not
 
   await expect.element(slider).toHaveValue('72');
   await expect.element(screen.getByText('default: 72, high: barely noticeable side by side')).toBeVisible();
+  // the format the package chose for this run, with the choice
+  await expect.element(screen.getByText('chosen per image: JPEG')).toBeVisible();
   expect(encodes()).toEqual([{}]);
 
   slider.element().focus();

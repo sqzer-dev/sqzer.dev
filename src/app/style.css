@@ -84,10 +84,10 @@
   --alert-foreground: var(--red-12);
   --destructive: var(--red-9);
   --drop: var(--blue-9);
-  --score-low: var(--red-9);
-  --score-good: var(--yellow-9);
-  --score-better: var(--green-9);
-  --score-best: var(--blue-9);
+  --score-low: var(--red-8);
+  --score-good: var(--yellow-8);
+  --score-better: var(--green-8);
+  --score-best: var(--blue-8);
 
   /* The tint is the lowest step of the scale that passes `glass.test.tsx`, not one chosen by eye. */
   --glass: var(--white-a11);
@@ -155,6 +155,12 @@
   }
   html {
     @apply font-sans;
+  }
+  /* the controls scale up on a 2K screen, where 16 px type reads small: everything is in rem (ADR-0007 D6) */
+  @media (min-width: 128rem) {
+    html {
+      font-size: 112.5%;
+    }
   }
   body {
     @apply bg-background text-foreground;

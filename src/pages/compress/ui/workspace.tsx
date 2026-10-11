@@ -38,13 +38,14 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const scale = viewer.view?.scale ?? null;
   // the column is the height of the screen: between its panels the pointer reaches the image. It is
   // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
+  // The result keeps its height, up to two fifths of the column: the options above it are what scrolls.
   const column = wide && (
     <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
       <Panel title="Options" className="pointer-events-auto">
         {controls}
       </Panel>
       {hasResult && (
-        <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto">
+        <Panel title="Result" pinned={<DownloadButton />} className="pointer-events-auto max-h-2/5 shrink-0">
           <ResultPanel />
         </Panel>
       )}

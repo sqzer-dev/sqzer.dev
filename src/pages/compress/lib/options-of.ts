@@ -9,32 +9,33 @@ const typed = (value: string) => (value === '' ? undefined : Number(value));
 /**
  * What the controls say, as the options of the package: the one place the form becomes a call. A
  * control that was not touched, or does not apply to the rest, is left out, so the package's
- * defaults stay its own and it validates what it is given (ADR-0001 D3).
+ * defaults stay its own and it validates what it is given (ADR-0001 D3). `chosen` is the format
+ * the newest result says the package chose, for the backend options under `auto`.
  */
-export function optionsOf(controls: Controls, codecs: Codec[]): EncodeOptions {
+export function optionsOf(controls: Controls, codecs: Codec[], chosen: string | null = null): EncodeOptions {
   const { format, target, quality, codecOpts } = controls;
-  const applies = applicable(controls, codecs);
-  const { mode } = applies;
+  const applies = applicable(controls, codecs, chosen);
+  const { mode, resize } = applies;
   const options: EncodeOptions = {
     // The list comes from `codecs()`, and the package validates what it is given.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     format: format === 'auto' ? undefined : (format as EncodeOptions['format']),
     target: applies.target && mode === 'target' && target !== null ? target : undefined,
-    quality: applies.quality && mode === 'quality' ? typed(quality) : undefined,
+    quality: applies.quality && mode === 'quality' ? quality : undefined,
     lossless: applies.lossless && mode === 'lossless' ? true : undefined,
-    effort: typed(controls.effort),
+    effort: controls.effort ?? undefined,
     subsampling: applies.subsampling ? (controls.subsampling ?? undefined) : undefined,
     fast: applies.fast && controls.fast ? true : undefined,
     keepIcc: controls.keepIcc ? true : undefined,
     keepMetadata: controls.keepMetadata ? true : undefined,
-    width: typed(controls.width),
-    height: typed(controls.height),
-    fit: controls.fit ?? undefined,
+    width: resize ? typed(controls.width) : undefined,
+    height: resize ? typed(controls.height) : undefined,
+    fit: resize ? (controls.fit ?? undefined) : undefined,
     position: applies.position ? (controls.position ?? undefined) : undefined,
     background: applies.background && controls.background !== '' ? controls.background : undefined,
-    scale: typed(controls.scale),
-    enlarge: controls.enlarge ? true : undefined,
-    filter: controls.filter ?? undefined,
+    scale: resize ? typed(controls.scale) : undefined,
+    enlarge: resize && controls.enlarge ? true : undefined,
+    filter: resize ? (controls.filter ?? undefined) : undefined,
     maxPixels: typed(controls.maxPixels),
   };
   const backend = applies.codecOpts

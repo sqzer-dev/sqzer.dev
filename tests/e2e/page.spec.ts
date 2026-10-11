@@ -129,6 +129,7 @@ test('a change of format during a search ends the worker and starts another', as
   });
 
   // drawn large, so a search takes seconds
+  await page.getByRole('switch', { name: 'Resize' }).click();
   await page.getByLabel('Width').fill('2000');
   await expect(said(page, 'Encoding pattern-rgb.svg.')).toHaveText(/Trial 1 of at most/u, SLOW);
 
@@ -268,6 +269,7 @@ test.describe('on a phone', () => {
     await page.mouse.up();
 
     await expect.poll(top).toBeLessThan(200);
+    await page.getByRole('switch', { name: 'Resize' }).click();
     await page.getByLabel('Width').fill('24');
     await expect(page.getByText('After: 24 × 16')).toBeVisible(SLOW);
 
