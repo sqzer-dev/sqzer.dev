@@ -48,7 +48,10 @@ export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
 
   useEffect(() => {
     nowRef.current = {
-      options: () => optionsOf(form.state.values, search.getSnapshot().context.codecs),
+      options: () => {
+        const { codecs, result } = search.getSnapshot().context;
+        return optionsOf(form.state.values, codecs, result?.output.format ?? null);
+      },
       settle: () => {
         clearTimeout(resting.current);
       },

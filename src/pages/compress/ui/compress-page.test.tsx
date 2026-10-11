@@ -235,6 +235,21 @@ test('the untouched target stands at the score the result reports, and sends not
   expect(encodes()).toEqual([{}, { target: 73 }]);
 });
 
+test('another image picked under `chosen per image` keeps the backend settings of the format the last run chose', async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Advanced' }).click();
+  // the last run chose JPEG, so its options show, and one is flipped
+  await screen.getByRole('switch', { name: 'jpeg:progressive' }).click();
+  await wait(SETTLED_MS);
+  expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
+
+  await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
+  await wait(SETTLED_MS);
+
+  expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
+});
+
 test('an option behind Advanced reaches the search as the package spells it', async () => {
   const { screen, encodes, drop } = await renderPage();
   await drop();
