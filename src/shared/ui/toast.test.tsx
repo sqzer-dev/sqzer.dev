@@ -31,10 +31,15 @@ test('a long name in the title breaks and keeps clear of the action and the clos
   const toast = screen.getByRole('dialog', { name: NAME });
   await expect.element(toast).toBeVisible();
 
-  const title = toast.element().querySelector('[data-slot=toast-title]')?.getBoundingClientRect();
-  const action = toast.getByRole('button', { name: 'Cancel' }).element().getBoundingClientRect();
+  const title = toast.element().querySelector('[data-slot=toast-title]');
   if (!title) throw new Error('the toast has no title');
-  expect(title.right).toBeLessThanOrEqual(action.left);
-  // and the title is more than one line tall, since the name broke rather than overflowed
-  expect(title.height).toBeGreaterThan(20);
+  const action = toast.getByRole('button', { name: 'Cancel' }).element().getBoundingClientRect();
+  // the text itself, not the box it may spill out of
+  const range = document.createRange();
+  range.selectNodeContents(title);
+  const text = range.getBoundingClientRect();
+  expect(text.right).toBeLessThanOrEqual(action.left);
+  expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth);
+  // and the name broke rather than overflowed: the text is more than one line tall
+  expect(text.height).toBeGreaterThan(20);
 });
