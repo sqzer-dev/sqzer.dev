@@ -70,7 +70,7 @@ function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
     <div className="relative mx-1.5 h-5 text-[0.625rem]/4 text-muted-foreground">
       {PRESETS.map(({ name, score }, index) => (
         <span key={name} className="absolute left-(--at) flex flex-col items-center" style={at(score)}>
-          <span className="absolute -top-3 h-4 w-px bg-foreground" />
+          <span className="pointer-events-none absolute -top-3 h-4 w-px bg-foreground" />
           <button
             type="button"
             className={cn(
