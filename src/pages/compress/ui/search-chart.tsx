@@ -5,14 +5,19 @@ import { useSize } from '../lib/size';
 import { useSearch } from '../model/context';
 import { currentTarget, currentTrials } from '../model/run';
 
-type TargetRuleProps = { y: number; score: number | null; width: number };
+type TargetRuleProps = NonNullable<Chart['target']> & { score: number | null; width: number };
 
-/** The target as one labelled rule, across the trials, its label above its right end. */
-function TargetRule({ y, score, width }: TargetRuleProps) {
+/** The target as one labelled rule, across the trials, its label where the current run keeps clear. */
+function TargetRule({ y, label, side, score, width }: TargetRuleProps) {
   return (
     <>
       <line x1={0} x2={width} y1={y} y2={y} className="stroke-foreground/50" />
-      <text x={width} y={y - 3} textAnchor="end" className="fill-muted-foreground font-mono text-[0.625rem]">
+      <text
+        x={label === 'end' ? width : 0}
+        y={side === 'above' ? y - 3 : y + 11}
+        textAnchor={label}
+        className="fill-muted-foreground font-mono text-[0.625rem]"
+      >
         target {score}
       </text>
     </>
@@ -64,7 +69,7 @@ export function SearchChart() {
           {drawn.rules.map((y) => (
             <line key={y} x1={0} x2={size.width} y1={y} y2={y} className="stroke-border" />
           ))}
-          {drawn.target !== null && <TargetRule y={drawn.target} score={target} width={size.width} />}
+          {drawn.target !== null && <TargetRule {...drawn.target} score={target} width={size.width} />}
           {drawn.previous.map((run, index) => (
             // a run is never edited, so its place is its name
             // oxlint-disable-next-line react/no-array-index-key

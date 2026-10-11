@@ -12,8 +12,11 @@ import type { Point, Size } from './view';
 export type Chart = {
   /** The rules, from 0 at the bottom up, one every twenty points. */
   rules: number[];
-  /** Where the target's rule stands, once a score is searched for. */
-  target: number | null;
+  /**
+   * Where the target's rule stands, once a score is searched for, and where its label goes: at the
+   * end the current run's point is further from, and on the side of the rule that point is not.
+   */
+  target: { y: number; label: 'start' | 'end'; side: 'above' | 'below' } | null;
   /** The runs before, each its score and its quality as the `d` of a path, and the score as a lone point where it has one trial: a path of one point draws nothing. */
   previous: { path: string; quality: string; lone: Point | null }[];
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
@@ -71,6 +74,39 @@ function curve(points: Point[]): string {
   return [move, ...segments].join(' ');
 }
 
+/** The height of a rule's label, which goes above where there is no room under. */
+const LABEL = 12;
+
+type Label = Pick<NonNullable<Chart['target']>, 'label' | 'side'>;
+// in the order a tie falls back through
+const PLACES: Label[] = [
+  { label: 'end', side: 'above' },
+  { label: 'start', side: 'above' },
+  { label: 'end', side: 'below' },
+  { label: 'start', side: 'below' },
+];
+
+/**
+ * The target's rule at `y`, labelled where the current run keeps clear of it: of the ends and sides
+ * of the rule, the one whose nearest point of the run, its score or its quality, is furthest from
+ * the label's middle. A run hugging the rule from above at both ends still leaves the space under
+ * it. The right end, above, with nothing drawn, and nothing below a rule at the bottom edge.
+ */
+function labelled(y: number, points: Record<Label['label'], number[]>, height: number): NonNullable<Chart['target']> {
+  const middle = (side: Label['side']) => (side === 'above' ? y - LABEL / 2 : y + LABEL / 2);
+  const clearance = ({ label, side }: Label) =>
+    Math.min(...points[label].map((point) => Math.abs(point - middle(side))));
+  let best: Label = { label: 'end', side: 'above' };
+  for (const place of PLACES.filter((candidate) => candidate.side === 'above' || y + LABEL < height))
+    if (clearance(place) > clearance(best)) best = place;
+  return { y, ...best };
+}
+
+/** The points of a run at each end of the chart, as the ys of its lines there. */
+function ends(ys: number[][]): Record<Label['label'], number[]> {
+  return { start: ys[0] ?? [], end: ys.at(-1) ?? [] };
+}
+
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
 export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
   const bottom = size.height - 1;
@@ -82,7 +118,14 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
   for (let value = 0; value <= 100; value += RULE_STEP) rules.push(Math.round(y(value)) + 0.5);
   return {
     rules,
-    target: target === null ? null : Math.round(y(target)) + 0.5,
+    target:
+      target === null
+        ? null
+        : labelled(
+            Math.round(y(target)) + 0.5,
+            ends(current.map((trial) => [y(trial.score), y(trial.quality)])),
+            size.height,
+          ),
     previous: previous.map((run) => ({
       path: path(scores(run)),
       quality: path(run.map((trial) => trial.quality)),
