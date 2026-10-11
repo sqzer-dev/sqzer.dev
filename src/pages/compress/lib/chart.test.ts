@@ -27,7 +27,8 @@ test('consecutive trials are joined in their order, and the target stands at its
 
   expect(drawn.current.path).toBe('M102 64 L123 54');
   expect(drawn.target).toBe(102);
-  expect(drawn.previous).toEqual(['M4 74']);
+  // a run of one trial is a lone point, since its path draws nothing
+  expect(drawn.previous).toEqual([{ path: 'M4 74', lone: { x: 4, y: 74 } }]);
 });
 
 test('a trial under 30 widens the chart to the ten under it, and one over 100 stops at the edge', () => {
@@ -35,5 +36,5 @@ test('a trial under 30 widens the chart to the ten under it, and one over 100 st
 
   expect(drawn.low).toBe(0);
   expect(drawn.current.points[0]?.x).toBeCloseTo(SIDE + 0.075 * (size.width - 2 * SIDE));
-  expect(drawn.previous).toEqual([`M${size.width - SIDE} 24`]);
+  expect(drawn.previous[0]?.path).toBe(`M${size.width - SIDE} 24`);
 });

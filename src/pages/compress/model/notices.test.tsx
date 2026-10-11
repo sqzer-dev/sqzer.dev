@@ -195,9 +195,10 @@ test('the search toast is cancelled by its action, and the search with it', asyn
   await wait(SHOWN_MS);
   tell(trial);
   const encoding = screen.getByRole('dialog', { name: 'Encoding pattern-rgb.jpg.' });
-  await expect.element(encoding.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const cancel = encoding.getByRole('button', { name: 'Cancel' });
+  await expect.element(cancel).toBeVisible();
 
-  await encoding.getByRole('button', { name: 'Cancel' }).click();
+  await cancel.click();
 
   await expect.element(encoding).not.toBeInTheDocument();
   // no search is running to be done: a `done` landing now tells of nothing

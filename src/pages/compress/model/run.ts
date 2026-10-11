@@ -1,6 +1,6 @@
 import type { SnapshotFrom } from 'xstate';
 
-import type { Trial } from '@/shared/api';
+import type { EncodeOptions, Trial } from '@/shared/api';
 
 import { DEFAULTS } from '../lib/defaults';
 import type { searchMachine } from './machine';
@@ -21,16 +21,26 @@ export function currentTrials(snapshot: Snapshot): Trial[] {
   return result?.output.trials ?? NONE;
 }
 
+/** The score `asked` searches for, or null where it asks for none: a fixed quality, lossless, or an encoder that is lossless only. */
+function searchedFor(asked: EncodeOptions, { codecs }: Snapshot['context']) {
+  if (asked.quality !== undefined || asked.lossless === true) return null;
+  const encoder =
+    asked.format === undefined ? undefined : codecs.find((codec) => codec.format === asked.format)?.encoder;
+  if (encoder !== undefined && !encoder.lossy) return null;
+  return asked.target ?? DEFAULTS.target;
+}
+
 /**
- * The score those trials search for, which is the target's rule on the chart: what the search was
- * asked, or the package's default while it has not said its own, or what the result reports. Null
- * where no score is searched for: a fixed quality, or lossless.
+ * The score those trials search for, which is the target's rule on the chart: what the running
+ * encode was asked, which the controls may have moved on from, or what the search about to start
+ * asks, with the package's documented default while it has not said its own; or what the result
+ * reports. Null where no score is searched for: a fixed quality, lossless, or an encoder that is
+ * lossless only, and a result the package went lossless for, which reports the target it was asked.
  */
 export function currentTarget(snapshot: Snapshot): number | null {
-  const { options, result } = snapshot.context;
-  if (snapshot.matches({ open: 'searching' })) {
-    if (options.quality !== undefined || options.lossless === true) return null;
-    return options.target ?? DEFAULTS.target;
-  }
-  return result?.output.target ?? null;
+  const { options, running, result } = snapshot.context;
+  if (snapshot.matches({ open: { searching: 'encoding' } })) return searchedFor(running, snapshot.context);
+  if (snapshot.matches({ open: 'searching' })) return searchedFor(options, snapshot.context);
+  if (!result || result.output.lossless) return null;
+  return result.output.target ?? null;
 }

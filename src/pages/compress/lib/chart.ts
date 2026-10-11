@@ -12,8 +12,8 @@ export type Chart = {
   rules: number[];
   /** Where the target stands across, once a score is searched for. */
   target: number | null;
-  /** The runs before, each as the `d` of a path. */
-  previous: string[];
+  /** The runs before, each as the `d` of a path, and as a lone point where it has one trial: a path of one point draws nothing. */
+  previous: { path: string; lone: Point | null }[];
   /** The running or newest search: its path, and its points. */
   current: { path: string; points: Point[] };
   /** The score at the left edge: the slider's lowest, or a lower ten a trial fell under. */
@@ -49,7 +49,7 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
   return {
     rules,
     target: target === null ? null : x(target),
-    previous: previous.map((run) => path(run)),
+    previous: previous.map((run) => ({ path: path(run), lone: run.length === 1 && run[0] ? point(run[0]) : null })),
     current: { path: path(current), points: current.map((trial) => point(trial)) },
     low,
   };

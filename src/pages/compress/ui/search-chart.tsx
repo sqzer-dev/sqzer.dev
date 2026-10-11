@@ -34,7 +34,9 @@ function TargetRule({ x, score, size }: TargetRuleProps) {
  * newest search as points joined in their order, over rules every twenty points of quality and the
  * target as one labelled rule. The runs before stay behind as subtle lines, for as long as the tab.
  * Nothing of it is announced: the list next to it carries the numbers. Shown once a score is
- * searched for, so the target's rule stands while the first trial is on its way.
+ * searched for, so the target's rule stands while the first trial is on its way. The box it is
+ * measured in stays mounted, hidden, while there is nothing to draw: `useSize` watches the element
+ * it finds at mount.
  */
 export function SearchChart() {
   const trials = useSearch(currentTrials);
@@ -43,11 +45,11 @@ export function SearchChart() {
   const box = useRef<HTMLDivElement>(null);
   const size = useSize(box);
 
-  if (target === null && trials.length === 0) return null;
-  const drawn = size && chart(trials, runs, target, size);
+  const shown = target !== null || trials.length > 0;
+  const drawn = shown && size && size.width > 0 ? chart(trials, runs, target, size) : null;
   return (
-    <div ref={box} className="h-32 w-full">
-      {drawn && (
+    <div ref={box} hidden={!shown} className="h-32 w-full">
+      {drawn && size && (
         <svg
           data-slot="search-chart"
           aria-hidden="true"
@@ -59,10 +61,13 @@ export function SearchChart() {
             <line key={y} x1={0} x2={size.width} y1={y} y2={y} className="stroke-border" />
           ))}
           {drawn.target !== null && <TargetRule x={drawn.target} score={target} size={size} />}
-          {drawn.previous.map((d, index) => (
+          {drawn.previous.map(({ path, lone }, index) => (
             // a run is never edited, so its place is its name
             // oxlint-disable-next-line react/no-array-index-key
-            <path key={index} d={d} className="fill-none stroke-muted-foreground/40" />
+            <g key={index} className="fill-muted-foreground/40 stroke-muted-foreground/40">
+              <path d={path} className="fill-none" />
+              {lone && <circle cx={lone.x} cy={lone.y} r={1.5} className="stroke-none" />}
+            </g>
           ))}
           <path
             d={drawn.current.path}

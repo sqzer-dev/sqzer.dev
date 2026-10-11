@@ -23,6 +23,8 @@ type Context = {
   image: Picked | null;
   /** What the controls said when the newest search was asked for. */
   options: EncodeOptions;
+  /** What the running encode was asked: `options` may have moved on while the worker finishes it. */
+  running: EncodeOptions;
   /** The package's words for having no decoder for the image. The page draws it from then on. */
   unreadable: string | null;
   /** The worker holds the image, decoded. */
@@ -115,7 +117,8 @@ export const searchMachine = setup({
       assertEvent(event, 'options');
       return { options: event.options };
     }),
-    // the trials of the search before, as far as it got, become a run behind the one starting
+    // the trials of the search before, as far as it got, become a run behind the one starting: at the
+    // start of a search, and at an encode that follows one the controls outdated
     keepRun: assign(({ context }) => ({
       trials: [],
       runs: context.trials.length === 0 ? context.runs : [...context.runs, context.trials],
@@ -158,6 +161,7 @@ export const searchMachine = setup({
     codecs: [],
     image: null,
     options: {},
+    running: {},
     unreadable: null,
     held: false,
     drawnWidth: null,
@@ -205,6 +209,7 @@ export const searchMachine = setup({
         empty: {},
         searching: {
           initial: 'starting',
+          entry: 'keepRun',
           exit: 'keepPatience',
           on: {
             // the worker is busy with the image that just left
@@ -242,7 +247,12 @@ export const searchMachine = setup({
               },
             },
             encoding: {
-              entry: ['keepRun', assign({ outdated: false }), 'askForPreview', 'encode'],
+              entry: [
+                'keepRun',
+                assign(({ context }) => ({ running: context.options, outdated: false })),
+                'askForPreview',
+                'encode',
+              ],
               on: {
                 trial: {
                   guard: not('outdated'),

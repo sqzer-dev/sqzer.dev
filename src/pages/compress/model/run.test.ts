@@ -1,8 +1,32 @@
 // The runs the chart draws and the trials the list shows, read off the machine (ADR-0001 D4).
 import { expect, test } from 'vitest';
 
-import { decoded, done, encoding, output } from './machine.harness';
+import type { Codec } from '@/shared/api';
+
+import { decoded, done, encoding, output, picked } from './machine.harness';
 import { currentTarget, currentTrials } from './run';
+
+const encoder = (format: string, lossy: boolean): Codec => ({
+  format,
+  extension: format,
+  mime: `image/${format}`,
+  decoderFeatures: [],
+  encoderFeatures: [],
+  encoder: {
+    backend: `${format}-rs`,
+    tier: 'portable',
+    lossy,
+    lossless: !lossy,
+    alpha: false,
+    animation: false,
+    exif: false,
+    xmp: false,
+    bitDepth: [8],
+    options: [],
+  },
+});
+const lossy = (format: string) => encoder(format, true);
+const lossless = (format: string) => encoder(format, false);
 
 test('the trials of every search gone by stay as runs, as far as each got', () => {
   const search = encoding();
@@ -48,6 +72,43 @@ test('the chart draws the running search as it lands, then the result as the pac
   search.tell(done);
   expect(currentTrials(search.actor.getSnapshot())).toEqual([]);
   expect(currentTarget(search.actor.getSnapshot())).toBeNull();
+});
+
+test("the rule is the running search's target, not the controls that moved on, and none for a lossless encode", () => {
+  const search = encoding();
+  search.actor.send({ type: 'ready', version: '0.3.0', codecs: [lossy('avif'), lossless('png')] });
+  search.tell({ type: 'trial', trial: { n: 1, max: 6, quality: 60, score: 68 } });
+  search.actor.send({ type: 'options', options: { target: 85 } });
+  expect(currentTarget(search.actor.getSnapshot())).toBe(70);
+  expect(currentTrials(search.actor.getSnapshot())).toHaveLength(1);
+  // once the patience runs out, the search about to start is the one on the chart, with no trial yet
+  search.clock.increment(300);
+  expect(currentTarget(search.actor.getSnapshot())).toBe(85);
+  expect(currentTrials(search.actor.getSnapshot())).toEqual([]);
+
+  // an encoder that is lossless only searches for no score, and a result gone lossless reports the target it was asked
+  search.tell(decoded());
+  search.actor.send({ type: 'options', options: { format: 'png' } });
+  search.clock.increment(300);
+  search.tell(decoded());
+  expect(currentTarget(search.actor.getSnapshot())).toBeNull();
+  const went = { ...output, lossless: true, target: 70 };
+  search.tell({ type: 'done', result: { output: went, file: new File([], 'a.png'), seconds: 1 } });
+  expect(currentTarget(search.actor.getSnapshot())).toBeNull();
+});
+
+test('another image picked shows none of the trials of the one before while it is read', () => {
+  const search = encoding();
+  search.tell({ type: 'trial', trial: { n: 1, max: 6, quality: 60, score: 68 } });
+  search.tell({
+    type: 'done',
+    result: { output: { ...output, trials: [{ quality: 60, score: 68 }] }, file: new File([], 'a.avif'), seconds: 1 },
+  });
+
+  search.actor.send({ type: 'picked', image: picked('b.jpg'), options: {} });
+
+  expect(currentTrials(search.actor.getSnapshot())).toEqual([]);
+  expect(search.actor.getSnapshot().context.runs).toEqual([[{ n: 1, max: 6, quality: 60, score: 68 }]]);
 });
 
 test('a cancelled search leaves the result before it on the chart, and a failure clears it', () => {
