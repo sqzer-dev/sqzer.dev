@@ -7,5 +7,6 @@ export type {
   Failure,
   Output,
   Reply,
+  Trial,
   TrialProgress,
 } from './sqzer/protocol';

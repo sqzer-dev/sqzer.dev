@@ -23,11 +23,11 @@ export function summarize(source: { name: string; size: number }, { output, file
     `${source.name} -> ${file.name}  ${bytes(source.size)} -> ${bytes(file.size)}  ${change(source.size, file.size)}  ${format} ${how}`,
     `${width}x${height}${resized}  ${output.content}  ${output.inputFormat ?? 'drawn by the browser'} -> ${format} (${backend})`,
   ];
+  // the trials themselves are the list and the chart beside this
   if (output.trials !== undefined && output.trials.length > 0) {
     const reached = output.reached === true ? 'reached' : 'not reached';
     const count = output.trials.length === 1 ? '1 trial' : `${output.trials.length} trials`;
-    const trials = output.trials.map((trial) => `q${trial.quality} s${trial.score.toFixed(1)}`).join(', ');
-    lines.push(`target ${output.target} ${reached} in ${count}: ${trials}`);
+    lines.push(`target ${output.target} ${reached} in ${count}`);
   }
   return lines.join('\n');
 }

@@ -123,7 +123,7 @@ A toast is the popover's surface: opaque, `popover` on its tokens, a `border` ed
 ## 6. Action items
 
 1. [x] The toaster of D1 and D5, and the two toasts of D2, with issue 13.
-2. [ ] The cancel action and the trial list of D4, with ADR-0001 item 8.
+2. [x] The cancel action and the trial list of D4, with ADR-0001 item 8.
 
 ---
 

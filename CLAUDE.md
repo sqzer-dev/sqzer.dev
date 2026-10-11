@@ -19,11 +19,12 @@ components.json             what `shadcn add` reads: the Base UI base, the Mira 
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
 src/pages/compress/ui/      the page and its parts: the empty state, the workspace with its comparison,
                             panels, bottom expander and view bar, the controls as a form with its
-                            fields, the target slider and the Advanced expander, the result, the failure
+                            fields, the target slider and the Advanced expander, the result with the
+                            chart and the trials, the failure
 src/pages/compress/model/   the search machine, the worker actor, the picked image, the result,
-                            what the controls say, the notices the toaster shows
+                            what the controls say, the notices the toaster shows, the run the chart draws
 src/pages/compress/lib/     drawing on the page, codec lookups and which controls apply, the score's
-                            words, the summary, the controls as the package's options
+                            words, the summary, the controls as the package's options, the chart's arithmetic
 src/shared/api/sqzer/       the worker, its client and the message types. Every call into `sqzer`
 src/shared/ui/              the components, one file each, copied in by `shadcn add`. No barrel
 src/shared/lib/             small helpers, named by their domain
@@ -48,7 +49,7 @@ Vitest tests sit next to what they test, as `*.test.ts` and `*.test.tsx`.
 - The palette is Radix `gray`, with `red` on an alert, `blue` on the border of a drop target while a file is dragged (ADR-0006), and the four `score` tokens, red to blue, on the bands of the target slider's track and nowhere else (ADR-0007 D5). No hue anywhere else on the page. The `destructive` variants of the components carry the alert's colours, `red 3`, `red 12` and `red 9`, for when one is an alert's own button or chip. Light and dark follow `prefers-color-scheme`, with no script and no `.dark` class: the build moves Radix's dark scales under the media query.
 - Glass is the `glass` utility and nothing else, on what floats over the image on its own: the panels, which are `Card`, the view bar, the bottom expander, the corner labels. Nothing inside glass is glass, and a toast is not glass (ADR-0005). Its tint is whatever `glass.test.tsx` passes at, never a value chosen by eye, and a new glass surface joins `glass.surfaces.tsx`, which that test measures.
 - Every call into `sqzer` runs in the worker. The package is synchronous, and a search takes seconds. Only the client in `src/shared/api/sqzer/` starts or ends a worker, and only the search machine uses the client.
-- A search cannot be interrupted. The machine's `restart` re-enters its `open` state, which ends the worker and starts another; keep that the only way an encode is cancelled. An idle worker is never ended: it holds the decoded image, so a change of the controls only pays for the encode (ADR-0004).
+- A search cannot be interrupted. The machine's `restart` and `cancel` re-enter its `open` state, which ends the worker and starts another; keep that the only way an encode is cancelled. `restart` searches again, `cancel` leaves the result before, and the Cancel button is the action of the search toast (ADR-0005 D4). An idle worker is never ended: it holds the decoded image, so a change of the controls only pays for the encode (ADR-0004).
 - The package's decoder comes first, the browser's canvas decodes what the package cannot. An SVG is drawn on the page from an `<img>`, at the size asked for: `createImageBitmap` refuses an SVG blob inside a worker in Chrome and Firefox.
 - What the format list offers comes from `codecs()`. Do not hardcode formats or backends. The resize is an expander like Advanced; its sides show the image's own size until typed, and send nothing then. The value of a slider is typed where it is shown.
 - A control that was not touched sends nothing, so the defaults are the package's (ADR-0001 D3). Until it is touched a control shows the package's default as its value, a field steps from it and a select opens on it, a slider rests at it or on a notch that says `default`, and the field itself stays empty; `lib/defaults.ts` is the one copy of the defaults the README states, read again at a version bump (ADR-0007 D6). A range is a slider, `true` or `false` a switch, listed values a select, read for a backend option from its help by `lib/option-kind.ts`. A control shows only where it applies to what the others say, and one that is not shown sends nothing; `applicable` in `lib/codec.ts` decides both from `codecs()`. The untouched target slider stands at the target the newest result reports, or at the `web` mark until there is one, and says `default` (ADR-0007 D3).

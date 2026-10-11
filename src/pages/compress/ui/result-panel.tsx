@@ -5,7 +5,9 @@ import { buttonVariants } from '@/shared/ui/button';
 
 import { summarize } from '../lib/summary';
 import { useSearch } from '../model/context';
+import { SearchChart } from './search-chart';
 import { SearchFailure } from './search-failure';
+import { TrialList } from './trial-list';
 
 /** The file to save, once there is one. It stays in sight when the result panel is collapsed. */
 export function DownloadButton() {
@@ -33,12 +35,20 @@ export function DownloadButton() {
   );
 }
 
-/** What was made, as the command line would print it, or why nothing was. */
-/** Whether there is a result panel to show: a result, or the failure in its place (ADR-0001 D6). */
+/**
+ * Whether there is a result panel to show: a result, the failure in its place (ADR-0001 D6), or a
+ * search with a trial landed, which the chart and the list show as it runs (D4).
+ */
 export function useHasResult() {
-  return useSearch((snapshot) => snapshot.context.result !== null || snapshot.matches({ open: 'failed' }));
+  return useSearch(
+    (snapshot) =>
+      snapshot.context.result !== null ||
+      snapshot.matches({ open: 'failed' }) ||
+      (snapshot.matches({ open: 'searching' }) && snapshot.context.trials.length > 0),
+  );
 }
 
+/** The search as it runs and the result it ends in: the chart and the trials, then what was made, as the command line would print it, or why nothing was. */
 export function ResultPanel() {
   const image = useSearch((snapshot) => snapshot.context.image);
   const result = useSearch((snapshot) => snapshot.context.result);
@@ -46,6 +56,8 @@ export function ResultPanel() {
   return (
     <div className="flex flex-col items-start gap-3">
       <SearchFailure of="image" />
+      <SearchChart />
+      <TrialList />
       <pre className="font-mono text-xs/relaxed whitespace-pre-wrap empty:hidden">
         {image && result && summarize({ name: image.name, size: image.bytes.byteLength }, result)}
       </pre>
