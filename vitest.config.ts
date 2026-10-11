@@ -42,6 +42,10 @@ export default mergeConfig(
       setupFiles: ['src/app/style.css'],
       // a test that asserts nothing has checked nothing
       expect: { requireAssertions: true },
+      // a click or a key is a real input event, delivered when the browser's process gets the CPU. With
+      // both browsers' pages sharing the machine, one click in Firefox measured 7 s, and a test of a dozen
+      // interactions passed the 15 s Vitest gives a browser test. The timeout is there to bound a hang
+      testTimeout: 60_000,
       restoreMocks: true,
       browser: {
         enabled: true,

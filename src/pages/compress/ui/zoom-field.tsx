@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent } from 'react';
 
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -49,13 +49,19 @@ function useDraft(onZoom: ZoomFieldProps['onZoom']) {
     restore.current = true;
     event.preventDefault();
   };
-  return { draft, setDraft, field, preview, apply, onKeyDown };
+  // the reader leaving the field, by a click, a tab or a script, has the focus on the body by the time
+  // the field hears of it. A blur that leaves the field the document's active element is the window
+  // going: Firefox and Chromium blur the field then, and give it the focus back when the window returns
+  const onBlur = ({ target }: FocusEvent<HTMLInputElement>) => {
+    if (target !== target.ownerDocument.activeElement) apply();
+  };
+  return { draft, setDraft, field, preview, onBlur, onKeyDown };
 }
 
 type FieldProps = Omit<ReturnType<typeof useDraft>, 'preview' | 'draft'> & { draft: string };
 
 /** The field while it is open, in the text's place. */
-function Field({ draft, field, setDraft, apply, onKeyDown }: FieldProps) {
+function Field({ draft, field, setDraft, onBlur, onKeyDown }: FieldProps) {
   return (
     <span className="flex items-center gap-0.5 font-mono text-xs">
       <Input
@@ -67,7 +73,7 @@ function Field({ draft, field, setDraft, apply, onKeyDown }: FieldProps) {
         onChange={(event) => {
           setDraft(event.target.value);
         }}
-        onBlur={apply}
+        onBlur={onBlur}
         onKeyDown={onKeyDown}
       />
       %
@@ -103,7 +109,7 @@ function useWait() {
  * does not open the field first.
  */
 export function ZoomField({ scale, onZoom }: ZoomFieldProps) {
-  const { draft, setDraft, field, preview, apply, onKeyDown } = useDraft(onZoom);
+  const { draft, setDraft, field, preview, onBlur, onKeyDown } = useDraft(onZoom);
   const wait = useWait();
   const shown = scale === null ? '' : percent(scale);
   const open = () => {
@@ -129,7 +135,7 @@ export function ZoomField({ scale, onZoom }: ZoomFieldProps) {
   };
 
   if (draft !== null)
-    return <Field draft={draft} field={field} setDraft={setDraft} apply={apply} onKeyDown={onKeyDown} />;
+    return <Field draft={draft} field={field} setDraft={setDraft} onBlur={onBlur} onKeyDown={onKeyDown} />;
   return (
     <Tooltip>
       <TooltipTrigger

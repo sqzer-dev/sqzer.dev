@@ -78,7 +78,14 @@ async function renderNotices() {
     screen,
     tell: (event: EncoderEvent) => answer.to?.(event),
     ready: () => answer.to?.({ type: 'ready', version: '0.0.0', codecs: [] }),
-    pick: () => screen.getByRole('button', { name: 'Pick' }).click(),
+    // a click of the element itself, not of the pointer: a toast sliding in from past the top edge
+    // crosses the button, and a pointer waits for it to pass, which the test's waits are not timed for
+    pick: () => {
+      screen
+        .getByRole('button', { name: 'Pick' })
+        .element()
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    },
     toasts: () => screen.getByRole('dialog').elements().length,
   };
 }
@@ -97,7 +104,7 @@ test('the encoder is one toast, loading and then ready', async () => {
 test('a search is one toast, shown after 500 ms with the newest trial, and done', async () => {
   const { screen, ready, pick, tell } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   await wait(QUIET_MS);
   expect(screen.getByText(/^Encoding/u).elements()).toHaveLength(0);
@@ -118,7 +125,7 @@ test('a search is one toast, shown after 500 ms with the newest trial, and done'
 test('a search over within 500 ms shows nothing: the result panel is its message', async () => {
   const { screen, ready, pick, tell, toasts } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   tell(done);
 
@@ -131,13 +138,13 @@ test('a search over within 500 ms shows nothing: the result panel is its message
 test('a done toast still on the screen waits the same 500 ms before it tells of the next search', async () => {
   const { screen, ready, pick, tell } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   await wait(SHOWN_MS);
   tell(done);
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
 
-  await pick();
+  pick();
 
   await wait(QUIET_MS);
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();
@@ -149,7 +156,7 @@ test('a done toast still on the screen waits the same 500 ms before it tells of 
 test('a failure closes the search toast', async () => {
   const { screen, ready, pick, tell } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   await wait(SHOWN_MS);
   await expect.element(screen.getByText('Encoding pattern-rgb.jpg.')).toBeVisible();
@@ -162,7 +169,7 @@ test('a failure closes the search toast', async () => {
 test('a search toast the reader closed stays closed until the search is done', async () => {
   const { screen, ready, pick, tell } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   await wait(SHOWN_MS);
   const encoding = screen.getByRole('dialog', { name: 'Encoding pattern-rgb.jpg.' });
@@ -185,7 +192,7 @@ test('the ready toast goes once an image is on the page', async () => {
   ready();
   await expect.element(screen.getByText('Ready.')).toBeVisible();
 
-  await pick();
+  pick();
 
   await expect.element(screen.getByText('Ready.')).not.toBeInTheDocument();
 });
