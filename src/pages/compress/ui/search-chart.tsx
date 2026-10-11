@@ -5,16 +5,16 @@ import { useSize } from '../lib/size';
 import { useSearch } from '../model/context';
 import { currentTarget, currentTrials } from '../model/run';
 
-type TargetRuleProps = { y: number; label: 'start' | 'end'; score: number | null; width: number };
+type TargetRuleProps = NonNullable<Chart['target']> & { score: number | null; width: number };
 
-/** The target as one labelled rule, across the trials, its label above the end the current run keeps clear. */
-function TargetRule({ y, label, score, width }: TargetRuleProps) {
+/** The target as one labelled rule, across the trials, its label where the current run keeps clear. */
+function TargetRule({ y, label, side, score, width }: TargetRuleProps) {
   return (
     <>
       <line x1={0} x2={width} y1={y} y2={y} className="stroke-foreground/50" />
       <text
         x={label === 'end' ? width : 0}
-        y={y - 3}
+        y={side === 'above' ? y - 3 : y + 11}
         textAnchor={label}
         className="fill-muted-foreground font-mono text-[0.625rem]"
       >

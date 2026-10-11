@@ -33,20 +33,29 @@ test('the score and the quality are two lines over the same trials, and the targ
 
   expect(drawn.score.path).toBe('M4 49 L200 41.5');
   expect(drawn.quality.path).toBe('M4 64 L200 54');
-  // the run ends nearer the target than it starts, so the label goes above the left end
-  expect(drawn.target).toEqual({ y: 44.5, label: 'start' });
+  // the run ends nearer the target than it starts, so the label goes to the left end, and the run
+  // is under the rule there, so above it
+  expect(drawn.target).toEqual({ y: 44.5, label: 'start', side: 'above' });
   // a run of one trial is a lone point, since its path draws nothing
   expect(drawn.previous).toEqual([{ path: 'M4 84', quality: 'M4 74', lone: { x: 4, y: 84 } }]);
 });
 
-test('the target is labelled at the end its rule is clear of the current run, and the right with none', () => {
-  expect(chart([], [], 70, size).target).toEqual({ y: 44.5, label: 'end' });
+test('the target is labelled where its rule is clear of the current run: the end further from it, on the other side', () => {
+  expect(chart([], [], 70, size).target).toEqual({ y: 44.5, label: 'end', side: 'above' });
   const away = [
     { quality: 0, score: 72 },
     { quality: 0, score: 30 },
   ];
-  expect(chart(away, [], 70, size).target).toEqual({ y: 44.5, label: 'end' });
-  expect(chart(away.toReversed(), [], 70, size).target).toEqual({ y: 44.5, label: 'start' });
+  expect(chart(away, [], 70, size).target).toEqual({ y: 44.5, label: 'end', side: 'above' });
+  expect(chart(away.toReversed(), [], 70, size).target).toEqual({ y: 44.5, label: 'start', side: 'above' });
+  // a run hugging the rule from above at both ends leaves the space under it
+  const hugging = [
+    { quality: 0, score: 91 },
+    { quality: 0, score: 90 },
+  ];
+  expect(chart(hugging, [], 85, size).target).toEqual({ y: 29.5, label: 'start', side: 'below' });
+  // unless the rule is at the bottom edge, where there is no room under it
+  expect(chart(hugging, [], 2, size).target).toEqual({ y: 112.5, label: 'start', side: 'above' });
 });
 
 test('every run spans the width on its own, and a value past the scale stops at its edge', () => {

@@ -12,8 +12,11 @@ import type { Point, Size } from './view';
 export type Chart = {
   /** The rules, from 0 at the bottom up, one every twenty points. */
   rules: number[];
-  /** Where the target's rule stands, once a score is searched for, and the end of it the label goes above: the one the current run's point there is further from. */
-  target: { y: number; label: 'start' | 'end' } | null;
+  /**
+   * Where the target's rule stands, once a score is searched for, and where its label goes: at the
+   * end the current run's point is further from, and on the side of the rule that point is not.
+   */
+  target: { y: number; label: 'start' | 'end'; side: 'above' | 'below' } | null;
   /** The runs before, each its score and its quality as the `d` of a path, and the score as a lone point where it has one trial: a path of one point draws nothing. */
   previous: { path: string; quality: string; lone: Point | null }[];
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
@@ -71,12 +74,21 @@ function curve(points: Point[]): string {
   return [move, ...segments].join(' ');
 }
 
-/** The target's rule at `y`, labelled at the end of it the run's point there, of `ys`, sits further from; the right end with nothing drawn. */
-function labelled(y: number, ys: number[]): NonNullable<Chart['target']> {
+/** Room under a rule for its label, which goes above where there is none. */
+const LABEL = 12;
+
+/**
+ * The target's rule at `y`, labelled at the end of it the run's point there, of `ys`, sits further
+ * from, on the side of the rule that point is not: a run hugging the rule from above at both ends
+ * still leaves the space under it. The right end, above, with nothing drawn.
+ */
+function labelled(y: number, ys: number[], height: number): NonNullable<Chart['target']> {
   const [first] = ys;
   const last = ys.at(-1);
-  if (first === undefined || last === undefined) return { y, label: 'end' };
-  return { y, label: Math.abs(first - y) > Math.abs(last - y) ? 'start' : 'end' };
+  if (first === undefined || last === undefined) return { y, label: 'end', side: 'above' };
+  const atStart = Math.abs(first - y) > Math.abs(last - y);
+  const point = atStart ? first : last;
+  return { y, label: atStart ? 'start' : 'end', side: point < y && y + LABEL < height ? 'below' : 'above' };
 }
 
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
@@ -96,6 +108,7 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
         : labelled(
             Math.round(y(target)) + 0.5,
             scores(current).map((score) => y(score)),
+            size.height,
           ),
     previous: previous.map((run) => ({
       path: path(scores(run)),
