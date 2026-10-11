@@ -12,8 +12,8 @@ import type { Point, Size } from './view';
 export type Chart = {
   /** The rules, from 0 at the bottom up, one every twenty points. */
   rules: number[];
-  /** Where the target's rule stands, once a score is searched for. */
-  target: number | null;
+  /** Where the target's rule stands, once a score is searched for, and the end of it the label goes above: the one the current run's point there is further from. */
+  target: { y: number; label: 'start' | 'end' } | null;
   /** The runs before, each its score and its quality as the `d` of a path, and the score as a lone point where it has one trial: a path of one point draws nothing. */
   previous: { path: string; quality: string; lone: Point | null }[];
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
@@ -71,6 +71,14 @@ function curve(points: Point[]): string {
   return [move, ...segments].join(' ');
 }
 
+/** The target's rule at `y`, labelled at the end of it the run's point there, of `ys`, sits further from; the right end with nothing drawn. */
+function labelled(y: number, ys: number[]): NonNullable<Chart['target']> {
+  const [first] = ys;
+  const last = ys.at(-1);
+  if (first === undefined || last === undefined) return { y, label: 'end' };
+  return { y, label: Math.abs(first - y) > Math.abs(last - y) ? 'start' : 'end' };
+}
+
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
 export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
   const bottom = size.height - 1;
@@ -82,7 +90,13 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
   for (let value = 0; value <= 100; value += RULE_STEP) rules.push(Math.round(y(value)) + 0.5);
   return {
     rules,
-    target: target === null ? null : Math.round(y(target)) + 0.5,
+    target:
+      target === null
+        ? null
+        : labelled(
+            Math.round(y(target)) + 0.5,
+            scores(current).map((score) => y(score)),
+          ),
     previous: previous.map((run) => ({
       path: path(scores(run)),
       quality: path(run.map((trial) => trial.quality)),

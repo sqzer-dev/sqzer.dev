@@ -33,9 +33,20 @@ test('the score and the quality are two lines over the same trials, and the targ
 
   expect(drawn.score.path).toBe('M4 49 L200 41.5');
   expect(drawn.quality.path).toBe('M4 64 L200 54');
-  expect(drawn.target).toBe(44.5);
+  // the run ends nearer the target than it starts, so the label goes above the left end
+  expect(drawn.target).toEqual({ y: 44.5, label: 'start' });
   // a run of one trial is a lone point, since its path draws nothing
   expect(drawn.previous).toEqual([{ path: 'M4 84', quality: 'M4 74', lone: { x: 4, y: 84 } }]);
+});
+
+test('the target is labelled at the end its rule is clear of the current run, and the right with none', () => {
+  expect(chart([], [], 70, size).target).toEqual({ y: 44.5, label: 'end' });
+  const away = [
+    { quality: 0, score: 72 },
+    { quality: 0, score: 30 },
+  ];
+  expect(chart(away, [], 70, size).target).toEqual({ y: 44.5, label: 'end' });
+  expect(chart(away.toReversed(), [], 70, size).target).toEqual({ y: 44.5, label: 'start' });
 });
 
 test('every run spans the width on its own, and a value past the scale stops at its edge', () => {
