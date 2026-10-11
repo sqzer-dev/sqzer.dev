@@ -21,6 +21,20 @@ const WORDS = [
 ] as const;
 const LOW = 'low: obvious artifacts';
 
+/**
+ * The bands of the track, from worst to visually lossless: where each starts, and the token it is
+ * painted in (ADR-0007 D5). The lines of `WORDS` fall into them two by two.
+ */
+export const BANDS = [
+  { from: TARGET.min, token: 'low' },
+  { from: 70, token: 'good' },
+  { from: 80, token: 'better' },
+  { from: 90, token: 'best' },
+] as const;
+
+/** Where a score sits on the track, as a share of its length. */
+export const share = (score: number) => ((score - TARGET.min) / (TARGET.max - TARGET.min)) * 100;
+
 /** What a score looks like, as `70, high: barely noticeable side by side`. */
 export function describe(score: number) {
   const words = WORDS.find(([from]) => score >= from)?.[1] ?? LOW;

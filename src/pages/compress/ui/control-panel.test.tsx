@@ -97,6 +97,11 @@ test('the target starts untouched: at the `web` mark, saying `default`, and noth
   await expect.element(slider).toHaveValue('70');
   await expect.element(slider).toHaveAttribute('aria-valuetext', 'default');
   await expect.element(screen.getByText('default')).toBeVisible();
+  // the track is the scale, in the four `score` tokens as the browser paints them
+  const track = slider.element().closest('[data-slot=slider]')?.querySelector('[data-slot=slider-track]');
+  const painted = track && getComputedStyle(track).backgroundImage;
+  expect(painted).toMatch(/^linear-gradient\(/u);
+  expect(new Set(painted?.match(/rgb\([^)]*\)/gu)).size).toBe(4);
   // the presets, marked on the track
   await Promise.all(
     ['thumbnail, 60', 'web, 70', 'archive, 85'].map((mark) =>

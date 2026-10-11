@@ -1,7 +1,7 @@
 # ADR-0007: The controls are a form
 
 **Status:** Accepted   **Date:** 2026-10-08   **Deciders:** Vlad (sole maintainer)
-**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. Nothing else in ADR-0001 to ADR-0006 changes.
+**Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. Nothing else in ADR-0001 to ADR-0006 changes.
 
 ---
 
@@ -74,7 +74,13 @@ Moving the slider, pressing a preset or typing a fixed quality picks that way of
 
 ### D4. The toaster at the top centre
 
-ADR-0005 put the viewport at the top right, under the corner label, because the top was the one edge nothing else claimed: the column of panels is anchored to the bottom right, and the Options panel was short. With every option in it the Options panel reaches the top of the column, and the search toast then lies over the format list: the Playwright suite found the click intercepted, for the thirty seconds of a search. On a wide screen the viewport moves to the top centre, between the two corner labels, where nothing sits: the panels are at the right, the view bar at the bottom left, the split handle at mid-height. On a phone it spans the width as before. The stack, the announcements and the ids of ADR-0005 are unchanged.
+ADR-0005 put the viewport at the top right, under the corner label, because the top was the one edge nothing else claimed: the column of panels is anchored to the bottom right, and the Options panel was short. With every option in it the Options panel reaches the top of the column, and the search toast then lies over the format list: the Playwright suite found the click intercepted, for the thirty seconds of a search. On a wide screen the viewport moves to the top centre, on the line of the two corner labels and between them, where nothing sits: the panels are at the right, the view bar at the bottom left, the split handle at mid-height. On a phone it spans the width as before, under the labels. The stack, the announcements and the ids of ADR-0005 are unchanged.
+
+### D5. The track of the target slider in four colours
+
+The maintainer's review of the slider asked for a coloured track: red, yellow, green and blue for worst, good, better and visually lossless, with the preset marks crossing the track. ADR-0003 D4 made the page monochrome, with one hue for one purpose, red for an alert and blue for a drop target (ADR-0006). The track is a third purpose, and the one place on the page where a colour stands for a reading rather than a state: the four bands are the lines of section 1 of ADR-0001 two by two, `low` and `medium` in red below 70, `high` in yellow to 80, `very high` and `excellent` in green to 90, `visually lossless` in blue from 90. The hues are Radix `red`, `yellow`, `green` and `blue` at step 9, the solid of each scale, as four tokens, `score-low`, `score-good`, `score-better` and `score-best`, and the track is a gradient of them with hard stops. The filled range of the slider is transparent, so the thumb reads against the band it is in. The words next to the slider say the same reading, so colour is never the only way it is said (WCAG 1.4.1). The ticks of the presets cross the track in the foreground colour, which shows on any band.
+
+Red on the track is not an alert, and blue on it is not a drop target: the tokens are different, and the rules in `.greptile/config.json` and `CLAUDE.md` name the track as the one place for the four.
 
 ---
 
@@ -108,6 +114,7 @@ ADR-0005 put the viewport at the top right, under the corner label, because the 
 
 - `CLAUDE.md` gets the form and `optionsOf` under its rules, and the `codecs-drive-the-controls` rule in `.greptile/config.json` names them.
 - ADR-0005 gets a `Superseded by` line for the viewport's place; its row in `docs/adr/README.md` and its entry in `.greptile/files.json` stay as they are, since the record still says what it says.
+- ADR-0003 gets a `Superseded by` line for the four `score` tokens of D5, next to the one for ADR-0006 that it was missing. The `yellow` and `green` scales join the stylesheet's imports, light and dark, and the `one-styling-system` rule in `.greptile/config.json` and the palette line of `CLAUDE.md` name the track as the one place for them.
 - `@tanstack/react-form` is a dependency at an exact version, with `@tanstack/form-core`, `@tanstack/store`, `@tanstack/react-store`, `@tanstack/pacer-lite` and `@tanstack/devtools-event-client` under it, all MIT. Vite lists their licences.
 - Validation, if the page ever wants to say something before the package does, has a place: the form's validators. ADR-0001 D3 says not to, and this record changes nothing there.
 - ADR-0001 items 8 and 9 build on the form: the chips of D5 are what `optionsOf` sent.

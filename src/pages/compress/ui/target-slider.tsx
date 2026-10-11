@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { Slider } from '@/shared/ui/slider';
 
-import { describe, PRESETS, TARGET } from '../lib/score';
+import { BANDS, describe, PRESETS, share, TARGET } from '../lib/score';
 import { useSearch } from '../model/context';
 import type { FieldOf } from './form';
 
@@ -45,14 +45,24 @@ function wordsFor(chosen: number | null, reported: Reported) {
 }
 
 /** Where a score sits on the track, as a custom property the mark is placed by. */
-const at = (score: number): CSSProperties => ({
-  '--at': `${((score - TARGET.min) / (TARGET.max - TARGET.min)) * 100}%`,
-});
+const at = (score: number): CSSProperties => ({ '--at': `${share(score)}%` });
 
 /**
- * The package's presets, marked on the track: a tick at each score, and its name under the tick.
- * Each goes to its score when pressed. The first name ends at its tick and the last starts at it,
- * so two presets ten points apart keep their names apart.
+ * The track as a scale: four bands, red to blue from worst to visually lossless, in the `score`
+ * tokens (ADR-0007 D5). The words next to the slider carry the same reading, so colour is not the
+ * only way it is said.
+ */
+const TRACK: CSSProperties = {
+  '--track': `linear-gradient(to right, ${BANDS.map(({ from, token }, index) => {
+    const to = BANDS[index + 1]?.from ?? TARGET.max;
+    return `var(--score-${token}) ${share(from)}% ${share(to)}%`;
+  }).join(', ')})`,
+};
+
+/**
+ * The package's presets, marked on the track: a tick crossing the track at each score, and its name
+ * under the tick. Each goes to its score when pressed. The first name ends at its tick and the last
+ * starts at it, so two presets ten points apart keep their names apart.
  */
 function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
   const last = PRESETS.length - 1;
@@ -60,7 +70,7 @@ function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
     <div className="relative mx-1.5 h-5 text-[0.625rem]/4 text-muted-foreground">
       {PRESETS.map(({ name, score }, index) => (
         <span key={name} className="absolute left-(--at) flex flex-col items-center" style={at(score)}>
-          <span className="h-1 w-px bg-input" />
+          <span className="absolute -top-3 h-4 w-px bg-foreground" />
           <button
             type="button"
             className={cn(
@@ -77,6 +87,22 @@ function PresetMarks({ onPress }: { onPress: (score: number) => void }) {
         </span>
       ))}
     </div>
+  );
+}
+
+/** The way back to the package's default, once the slider was moved: a slider cannot be cleared as a field can. */
+function Forget({ onPress }: { onPress: () => void }) {
+  return (
+    <>
+      {' '}
+      <button
+        type="button"
+        className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={onPress}
+      >
+        use the default
+      </button>
+    </>
   );
 }
 
@@ -107,6 +133,9 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
         aria-labelledby={labelledBy}
         aria-describedby={`${labelledBy}-words`}
         className="px-1.5"
+        style={TRACK}
+        trackClassName="bg-(image:--track)"
+        indicatorClassName="bg-transparent"
         thumbAlignment="center"
         min={TARGET.min}
         max={TARGET.max}
@@ -120,18 +149,7 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
       <PresetMarks onPress={move} />
       <p id={`${labelledBy}-words`} className="text-xs/relaxed text-muted-foreground">
         <span>{words}</span>
-        {chosen !== null && (
-          <>
-            {' '}
-            <button
-              type="button"
-              className="rounded-sm underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={forget}
-            >
-              use the default
-            </button>
-          </>
-        )}
+        {chosen !== null && <Forget onPress={forget} />}
       </p>
     </div>
   );
