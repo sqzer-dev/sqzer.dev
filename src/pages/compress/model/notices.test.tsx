@@ -190,7 +190,7 @@ test('a search toast the reader closed stays closed until the search is done', a
 test('the search toast is cancelled by its action, and the search with it', async () => {
   const { screen, ready, pick, tell, toasts } = await renderNotices();
   ready();
-  await pick();
+  pick();
   tell(decoded);
   await wait(SHOWN_MS);
   tell(trial);
