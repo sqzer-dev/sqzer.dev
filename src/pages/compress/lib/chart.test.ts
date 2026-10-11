@@ -35,7 +35,7 @@ test('the score and the quality are two lines over the same trials, and the targ
   expect(drawn.quality.path).toBe('M4 64 L200 54');
   expect(drawn.target).toBe(44.5);
   // a run of one trial is a lone point, since its path draws nothing
-  expect(drawn.previous).toEqual([{ path: 'M4 84', lone: { x: 4, y: 84 } }]);
+  expect(drawn.previous).toEqual([{ path: 'M4 84', quality: 'M4 74', lone: { x: 4, y: 84 } }]);
 });
 
 test('every run spans the width on its own, and a value past the scale stops at its edge', () => {

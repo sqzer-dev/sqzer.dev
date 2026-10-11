@@ -2,7 +2,8 @@
 // width, and one scale of 0 to
 // 100 up, which holds the score and the quality as two curves, each trial a point on the score's,
 // over plain horizontal rules every twenty points, with no ticks and no background. The target is
-// one labelled rule. The runs before stay behind as subtle lines of their score. The chart comes
+// one labelled rule. The runs before stay behind as subtle lines, their score and their quality,
+// so the searches of a tab weave into one pattern. The chart comes
 // from the numbers and draws nothing that did not happen. Arithmetic only.
 import type { Trial } from '@/shared/api';
 
@@ -13,8 +14,8 @@ export type Chart = {
   rules: number[];
   /** Where the target's rule stands, once a score is searched for. */
   target: number | null;
-  /** The runs before, each its score as the `d` of a path, and as a lone point where it has one trial: a path of one point draws nothing. */
-  previous: { path: string; lone: Point | null }[];
+  /** The runs before, each its score and its quality as the `d` of a path, and the score as a lone point where it has one trial: a path of one point draws nothing. */
+  previous: { path: string; quality: string; lone: Point | null }[];
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
   score: { path: string; points: Point[] };
   quality: { path: string };
@@ -84,6 +85,7 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
     target: target === null ? null : Math.round(y(target)) + 0.5,
     previous: previous.map((run) => ({
       path: path(scores(run)),
+      quality: path(run.map((trial) => trial.quality)),
       lone: run.length === 1 && run[0] ? { x: x(0, 1), y: y(run[0].score) } : null,
     })),
     score: {
