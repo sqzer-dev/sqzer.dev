@@ -3,7 +3,17 @@ import { useState, type RefObject, type SyntheticEvent } from 'react';
 import { BASE_RATIO, useDevicePixelRatio } from '@/shared/lib/device-pixel-ratio';
 
 import { useSize } from '../lib/size';
-import { changed, fitted, stepped, type Change, type Frame, type Size, type View } from '../lib/view';
+import {
+  changed,
+  fitted,
+  inView,
+  moveInView,
+  stepped,
+  type Change,
+  type Frame,
+  type Size,
+  type View,
+} from '../lib/view';
 import { useSearch } from './context';
 import type { Picked } from './picked';
 
@@ -31,10 +41,7 @@ export type Viewer = {
 /** The screen and the picture to hold a view against, once both are measured. The screen is in the view's pixels, not CSS ones. */
 function framed(screen: Size | null, picture: Size | null, css: number): Frame | null {
   return screen && picture
-    ? {
-        screen: { width: screen.width / css, height: screen.height / css },
-        picture: { width: picture.width, height: picture.height },
-      }
+    ? { screen: inView(screen, css), picture: { width: picture.width, height: picture.height } }
     : null;
 }
 
@@ -84,16 +91,9 @@ export function useViewer(screen: RefObject<Element | null>): Viewer {
     onLoad: ({ currentTarget }) => {
       if (input) setLoaded({ of: input, width: currentTarget.naturalWidth, height: currentTarget.naturalHeight });
     },
-    change: ({ dx, dy, origin, ...rest }) => {
+    change: (change) => {
       // a move is in CSS pixels, from the pointer
-      update((current, measured) =>
-        changed(current, measured, {
-          ...rest,
-          ...(dx !== undefined && { dx: dx / css }),
-          ...(dy !== undefined && { dy: dy / css }),
-          ...(origin && { origin: { x: origin.x / css, y: origin.y / css } }),
-        }),
-      );
+      update((current, measured) => changed(current, measured, moveInView(change, css)));
     },
     zoom: (to) => {
       update((current, measured) => {

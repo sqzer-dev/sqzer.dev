@@ -4,7 +4,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useObjectUrl } from '@/shared/lib/object-url';
 
 import { useGestures } from '../lib/gestures';
-import type { Size, View } from '../lib/view';
+import { inCss, type Size, type View } from '../lib/view';
 import { useSearch, useSearchRef } from '../model/context';
 import type { Picked } from '../model/picked';
 import type { Viewer } from '../model/viewer';
@@ -119,13 +119,14 @@ function useAfterSide(file: Blob | null, image: Picked | null) {
 /** What the stylesheet draws from: where the line stands, the picture's own size, and where it stands on the screen. */
 /** The view as CSS, `css` CSS pixels to one of the view's: the picture holds its size on the device across the browser's zoom. */
 function drawn(split: number, size: Size | null, view: View | null, css: number) {
+  const shown = view && inCss(view, css);
   return {
     '--split': `${split}%`,
     '--width': size ? `${size.width}px` : undefined,
     '--aspect': size ? String(size.width / size.height) : undefined,
-    '--scale': view ? String(view.scale * css) : undefined,
-    '--x': view ? `${view.x * css}px` : undefined,
-    '--y': view ? `${view.y * css}px` : undefined,
+    '--scale': shown ? String(shown.scale) : undefined,
+    '--x': shown ? `${shown.x}px` : undefined,
+    '--y': shown ? `${shown.y}px` : undefined,
   };
 }
 

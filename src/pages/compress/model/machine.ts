@@ -2,6 +2,7 @@ import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup } f
 
 import type { Codec, Decoded, EncodeOptions, TrialProgress } from '@/shared/api';
 
+import { boxed } from '../lib/options-of';
 import type { EncodeResult } from './encode-result';
 import { encoder, type EncoderCommand, type EncoderEvent } from './encoder';
 import type { Picked } from './picked';
@@ -121,8 +122,9 @@ export const searchMachine = setup({
       };
       enqueue.sendTo('encoder', command);
     }),
+    // the box of a fit that needs both sides is filled from the image held, which is this one's size
     encode: enqueueActions(({ context, enqueue }) => {
-      const command: EncoderCommand = { type: 'encode', options: context.options };
+      const command: EncoderCommand = { type: 'encode', options: boxed(context.options, context.original) };
       enqueue.sendTo('encoder', command);
     }),
     // Only an image the worker holds can be asked for, and only once.

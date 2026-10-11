@@ -42,8 +42,8 @@ export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
       onChange: ({ formApi }) => {
         clearTimeout(resting.current);
         resting.current = window.setTimeout(() => {
-          const { codecs, result, original } = search.getSnapshot().context;
-          const options = optionsOf(formApi.state.values, codecs, result?.output.format ?? null, original);
+          const { codecs, result } = search.getSnapshot().context;
+          const options = optionsOf(formApi.state.values, codecs, result?.output.format ?? null);
           if (said(options) === sent.current) return;
           sent.current = said(options);
           search.send({ type: 'options', options });
@@ -55,8 +55,8 @@ export function useControlsForm(nowRef: RefObject<ControlsNow | null>) {
   useEffect(() => {
     nowRef.current = {
       options: () => {
-        const { codecs, result, original } = search.getSnapshot().context;
-        const options = optionsOf(form.state.values, codecs, result?.output.format ?? null, original);
+        const { codecs, result } = search.getSnapshot().context;
+        const options = optionsOf(form.state.values, codecs, result?.output.format ?? null);
         sent.current = said(options);
         return options;
       },

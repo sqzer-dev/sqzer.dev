@@ -169,6 +169,32 @@ test("an image's own size is kept apart from the size it was drawn at", () => {
   expect(vector.actor.getSnapshot().context.original).toMatchObject({ width: 48 });
 });
 
+test('the box of a fit that needs both sides is filled at the encode from the image held, so another image gets its own', () => {
+  const search = start();
+  search.actor.send({ type: 'picked', image: picked('a.jpg'), options: { fit: 'cover', width: 24 } });
+  search.tell(decoded());
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({
+    type: 'encode',
+    options: { fit: 'cover', width: 24, height: 32 },
+  });
+  search.tell(done);
+
+  // the next image is read before it is encoded, and its own size fills the box
+  search.actor.send({ type: 'picked', image: picked('b.jpg'), options: { fit: 'cover' } });
+  search.tell({
+    type: 'decoded',
+    decoded: { width: 200, height: 300, format: 'jpeg', alpha: false, animated: false },
+    drawnWidth: null,
+  });
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({
+    type: 'encode',
+    options: { fit: 'cover', width: 200, height: 300 },
+  });
+  // the record of what was asked stays the reader's own
+  search.tell(done);
+  expect(search.actor.getSnapshot().context.result).toMatchObject({ asked: { fit: 'cover' } });
+});
+
 test('a vector image is drawn again when its width changes, and not when it stays', () => {
   const search = start();
   search.actor.send({ type: 'picked', image: picked('c.svg', true), options: { width: 100 } });

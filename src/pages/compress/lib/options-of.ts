@@ -10,30 +10,25 @@ const typed = (value: string) => (value === '' ? undefined : Number(value));
 export type Size = { width: number; height: number };
 
 /**
- * The box as sent: a side typed is sent, and with a fit that needs both sides, every fit but
- * `inside`, an empty side is sent as the image's own, which is what the field shows.
+ * `options` with the box filled for a fit that needs both sides, every fit but `inside`: a side
+ * not asked for is the image's own, which is what the field shows. The machine does this at the
+ * encode, from the image the worker holds, so another image picked gets its own size and not the
+ * one before.
  */
-function box({ width, height, fit }: Controls, image: Size | null) {
-  const needsBoth = fit !== null && fit !== 'inside' && image !== null;
-  return {
-    width: typed(width) ?? (needsBoth ? image.width : undefined),
-    height: typed(height) ?? (needsBoth ? image.height : undefined),
-  };
+export function boxed(options: EncodeOptions, image: Size | null): EncodeOptions {
+  const { fit, width, height } = options;
+  if (fit === undefined || fit === 'inside' || image === null || (width !== undefined && height !== undefined))
+    return options;
+  return { ...options, width: width ?? image.width, height: height ?? image.height };
 }
 
 /**
  * What the controls say, as the options of the package: the one place the form becomes a call. A
  * control that was not touched, or does not apply to the rest, is left out, so the package's
  * defaults stay its own and it validates what it is given (ADR-0001 D3). `chosen` is the format
- * the newest result says the package chose, for the backend options under `auto`; `image` is the
- * image's own size, for a side of the box left as shown.
+ * the newest result says the package chose, for the backend options under `auto`.
  */
-export function optionsOf(
-  controls: Controls,
-  codecs: Codec[],
-  chosen: string | null = null,
-  image: Size | null = null,
-): EncodeOptions {
+export function optionsOf(controls: Controls, codecs: Codec[], chosen: string | null = null): EncodeOptions {
   const { format, target, quality, codecOpts } = controls;
   const applies = applicable(controls, codecs, chosen);
   const { mode } = applies;
@@ -49,7 +44,8 @@ export function optionsOf(
     fast: applies.fast && controls.fast ? true : undefined,
     keepIcc: controls.keepIcc ? true : undefined,
     keepMetadata: controls.keepMetadata ? true : undefined,
-    ...box(controls, image),
+    width: typed(controls.width),
+    height: typed(controls.height),
     fit: controls.fit ?? undefined,
     position: applies.position ? (controls.position ?? undefined) : undefined,
     background: applies.background && controls.background !== '' ? controls.background : undefined,

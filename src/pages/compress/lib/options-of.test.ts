@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import type { Codec, CodecOption } from '@/shared/api';
 
 import { UNTOUCHED } from '../model/controls';
-import { optionsOf } from './options-of';
+import { boxed, optionsOf } from './options-of';
 
 const codec = (format: string, lossy: boolean, options: CodecOption[] = []): Codec => ({
   format,
@@ -62,31 +62,16 @@ test("a format and a side of the box are sent as they are said, and an empty sid
   expect(optionsOf({ ...UNTOUCHED, ratio: false }, codecs)).toEqual({});
 });
 
-test("with a fit that needs both sides, a side left as the image's own is sent as such; with `inside`, it is not", () => {
+test("with a fit that needs both sides, `boxed` fills a side not asked for from the image's own size; with `inside`, it does not", () => {
   const image = { width: 48, height: 32 };
-  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'cover' }, codecs, null, image)).toEqual({
-    width: 24,
-    height: 32,
-    fit: 'cover',
-  });
-  expect(optionsOf({ ...UNTOUCHED, height: '16', fit: 'contain' }, codecs, null, image)).toEqual({
-    width: 48,
-    height: 16,
-    fit: 'contain',
-  });
-  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'inside' }, codecs, null, image)).toEqual({
-    width: 24,
-    fit: 'inside',
-  });
-  expect(optionsOf({ ...UNTOUCHED, width: '24' }, codecs, null, image)).toEqual({ width: 24 });
-  // both sides as shown: the box is the image's own, which the fit takes as it is
-  expect(optionsOf({ ...UNTOUCHED, fit: 'cover' }, codecs, null, image)).toEqual({
-    width: 48,
-    height: 32,
-    fit: 'cover',
-  });
-  // before the image is read there is no size to send, and the package says what it needs
-  expect(optionsOf({ ...UNTOUCHED, width: '24', fit: 'cover' }, codecs)).toEqual({ width: 24, fit: 'cover' });
+  expect(boxed({ width: 24, fit: 'cover' }, image)).toEqual({ width: 24, height: 32, fit: 'cover' });
+  expect(boxed({ height: 16, fit: 'contain' }, image)).toEqual({ width: 48, height: 16, fit: 'contain' });
+  expect(boxed({ fit: 'cover' }, image)).toEqual({ width: 48, height: 32, fit: 'cover' });
+  expect(boxed({ width: 24, fit: 'inside' }, image)).toEqual({ width: 24, fit: 'inside' });
+  expect(boxed({ width: 24 }, image)).toEqual({ width: 24 });
+  expect(boxed({ width: 24, height: 16, fit: 'cover' }, image)).toEqual({ width: 24, height: 16, fit: 'cover' });
+  // no image held yet: nothing to fill from, and the package says what it needs
+  expect(boxed({ width: 24, fit: 'cover' }, null)).toEqual({ width: 24, fit: 'cover' });
 });
 
 test('a format that is lossless only takes no score and no quality', () => {
