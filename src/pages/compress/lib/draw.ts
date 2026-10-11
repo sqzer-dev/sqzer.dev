@@ -1,6 +1,6 @@
 import type { Picked } from '../model/picked';
 
-// The package's default `maxPixels`, for the one image the page draws itself.
+// The package's default `maxPixels`, for the one image the page draws itself when no limit was asked for.
 const MAX_PIXELS = 24_000_000;
 
 async function load(blob: Blob) {
@@ -18,9 +18,11 @@ async function load(blob: Blob) {
 /**
  * The image drawn by the browser, for what the package cannot decode: RGBA
  * as `fromPixels` takes it. A vector image is drawn at `width`, sharp at any
- * size; pixels are drawn at their own size and resized by the package.
+ * size; pixels are drawn at their own size and resized by the package. The
+ * limit is the one the package would check, so raising `maxPixels` admits a
+ * larger drawing too.
  */
-export async function draw(image: Picked, width: number): Promise<ImageData> {
+export async function draw(image: Picked, width: number, maxPixels = MAX_PIXELS): Promise<ImageData> {
   const img = await load(image.blob);
   let { naturalWidth: w, naturalHeight: h } = img;
   if (!(w && h)) throw new Error('the browser gives no size for this image');
@@ -28,8 +30,8 @@ export async function draw(image: Picked, width: number): Promise<ImageData> {
     h = Math.max(1, Math.round((h * width) / w));
     w = width;
   }
-  if (w * h > MAX_PIXELS) {
-    throw new Error(`${w}x${h} is over the limit of ${MAX_PIXELS / 1e6} megapixels`);
+  if (w * h > maxPixels) {
+    throw new Error(`${w}x${h} is over the limit of ${maxPixels / 1e6} megapixels`);
   }
   const canvas = document.createElement('canvas');
   canvas.width = w;

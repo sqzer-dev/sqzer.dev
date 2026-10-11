@@ -55,10 +55,10 @@ async function handle(request: Request) {
   const { id } = request;
   try {
     if (request.type === 'decode') {
-      hold(id, await decodeAny(new Uint8Array(request.bytes)));
+      hold(id, await decodeAny(new Uint8Array(request.bytes), { maxPixels: request.maxPixels }));
     } else if (request.type === 'pixels') {
-      const { rgba, width, height } = request;
-      hold(id, fromPixels(new Uint8ClampedArray(rgba), width, height));
+      const { rgba, width, height, maxPixels } = request;
+      hold(id, fromPixels(new Uint8ClampedArray(rgba), width, height, { maxPixels }));
     } else if (!image || id !== held) {
       // a request for an image that failed to decode, or was replaced since
     } else if (request.type === 'encode') {

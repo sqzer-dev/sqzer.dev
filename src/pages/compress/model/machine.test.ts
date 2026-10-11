@@ -93,6 +93,8 @@ test('a picked image is read, then encoded, on the worker that is there', () => 
 
   expect(search.state()).toEqual({ open: 'result' });
   expect(search.asked()).toEqual([['read', 'encode']]);
+  // the result carries what it was asked, which is what its output answers
+  expect(search.actor.getSnapshot().context.result).toMatchObject({ asked: { target: 70 } });
 });
 
 test('the controls moving during a search end the worker once the patience runs out', () => {
@@ -148,6 +150,51 @@ test('another image after a result goes to the worker that is there', () => {
   expect(search.actor.getSnapshot().context.result).toBeNull();
 });
 
+test("an image's own size is kept apart from the size it was drawn at", () => {
+  const raster = encoding();
+  expect(raster.actor.getSnapshot().context.original).toMatchObject({ width: 48, height: 32 });
+
+  const vector = start();
+  vector.actor.send({ type: 'picked', image: picked('c.svg', true), options: {} });
+  vector.tell(decoded(0));
+  expect(vector.actor.getSnapshot().context.original).toMatchObject({ width: 48, height: 32 });
+  vector.tell(done);
+  vector.actor.send({ type: 'options', options: { width: 24 } });
+  vector.tell({
+    type: 'decoded',
+    decoded: { width: 24, height: 16, format: 'svg', alpha: false, animated: false },
+    drawnWidth: 24,
+  });
+  expect(vector.actor.getSnapshot().context.decoded).toMatchObject({ width: 24 });
+  expect(vector.actor.getSnapshot().context.original).toMatchObject({ width: 48 });
+});
+
+test('the box of a fit that needs both sides is filled at the encode from the image held, so another image gets its own', () => {
+  const search = start();
+  search.actor.send({ type: 'picked', image: picked('a.jpg'), options: { fit: 'cover', width: 24 } });
+  search.tell(decoded());
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({
+    type: 'encode',
+    options: { fit: 'cover', width: 24, height: 32 },
+  });
+  search.tell(done);
+
+  // the next image is read before it is encoded, and its own size fills the box
+  search.actor.send({ type: 'picked', image: picked('b.jpg'), options: { fit: 'cover' } });
+  search.tell({
+    type: 'decoded',
+    decoded: { width: 200, height: 300, format: 'jpeg', alpha: false, animated: false },
+    drawnWidth: null,
+  });
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({
+    type: 'encode',
+    options: { fit: 'cover', width: 200, height: 300 },
+  });
+  // the record of what was asked stays the reader's own
+  search.tell(done);
+  expect(search.actor.getSnapshot().context.result).toMatchObject({ asked: { fit: 'cover' } });
+});
+
 test('a vector image is drawn again when its width changes, and not when it stays', () => {
   const search = start();
   search.actor.send({ type: 'picked', image: picked('c.svg', true), options: { width: 100 } });
@@ -161,6 +208,20 @@ test('a vector image is drawn again when its width changes, and not when it stay
 
   expect(search.asked()).toEqual([['read', 'encode', 'encode', 'read']]);
   expect(search.workers[0]?.asked.at(-1)).toMatchObject({ type: 'read', width: 200 });
+});
+
+test('a new limit on the pixels reads the image again under it, and the same limit does not', () => {
+  const search = encoding();
+  expect(search.workers[0]?.asked[0]).toMatchObject({ type: 'read', maxPixels: undefined });
+  search.tell(done);
+
+  search.actor.send({ type: 'options', options: { maxPixels: 1000 } });
+  expect(search.workers[0]?.asked.at(-1)).toMatchObject({ type: 'read', maxPixels: 1000 });
+  search.tell(decoded());
+  search.tell(done);
+  search.actor.send({ type: 'options', options: { maxPixels: 1000, quality: 50 } });
+
+  expect(search.asked()).toEqual([['read', 'encode', 'read', 'encode', 'encode']]);
 });
 
 test('an image the package cannot decode is drawn on the page', () => {

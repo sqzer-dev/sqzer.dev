@@ -1,6 +1,7 @@
 # ADR-0003: The design system, the components and the styling
 
 **Status:** Accepted   **Date:** 2026-10-03   **Deciders:** Vlad (sole maintainer)
+**Superseded by:** ADR-0006 for blue on the border of a drop target, and ADR-0007 D5 for the four `score` tokens on the track of the target slider, red to blue from worst to visually lossless. D4's one hue for one purpose holds everywhere else
 **Scope:** What ADR-0001 D10 left to its own record, on the stack of ADR-0002. It covers the headless component library, the styling system, the fonts, the colours, the glass panels, the icons, and the licences they bring. It also adds one directive to the Content-Security-Policy. What the page does and where things sit is ADR-0001, and nothing here changes it.
 
 ---
