@@ -33,7 +33,6 @@ export function optionsOf(controls: Controls, codecs: Codec[], chosen: string | 
     fit: resize ? (controls.fit ?? undefined) : undefined,
     position: applies.position ? (controls.position ?? undefined) : undefined,
     background: applies.background && controls.background !== '' ? controls.background : undefined,
-    scale: resize ? typed(controls.scale) : undefined,
     enlarge: resize && controls.enlarge ? true : undefined,
     filter: resize ? (controls.filter ?? undefined) : undefined,
     maxPixels: typed(controls.maxPixels),

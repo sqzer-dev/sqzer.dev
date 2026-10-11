@@ -9,9 +9,9 @@ import { Switch } from '@/shared/ui/switch';
 import type { FieldOf } from './form';
 
 // The field components, each over a field of the form (`form.ts`), and each saying what the package
-// does with it, under the control. A field that was not touched shows the package's default, as the
-// placeholder of a field, the muted value of a select, the resting place of a slider, and sends
-// nothing (ADR-0001 D3, ADR-0007 D6).
+// does with it, under the control. A field that was not touched shows the package's default as its
+// value, so a field steps from it and a select opens on it, and sends nothing: the field itself is
+// empty, and only what is typed or chosen is the reader's (ADR-0001 D3, ADR-0007 D6, D7).
 
 type FieldProps<Value> = {
   field: FieldOf<Value>;
@@ -51,16 +51,18 @@ function Labelled({
 }
 
 type NumberFieldProps = FieldProps<string> & {
-  /** What the empty field says: the package's default, or what the package does without it. */
-  placeholder?: string;
+  /** What the empty field shows as its value: the package's default, or the image's own size. */
+  fallback?: string | undefined;
+  /** What the empty field says when there is no value to show. */
+  placeholder?: string | undefined;
   min?: number;
   max?: number;
   /** `any` for a factor. */
   step?: number | 'any';
 };
 
-/** A number, typed. Empty until it is, which leaves the package its default. */
-export function NumberField({ field, label, help, placeholder = 'default', min, max, step = 1 }: NumberFieldProps) {
+/** A number, typed, or stepped from the default it shows. Empty until it is, which leaves the package its default. */
+export function NumberField({ field, label, help, fallback, placeholder, min, max, step = 1 }: NumberFieldProps) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
   return (
@@ -77,7 +79,7 @@ export function NumberField({ field, label, help, placeholder = 'default', min, 
           min={min}
           max={max}
           step={step}
-          value={field.state.value}
+          value={field.state.value === '' && fallback !== undefined ? fallback : field.state.value}
           placeholder={placeholder}
           aria-describedby={describedBy}
           onBlur={field.handleBlur}
@@ -90,10 +92,14 @@ export function NumberField({ field, label, help, placeholder = 'default', min, 
   );
 }
 
-type TextFieldProps = FieldProps<string> & { placeholder: string };
+type TextFieldProps = FieldProps<string> & {
+  /** What the empty field shows as its value: the package's default. */
+  fallback?: string | undefined;
+  placeholder?: string | undefined;
+};
 
 /** Text, typed, in the package's own spelling: a colour, or a backend option. */
-export function TextField({ field, label, help, placeholder }: TextFieldProps) {
+export function TextField({ field, label, help, fallback, placeholder }: TextFieldProps) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
   return (
@@ -105,7 +111,7 @@ export function TextField({ field, label, help, placeholder }: TextFieldProps) {
         <Input
           id={id}
           className="w-36 font-mono"
-          value={field.state.value}
+          value={field.state.value === '' && fallback !== undefined ? fallback : field.state.value}
           placeholder={placeholder}
           aria-describedby={describedBy}
           onBlur={field.handleBlur}
@@ -121,21 +127,21 @@ export function TextField({ field, label, help, placeholder }: TextFieldProps) {
 type SelectFieldProps<Value extends string> = FieldProps<Value | null> & {
   /** The values the package lists, in its spelling. */
   options: { value: Value; label: string }[];
-  /** The package's default, shown muted until one is chosen. */
-  fallback?: string;
+  /** The package's default, which the select opens on until one is chosen. */
+  fallback?: Value;
 };
 
-/** One of the values the package lists, or none, which leaves the package its default. */
+/** One of the values the package lists. It shows the package's default until one is chosen, and sends nothing then. */
 export function SelectField<Value extends string>({ field, label, help, options, fallback }: SelectFieldProps<Value>) {
   const id = useId();
   const { describedBy, description } = useHelp(help);
-  const placeholder = fallback === undefined ? 'default' : `default: ${fallback}`;
+  const placeholder = 'default';
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
         items={options}
-        value={field.state.value}
+        value={field.state.value ?? fallback ?? null}
         onValueChange={(value: Value | null) => {
           field.handleChange(value);
         }}
@@ -144,7 +150,7 @@ export function SelectField<Value extends string>({ field, label, help, options,
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={null}>{placeholder}</SelectItem>
+          {fallback === undefined && <SelectItem value={null}>{placeholder}</SelectItem>}
           {options.map(({ value, label: name }) => (
             <SelectItem key={value} value={value}>
               {name}

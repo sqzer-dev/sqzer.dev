@@ -196,9 +196,10 @@ test('the resize is one section with a switch: off, its controls are away; on, a
   await expect.element(screen.getByRole('combobox', { name: 'Position' })).not.toBeInTheDocument();
   expect(said('resize')).toEqual({ resize: true });
 
-  // the fit's select shows the package's default until one is chosen
+  // the fit's select opens on the package's default until one is chosen, and nothing is said of it
   const fit = screen.getByRole('combobox', { name: 'Fit' });
-  await expect.element(screen.getByText('default: inside')).toBeVisible();
+  await expect.element(screen.getByText('inside', { exact: true })).toBeVisible();
+  expect(said('fit')).toEqual({ fit: null });
   // `position` with a fit that crops or pads, `background` with the one that pads
   await fit.click();
   await screen.getByRole('option', { name: 'cover' }).click();
@@ -209,16 +210,21 @@ test('the resize is one section with a switch: off, its controls are away; on, a
   await expect.element(screen.getByRole('textbox', { name: 'Background' })).toBeVisible();
   expect(said('fit')).toEqual({ fit: 'contain' });
 
-  // and a default can be chosen again
+  // the default chosen by hand is sent, which is the same to the package
   await fit.click();
-  await screen.getByRole('option', { name: 'default: inside' }).click();
-  expect(said('fit')).toEqual({ fit: null });
+  await screen.getByRole('option', { name: 'inside' }).click();
+  expect(said('fit')).toEqual({ fit: 'inside' });
 });
 
 test('Advanced stays closed until opened, with sliders for ranges and the defaults shown', async () => {
   const { screen, said, step } = await renderPanel();
   const effort = screen.getByRole('slider', { name: 'Effort' });
   await expect.element(effort).not.toBeInTheDocument();
+  // a press anywhere on a quality card picks it
+  screen.getByRole('radio', { name: 'Lossless' }).element().parentElement?.click();
+  await expect.element(screen.getByRole('radio', { name: 'Lossless' })).toBeChecked();
+  screen.getByRole('radio', { name: 'Target score' }).element().parentElement?.click();
+  await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeChecked();
 
   await screen.getByRole('button', { name: 'Advanced' }).click();
   // the package states no default effort: the slider rests on a notch left of its range that says so
@@ -231,7 +237,8 @@ test('Advanced stays closed until opened, with sliders for ranges and the defaul
   expect(said('fast')).toEqual({ fast: true });
 
   const maxPixels = screen.getByRole('spinbutton', { name: 'Max pixels' });
-  await expect.element(maxPixels).toHaveAttribute('placeholder', '24000000');
+  // the default is the value shown, so the field steps from it, and nothing is sent until it is typed
+  await expect.element(maxPixels).toHaveValue(24000000);
   await expect.element(maxPixels).toHaveAccessibleDescription(/The tab may run out of memory above the default/u);
   await maxPixels.fill('1000000');
   expect(said('maxPixels')).toEqual({ maxPixels: '1000000' });
@@ -266,7 +273,7 @@ test("the backend options are the chosen encoder's, from `codecs()`, each as the
 
   // listed values: a select showing the default
   const model = screen.getByRole('combobox', { name: 'jpeg:model' });
-  await expect.element(screen.getByText('default: ycbcr')).toBeVisible();
+  await expect.element(screen.getByText('ycbcr', { exact: true })).toBeVisible();
   await model.click();
   await screen.getByRole('option', { name: 'rgb' }).click();
   expect(said('codecOpts')).toMatchObject({ codecOpts: { 'jpeg:model': 'rgb' } });

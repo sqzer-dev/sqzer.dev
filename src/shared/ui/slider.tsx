@@ -8,7 +8,13 @@ type SliderProps = SliderPrimitive.Root.Props & {
   trackClassName?: string;
   /** On the filled range: `bg-transparent` where the track is the scale. */
   indicatorClassName?: string;
+  /** On the thumb: a colour read off the scale, say. */
+  thumbClassName?: string;
 };
+
+// The thumb: a small square with its hit area reaching past it.
+const THUMB =
+  'relative block size-3 shrink-0 rounded-md border border-ring bg-background ring-ring transition-[color,box-shadow] select-none after:absolute after:-inset-3 hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden active:ring-2 disabled:pointer-events-none disabled:opacity-50';
 
 function Slider({
   className,
@@ -19,6 +25,7 @@ function Slider({
   getAriaValueText,
   trackClassName,
   indicatorClassName,
+  thumbClassName,
   ...props
 }: SliderProps) {
   const values = Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max];
@@ -34,7 +41,8 @@ function Slider({
       thumbAlignment="edge"
       {...props}
     >
-      <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
+      {/* the control takes the pointer, so its padding is the room around the track a press lands in */}
+      <SliderPrimitive.Control className="relative flex w-full touch-none items-center py-2.5 select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:px-2.5 data-vertical:py-0">
         <SliderPrimitive.Track
           data-slot="slider-track"
           className={cn(
@@ -52,7 +60,7 @@ function Slider({
             data-slot="slider-thumb"
             key={index}
             getAriaValueText={getAriaValueText}
-            className="relative block size-3 shrink-0 rounded-md border border-ring bg-background ring-ring transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden active:ring-2 disabled:pointer-events-none disabled:opacity-50"
+            className={cn(THUMB, thumbClassName)}
           />
         ))}
       </SliderPrimitive.Control>

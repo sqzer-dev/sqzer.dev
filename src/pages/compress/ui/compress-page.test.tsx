@@ -131,7 +131,8 @@ test('a collapsed panel keeps what was typed into it', async () => {
 
   await expect.element(width).toHaveValue(1600);
   await wait(SETTLED_MS);
-  expect(encodes().at(-1)).toEqual({ width: 1600 });
+  // the height followed, by the image's ratio
+  expect(encodes().at(-1)).toEqual({ width: 1600, height: 1067 });
 });
 
 test('the checkerboard under a transparent image can be a flat colour', async () => {
@@ -180,7 +181,7 @@ test('the controls rest before a search starts with what they say', async () => 
   await wait(SETTLED_MS);
 
   // one search for the three changes, or two as the clock has it, on the worker that holds the image
-  expect(encodes().at(-1)).toEqual({ width: 1600 });
+  expect(encodes().at(-1)).toEqual({ width: 1600, height: 1067 });
   expect(workers).toHaveLength(1);
 });
 
@@ -194,7 +195,7 @@ test('a control changed just before another image is picked does not start the s
   await screen.getByLabelText('New image').upload(new File(['not an image'], 'other.jpg'));
   await wait(SETTLED_MS);
 
-  expect(encodes()).toEqual([{}, {}, { width: 1600 }]);
+  expect(encodes()).toEqual([{}, {}, { width: 1600, height: 1067 }]);
   expect(workers).toHaveLength(1);
 });
 
@@ -248,6 +249,36 @@ test('another image picked under `chosen per image` keeps the backend settings o
   await wait(SETTLED_MS);
 
   expect(encodes().at(-1)).toEqual({ codecOpts: new Map([['jpeg:progressive', 'false']]) });
+});
+
+test("the box shows the image's own size, a side typed sets the other by its ratio, and a preset sets both", async () => {
+  const { screen, encodes, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('switch', { name: 'Resize' }).click();
+  const width = screen.getByRole('spinbutton', { name: 'Width' });
+  const height = screen.getByRole('spinbutton', { name: 'Height' });
+  await expect.element(width).toHaveValue(48);
+  await expect.element(height).toHaveValue(32);
+  await wait(SETTLED_MS);
+  // the image's own size is what the package does with nothing: nothing was sent
+  expect(encodes().at(-1)).toEqual({});
+
+  await width.fill('24');
+  await expect.element(height).toHaveValue(16);
+  await wait(SETTLED_MS);
+  expect(encodes().at(-1)).toEqual({ width: 24, height: 16 });
+
+  await screen.getByRole('combobox', { name: 'Preset' }).click();
+  await screen.getByRole('option', { name: '50 %' }).click();
+  await expect.element(width).toHaveValue(24);
+  await expect.element(height).toHaveValue(16);
+
+  // the lock off, a side typed leaves the other
+  await screen.getByRole('switch', { name: 'Keep the ratio' }).click();
+  await width.fill('12');
+  await expect.element(height).toHaveValue(16);
+  await wait(SETTLED_MS);
+  expect(encodes().at(-1)).toEqual({ width: 12, height: 16 });
 });
 
 test('an option behind Advanced reaches the search as the package spells it', async () => {

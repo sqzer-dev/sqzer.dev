@@ -49,6 +49,9 @@ const at = (score: number): CSSProperties => ({ '--at': `${share(score)}%` });
 /** The band a score is in, which is the one to the left of a tick drawn at it. */
 const bandOf = (score: number) => BANDS.toReversed().find((band) => band.from < score)?.token ?? BANDS[0].token;
 
+/** The band the thumb stands in: at a band's start it is in that band, as the words say. */
+const bandAt = (score: number) => BANDS.toReversed().find((band) => band.from <= score)?.token ?? BANDS[0].token;
+
 /**
  * The track as a scale: four bands, red to blue from worst to visually lossless, in the `score`
  * tokens (ADR-0007 D5). The words next to the slider carry the same reading, so colour is not the
@@ -151,9 +154,10 @@ export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
           aria-labelledby={labelledBy}
           aria-describedby={`${labelledBy}-words`}
           className="px-1.5"
-          style={TRACK}
+          style={{ ...TRACK, '--thumb': `var(--score-${bandAt(shown)})` }}
           trackClassName="bg-(image:--track)"
           indicatorClassName="bg-transparent"
+          thumbClassName="bg-(--thumb)"
           thumbAlignment="center"
           min={TARGET.min}
           max={TARGET.max}

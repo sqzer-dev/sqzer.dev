@@ -78,7 +78,7 @@ ADR-0005 put the viewport at the top right, under the corner label, because the 
 
 ### D5. The track of the target slider in four colours
 
-The maintainer's review of the slider asked for a coloured track: red, yellow, green and blue for worst, good, better and visually lossless, with the preset marks crossing the track. ADR-0003 D4 made the page monochrome, with one hue for one purpose, red for an alert and blue for a drop target (ADR-0006). The track is a third purpose, and the one place on the page where a colour stands for a reading rather than a state: the four bands are the lines of section 1 of ADR-0001 two by two, `low` and `medium` in red below 70, `high` in yellow to 80, `very high` and `excellent` in green to 90, `visually lossless` in blue from 90. The hues are Radix `red`, `yellow`, `green` and `blue` at step 9, the solid of each scale, as four tokens, `score-low`, `score-good`, `score-better` and `score-best`, and the track is a gradient of them with hard stops. The filled range of the slider is transparent, so the thumb reads against the band it is in. The words next to the slider say the same reading, so colour is never the only way it is said (WCAG 1.4.1). The ticks of the presets cross the track in the foreground colour, which shows on any band.
+The maintainer's review of the slider asked for a coloured track: red, yellow, green and blue for worst, good, better and visually lossless, with the preset marks crossing the track. ADR-0003 D4 made the page monochrome, with one hue for one purpose, red for an alert and blue for a drop target (ADR-0006). The track is a third purpose, and the one place on the page where a colour stands for a reading rather than a state: the four bands are the lines of section 1 of ADR-0001 two by two, `low` and `medium` in red below 70, `high` in yellow to 80, `very high` and `excellent` in green to 85 after D7, `visually lossless` in blue from there. The hues are Radix `red`, `yellow`, `green` and `blue` at step 9, the solid of each scale, as four tokens, `score-low`, `score-good`, `score-better` and `score-best`, and the track is a gradient of them with hard stops. The filled range of the slider is transparent, so the thumb reads against the band it is in. The words next to the slider say the same reading, so colour is never the only way it is said (WCAG 1.4.1). The ticks of the presets cross the track in the foreground colour, which shows on any band.
 
 Red on the track is not an alert, and blue on it is not a drop target: the tokens are different, and the rules in `.greptile/config.json` and `CLAUDE.md` name the track as the one place for the four.
 
@@ -119,6 +119,31 @@ scale       on a screen 2048 px wide or more the root type is 18 px, so everythi
 ```
 
 What stays: a hidden control sends nothing, `optionsOf` is the one translation, and the package validates.
+
+### D7. The second round of the review
+
+The maintainer's second look, the same day:
+
+```text
+cards       a press anywhere on a quality card picks it, which the radio group hears through the
+            card's data-choice; the title keeps the keys. The cards are as wide as the controls
+sliders     the control of every slider has room above and below the track, 10 px each way, and the
+            thumb's hit area reaches 12 px past it, so a press near the track lands
+thumb       the thumb of the target slider takes the colour of the band it stands in
+bands       red to 60, yellow to 70, green to 85, blue beyond: the bands end where the presets sit
+resize      a row with the switch at its end, as Squoosh's, opening the section. Width and height
+            show the image's own size until a side is typed, and send nothing then; a side typed
+            sets the other by the image's ratio while "Keep the ratio" is on; a preset of 25 to
+            100 % sets both. The package's scale key is not sent: the box says the same thing
+defaults    the default is the value a field shows, not its placeholder, so a number steps from it
+            and a select opens on it; the field itself stays empty and sends nothing. A value typed
+            or chosen that equals the default is sent, which is the same to the package
+dividers    a line between the sections behind Advanced: the encode, the limit, the backend options
+asked       the package has no call that reports its defaults, effort's among them, so the page
+            shows the README's numbers from lib/defaults.ts and says `default` for the rest. The
+            call is asked of sqzer-dev/sqzer (the issue is linked under Sources); when it lands,
+            lib/defaults.ts goes
+```
 
 ---
 
@@ -176,4 +201,5 @@ What stays: a hidden control sends nothing, `optionsOf` is the one translation, 
 - TanStack Form: https://tanstack.com/form/latest, `listeners`: https://tanstack.com/form/latest/docs/framework/react/guides/listeners
 - `eslint-plugin-react-hooks`, the libraries it lists as incompatible with the React Compiler: https://github.com/facebook/react/blob/main/packages/eslint-plugin-react-hooks/src/rules/IncompatibleLibrary.ts
 - SSIMULACRA2, the meaning of its scores: https://github.com/cloudinary/ssimulacra2
+- The defaults asked of `sqzer`: https://github.com/sqzer-dev/sqzer/issues/57
 - `crates/sqzer-wasm/README.md` in `sqzer-dev/sqzer`, the options and what excludes what

@@ -136,7 +136,7 @@ function CodecField({ option, field }: CodecFieldProps) {
       />
     );
   }
-  return <TextField field={field} label={key} placeholder={fallback} help={help} />;
+  return <TextField field={field} label={key} fallback={fallback} help={help} />;
 }
 
 /** The backend options of the encoder in use, as `codecs()` lists them. */
@@ -175,17 +175,19 @@ export function AdvancedFields({ form, applies }: AdvancedFieldsProps) {
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-4 pt-3">
         <EncodeFields form={form} applies={applies} />
+        <hr className="border-border" />
         <form.Field name="maxPixels">
           {(field) => (
             <NumberField
               field={field}
               label="Max pixels"
               min={1}
-              placeholder={String(DEFAULTS.maxPixels)}
+              fallback={String(DEFAULTS.maxPixels)}
               help={HELP.maxPixels}
             />
           )}
         </form.Field>
+        {applies.codecOpts.length > 0 && <hr className="border-border" />}
         <CodecFields form={form} groups={applies.codecOpts} />
       </CollapsibleContent>
     </Collapsible>

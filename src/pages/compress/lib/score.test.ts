@@ -13,8 +13,8 @@ test("a score reads as SSIMULACRA2's words for the highest line it reaches", () 
   expect(describe(30)).toBe('30, low: obvious artifacts');
 });
 
-test('the bands start at the lines of the words, and a share is a place on the track', () => {
-  expect(BANDS.map((band) => band.from)).toEqual([30, 70, 80, 90]);
+test('the bands end at the presets, and a share is a place on the track', () => {
+  expect(BANDS.map((band) => band.from)).toEqual([30, 60, 70, 85]);
   expect(share(30)).toBe(0);
   expect(share(100)).toBe(100);
   expect(share(65)).toBe(50);

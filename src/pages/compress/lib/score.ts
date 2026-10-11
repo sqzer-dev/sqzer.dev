@@ -23,13 +23,14 @@ const LOW = 'low: obvious artifacts';
 
 /**
  * The bands of the track, from worst to visually lossless: where each starts, and the token it is
- * painted in (ADR-0007 D5). The lines of `WORDS` fall into them two by two.
+ * painted in (ADR-0007 D5). They end where the presets sit: red to `thumbnail`, yellow to `web`,
+ * green to `archive`, blue beyond.
  */
 export const BANDS = [
   { from: TARGET.min, token: 'low' },
-  { from: 70, token: 'good' },
-  { from: 80, token: 'better' },
-  { from: 90, token: 'best' },
+  { from: 60, token: 'good' },
+  { from: 70, token: 'better' },
+  { from: 85, token: 'best' },
 ] as const;
 
 /** Where a score sits on the track, as a share of its length. */

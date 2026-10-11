@@ -22,12 +22,13 @@ type ChoiceProps = {
 
 /**
  * One way to say the quality, as a card: its title is the radio, without a circle, and the card's
- * look says which is chosen, the border on the active one and the others dimmed. The control under
- * the title picks the card when it is moved.
+ * look says which is chosen, the border on the active one and the others dimmed. A press anywhere
+ * on the card picks it, which the group hears by `data-choice`, and so does moving its control.
  */
 function Choice({ value, title, active, titleId, children }: ChoiceProps) {
   return (
     <div
+      data-choice={value}
       data-active={active || undefined}
       className="flex flex-col gap-2 rounded-md border border-transparent p-2 transition-[border-color,opacity] not-data-active:opacity-60 data-active:border-input"
     >
@@ -85,7 +86,7 @@ type QualityFieldsProps = {
  */
 export function QualityFields({ form, applies }: QualityFieldsProps) {
   const legend = useId();
-  const target = useId();
+  const titleId = useId();
   const { mode } = applies;
 
   return (
@@ -96,18 +97,24 @@ export function QualityFields({ form, applies }: QualityFieldsProps) {
       <form.Field name="mode">
         {(field) => (
           <RadioGroup
-            className="-mx-2 flex w-auto flex-col gap-1"
+            className="flex w-auto flex-col gap-1"
             value={mode}
             aria-labelledby={legend}
             onValueChange={(value: unknown) => {
               if (value === 'target' || value === 'quality' || value === 'lossless') field.handleChange(value);
             }}
+            // a press anywhere on a card picks it; the title has the keys
+            onClick={({ target }) => {
+              const card = target instanceof Element ? target.closest('[data-choice]') : null;
+              const choice = card instanceof HTMLElement ? card.dataset['choice'] : undefined;
+              if (choice === 'target' || choice === 'quality' || choice === 'lossless') field.handleChange(choice);
+            }}
           >
             {applies.target && (
-              <Choice value="target" title="Target score" active={mode === 'target'} titleId={target}>
+              <Choice value="target" title="Target score" active={mode === 'target'} titleId={titleId}>
                 <form.Field name="target">
                   {(score) => (
-                    <TargetSlider field={score} labelledBy={target} onMove={() => field.handleChange('target')} />
+                    <TargetSlider field={score} labelledBy={titleId} onMove={() => field.handleChange('target')} />
                   )}
                 </form.Field>
               </Choice>

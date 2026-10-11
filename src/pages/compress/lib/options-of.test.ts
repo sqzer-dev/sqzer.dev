@@ -63,9 +63,7 @@ test('a format is sent as it is said, and a width once the resize is on', () => 
     width: 1600,
   });
   // off, the resize sends nothing, whatever was typed into it
-  expect(
-    optionsOf({ ...UNTOUCHED, width: '1600', fit: 'cover', scale: '2', enlarge: true, filter: 'box' }, codecs),
-  ).toEqual({});
+  expect(optionsOf({ ...UNTOUCHED, width: '1600', fit: 'cover', enlarge: true, filter: 'box' }, codecs)).toEqual({});
 });
 
 test('a format that is lossless only takes no score and no quality', () => {
@@ -88,7 +86,6 @@ test('every option behind Advanced and the resize is sent as the package spells 
         fit: 'contain',
         position: 'top-left',
         background: '#ffffff',
-        scale: '0.5',
         enlarge: true,
         filter: 'nearest',
         maxPixels: '1000000',
@@ -105,7 +102,6 @@ test('every option behind Advanced and the resize is sent as the package spells 
     fit: 'contain',
     position: 'top-left',
     background: '#ffffff',
-    scale: 0.5,
     enlarge: true,
     filter: 'nearest',
     maxPixels: 1000000,
