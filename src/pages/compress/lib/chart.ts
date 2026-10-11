@@ -1,4 +1,5 @@
-// The chart of the search (ADR-0001 D4): the trials across in their order, and one scale of 0 to
+// The chart of the search (ADR-0001 D4): the trials across in their order, each run spanning the
+// width, and one scale of 0 to
 // 100 up, which holds the score and the quality as two curves, each trial a point on the score's,
 // over plain horizontal rules every twenty points, with no ticks and no background. The target is
 // one labelled rule. The runs before stay behind as subtle lines of their score. The chart comes
@@ -17,8 +18,6 @@ export type Chart = {
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
   score: { path: string; points: Point[] };
   quality: { path: string };
-  /** How many trials stand across: the longest run drawn, and room for two. */
-  slots: number;
 };
 
 const RULE_STEP = 20;
@@ -73,11 +72,11 @@ function curve(points: Point[]): string {
 
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
 export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
-  const slots = Math.max(2, current.length, ...previous.map((run) => run.length));
   const bottom = size.height - 1;
-  const x = (index: number) => SIDE + (index / (slots - 1)) * (size.width - 2 * SIDE);
+  // every run spans the width, its trials spread evenly along it
+  const x = (index: number, of: number) => SIDE + (of > 1 ? index / (of - 1) : 0) * (size.width - 2 * SIDE);
   const y = (value: number) => bottom - (Math.min(Math.max(value, 0), 100) / 100) * (bottom - TOP);
-  const path = (values: number[]) => curve(values.map((value, index) => ({ x: x(index), y: y(value) })));
+  const path = (values: number[]) => curve(values.map((value, index) => ({ x: x(index, values.length), y: y(value) })));
   const rules = [];
   for (let value = 0; value <= 100; value += RULE_STEP) rules.push(Math.round(y(value)) + 0.5);
   return {
@@ -85,10 +84,12 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
     target: target === null ? null : Math.round(y(target)) + 0.5,
     previous: previous.map((run) => ({
       path: path(scores(run)),
-      lone: run.length === 1 && run[0] ? { x: x(0), y: y(run[0].score) } : null,
+      lone: run.length === 1 && run[0] ? { x: x(0, 1), y: y(run[0].score) } : null,
     })),
-    score: { path: path(scores(current)), points: current.map((trial, index) => ({ x: x(index), y: y(trial.score) })) },
+    score: {
+      path: path(scores(current)),
+      points: current.map((trial, index) => ({ x: x(index, current.length), y: y(trial.score) })),
+    },
     quality: { path: path(current.map((trial) => trial.quality)) },
-    slots,
   };
 }

@@ -21,7 +21,7 @@ function TargetRule({ y, score, width }: TargetRuleProps) {
 
 /**
  * The search drawn (ADR-0001 D4): the trials of the running or newest search across, in their
- * order, and one scale of 0 to 100 up, with the score as a line of points and the quality as a
+ * order and spanning the width, and one scale of 0 to 100 up, with the score as a line of points and the quality as a
  * lighter line, over rules every twenty points and the target as one labelled rule. The runs before
  * stay behind as subtle lines of their score, for as long as the tab.
  * Nothing of it is announced: the list next to it carries the numbers. Shown once a score is

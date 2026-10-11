@@ -15,8 +15,7 @@ test('the trials stand across, the scale of 0 to 100 runs up, with a rule every 
 
   // the sides leave a point's radius, and the bottom rule sits on the last pixel row, crisp
   expect(drawn.rules).toEqual([114.5, 94.5, 74.5, 54.5, 34.5, 14.5]);
-  // one trial stands at the left, with room for a second
-  expect(drawn.slots).toBe(2);
+  // one trial stands at the left
   expect(drawn.score.points).toEqual([{ x: SIDE, y: TOP }]);
   expect(drawn.target).toBeNull();
 });
@@ -39,11 +38,15 @@ test('the score and the quality are two lines over the same trials, and the targ
   expect(drawn.previous).toEqual([{ path: 'M4 84', lone: { x: 4, y: 84 } }]);
 });
 
-test('the longest run drawn sets how many trials stand across, and a value past the scale stops at its edge', () => {
+test('every run spans the width on its own, and a value past the scale stops at its edge', () => {
   const drawn = chart([{ quality: 110, score: -5 }], [run(5)], 70, size);
 
-  expect(drawn.slots).toBe(5);
   expect(drawn.score.points).toEqual([{ x: SIDE, y: size.height - 1 }]);
+  // the run of five ends at the right edge, at its last score of 40
+  const bottom = size.height - 1;
+  expect(drawn.previous[0]?.path.endsWith(` ${size.width - SIDE} ${bottom - 0.4 * (bottom - TOP)}`)).toBe(true);
+  const three = chart(run(3), [], null, size);
+  expect(three.score.points.map((point) => point.x)).toEqual([SIDE, size.width / 2, size.width - SIDE]);
   expect(drawn.quality.path).toBe(`M${SIDE} ${TOP}`);
   // three points and more are joined by cubic segments, one per pair
   expect(drawn.previous[0]?.path.split(' C')).toHaveLength(5);
