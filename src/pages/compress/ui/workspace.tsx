@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 
 import { useMediaQuery } from '@/shared/lib/media-query';
 
@@ -19,47 +19,12 @@ type WorkspaceProps = {
   dragging: boolean;
 };
 
-type SidePanelsProps = {
-  hasResult: boolean;
-  /** The controls, which are the options panel's. */
-  children: ReactNode;
-};
-
-/**
- * The panels of a wide screen, made apart from the view bar, which changes with the zoom, so a
- * zoom does not draw them again. Each sits in a box of its own at the right, and the pointer
- * reaches the image past them. The options stack on the result's box, which is the bottom two
- * fifths of the screen once there is a result: the result grows upward inside it, and the options
- * move once, when the box appears, never as a trial lands.
- */
-function SidePanels({ hasResult, children }: SidePanelsProps) {
-  // the result's box, and the gap above it
-  const above = hasResult ? 'bottom-[calc(40%+--spacing(6))]' : 'bottom-3';
-  return (
-    <>
-      <div className={`pointer-events-none absolute top-12 right-3 flex flex-col justify-end ${above}`}>
-        <Panel title="Options" className="pointer-events-auto">
-          {children}
-        </Panel>
-      </div>
-      {hasResult && (
-        <div className="pointer-events-none absolute right-3 bottom-3 flex max-h-2/5 flex-col justify-end">
-          <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto">
-            <ResultPanel expander />
-          </Panel>
-        </div>
-      )}
-    </>
-  );
-}
-
 /**
  * The page with a file on it: the image is the page, and everything else floats over it in glass
  * (ADR-0001 D2). It holds the form the controls are the fields of, so a change of layout keeps what
- * they say. On a wide screen the options float at the right, under the output's corner label, and
- * the result in the bottom right corner under them, each in a box of its own: a result growing as
- * the trials land moves nothing under the pointer. On a phone they are one bottom expander. The
- * result panel comes with the result, or with the failure, not before.
+ * they say. On a wide screen the options float above the result in one column at the right,
+ * under the output's corner label, and the view bar sits at the left. On a phone they are one
+ * bottom expander. The result panel comes with the result, or with the failure, not before.
  */
 export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const wide = useMediaQuery('(min-width: 48rem)');
@@ -73,6 +38,21 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const screen = useRef<HTMLElement>(null);
   const viewer = useViewer(screen);
   const scale = viewer.view?.scale ?? null;
+  // the column is the height of the screen: between its panels the pointer reaches the image. It is
+  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
+  // The result keeps its height, up to two fifths of the column: the options above it are what scrolls.
+  const column = wide && (
+    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
+      <Panel title="Options" className="pointer-events-auto">
+        {controls}
+      </Panel>
+      {hasResult && (
+        <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto max-h-2/5 shrink-0">
+          <ResultPanel expander />
+        </Panel>
+      )}
+    </div>
+  );
 
   return (
     <main
@@ -84,7 +64,7 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
       <Comparison flat={flat} viewer={viewer} />
       {wide ? (
         <>
-          <SidePanels hasResult={hasResult}>{controls}</SidePanels>
+          {column}
           <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
         </>
       ) : (

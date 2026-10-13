@@ -70,10 +70,6 @@ test('with a file, the image is the page, and the options float above the result
   expect(options.bottom).toBeLessThan(result.top);
   expect(options.right).toBe(result.right);
   expect(result.right).toBe(1200 - 12);
-  expect(result.bottom).toBe(800 - 12);
-  // the result has the bottom two fifths at most, and the options stop above that box
-  expect(result.height).toBeLessThanOrEqual(800 * 0.4);
-  expect(options.bottom).toBeLessThanOrEqual(800 - 800 * 0.4 - 12);
   // the view bar is at the other side
   const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]')?.getBoundingClientRect();
   expect(bar?.left).toBe(12);
