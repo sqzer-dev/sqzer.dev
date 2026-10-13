@@ -35,7 +35,7 @@ function Floating() {
 
 function Expander() {
   return (
-    <BottomExpander>
+    <BottomExpander fold={<p className="text-sm">The target was reached.</p>}>
       <Content />
     </BottomExpander>
   );

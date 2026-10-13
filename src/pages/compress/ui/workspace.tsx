@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import { useMediaQuery } from '@/shared/lib/media-query';
 
@@ -18,6 +18,33 @@ type WorkspaceProps = {
   /** A file is being dragged over the window. */
   dragging: boolean;
 };
+
+type ColumnProps = {
+  hasResult: boolean;
+  /** The controls, which are the options panel's. */
+  children: ReactNode;
+};
+
+/**
+ * The panels of a wide screen, in one column the height of the screen, inside its safe area:
+ * between the panels the pointer reaches the image. It is made apart from the view bar, which
+ * changes with the zoom, so a zoom does not draw the panels again. The result keeps its height,
+ * up to two fifths of the column, and the options above it are what scrolls.
+ */
+function Column({ hasResult, children }: ColumnProps) {
+  return (
+    <div className="pointer-events-none absolute top-[calc(--spacing(12)+env(safe-area-inset-top))] right-[calc(--spacing(3)+env(safe-area-inset-right))] bottom-[calc(--spacing(3)+env(safe-area-inset-bottom))] flex flex-col justify-end gap-3">
+      <Panel title="Options" className="pointer-events-auto">
+        {children}
+      </Panel>
+      {hasResult && (
+        <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto max-h-2/5 shrink-0">
+          <ResultPanel expander />
+        </Panel>
+      )}
+    </div>
+  );
+}
 
 /**
  * The page with a file on it: the image is the page, and everything else floats over it in glass
@@ -40,22 +67,6 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const screen = useRef<HTMLElement>(null);
   const viewer = useViewer(screen);
   const scale = viewer.view?.scale ?? null;
-  // the column is the height of the screen: between its panels the pointer reaches the image. It is
-  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
-  // The result keeps its height, up to two fifths of the column: the options above it are what scrolls.
-  // inside the screen's safe area, where the page runs under the browser's bars and the screen's edges
-  const column = wide && (
-    <div className="pointer-events-none absolute top-[calc(--spacing(12)+env(safe-area-inset-top))] right-[calc(--spacing(3)+env(safe-area-inset-right))] bottom-[calc(--spacing(3)+env(safe-area-inset-bottom))] flex flex-col justify-end gap-3">
-      <Panel title="Options" className="pointer-events-auto">
-        {controls}
-      </Panel>
-      {hasResult && (
-        <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto max-h-2/5 shrink-0">
-          <ResultPanel expander />
-        </Panel>
-      )}
-    </div>
-  );
 
   return (
     <main
@@ -67,13 +78,19 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
       <Comparison flat={flat} viewer={viewer} />
       {wide ? (
         <>
-          {column}
+          <Column hasResult={hasResult}>{controls}</Column>
           <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
         </>
       ) : (
-        <BottomExpander raise={failed}>
-          <ResultHeadline chips={false} />
-          <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
+        <BottomExpander
+          raise={failed}
+          fold={
+            <>
+              <ResultHeadline chips={false} />
+              <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
+            </>
+          }
+        >
           <SearchChart />
           <ResultChips />
           {controls}
