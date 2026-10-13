@@ -202,3 +202,20 @@ test("the policy names no origin but the page's own", async ({ page }) => {
   expect(policy).not.toMatch(/https?:|\*|unsafe-inline|data:/u);
   expect([...origins]).toEqual([new URL(page.url()).origin]);
 });
+
+test("the icon is the page's own, an SVG that the policy lets through, with a bitmap for a home screen", async ({
+  page,
+}) => {
+  await open(page);
+  const icon = await page.locator('link[rel=icon]').getAttribute('href');
+  const touch = await page.locator('link[rel=apple-touch-icon]').getAttribute('href');
+
+  expect(icon).toBe('/icon.svg');
+  const svg = await page.request.get(icon ?? '');
+  expect(svg.ok()).toBe(true);
+  expect(svg.headers()['content-type']).toContain('image/svg+xml');
+  expect(await svg.text()).toContain('prefers-color-scheme: dark');
+  const png = await page.request.get(touch ?? '');
+  expect(png.ok()).toBe(true);
+  expect(png.headers()['content-type']).toContain('image/png');
+});
