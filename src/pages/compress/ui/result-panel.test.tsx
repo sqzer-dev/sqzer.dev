@@ -164,3 +164,24 @@ test('the record is copied by its button, which says so for a moment, and stays 
   expect(screen.getByRole('button', { name: 'Copied' }).elements()).toHaveLength(0);
   await expect.element(screen.getByRole('button', { name: 'Copy the record' })).toBeVisible();
 });
+
+test('the chips expanded on a short screen leave the details reachable: the panel scrolls as a whole', async () => {
+  await page.viewport(1200, 600);
+  const { screen, drop } = await renderPage();
+  await drop();
+  await screen.getByRole('button', { name: 'Advanced' }).click();
+  await screen.getByRole('switch', { name: 'Keep metadata' }).click();
+  await screen.getByRole('switch', { name: 'Keep the ICC profile' }).click();
+  await screen.getByRole('spinbutton', { name: 'Max pixels' }).fill('1000');
+  await screen.getByRole('switch', { name: 'jpeg:progressive' }).click();
+  await wait(SETTLED_MS);
+  await screen.getByRole('button', { name: /^\d more$/u }).click();
+
+  const details = screen.getByRole('button', { name: 'Details' });
+  details.element().scrollIntoView();
+  await expect.element(details).toBeInViewport();
+  await details.click();
+  const time = screen.getByText('1.0 s');
+  time.element().scrollIntoView();
+  await expect.element(time).toBeInViewport();
+});
