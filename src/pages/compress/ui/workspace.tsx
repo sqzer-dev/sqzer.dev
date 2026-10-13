@@ -22,9 +22,10 @@ type WorkspaceProps = {
 /**
  * The page with a file on it: the image is the page, and everything else floats over it in glass
  * (ADR-0001 D2). It holds the form the controls are the fields of, so a change of layout keeps what
- * they say. On a wide screen the options float above the result in one column at the right,
- * under the output's corner label, and the view bar sits at the left. On a phone they are one
- * bottom expander. The result panel comes with the result, or with the failure, not before.
+ * they say. On a wide screen the options float at the right, under the output's corner label, and
+ * the result at the bottom left, above the view bar: apart from the options, so a result growing
+ * as the trials land moves nothing under the pointer. On a phone they are one bottom expander.
+ * The result panel comes with the result, or with the failure, not before.
  */
 export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const wide = useMediaQuery('(min-width: 48rem)');
@@ -38,21 +39,22 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const screen = useRef<HTMLElement>(null);
   const viewer = useViewer(screen);
   const scale = viewer.view?.scale ?? null;
-  // the column is the height of the screen: between its panels the pointer reaches the image. It is
-  // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again.
-  // The result keeps its height, up to two fifths of the column, and the options above it are what
-  // scrolls. The column hangs from the top, so a result growing as the trials land shortens the
-  // options from below and moves nothing under the pointer.
-  const column = wide && (
-    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col gap-3">
+  // the panels are made apart from the view bar, which changes with the zoom, so a zoom does not
+  // draw them again. Each sits in a box the height of the screen, and the pointer reaches the image
+  // past it. The options hang from the top right; the result stands on the view bar at the bottom
+  // left and grows upward, into room nothing else holds
+  const options = wide && (
+    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col">
       <Panel title="Options" className="pointer-events-auto">
         {controls}
       </Panel>
-      {hasResult && (
-        <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto max-h-2/5 shrink-0">
-          <ResultPanel expander />
-        </Panel>
-      )}
+    </div>
+  );
+  const result = wide && hasResult && (
+    <div className="pointer-events-none absolute top-12 bottom-15.5 left-3 flex flex-col justify-end">
+      <Panel title="Result" pinned={<ResultHeadline />} className="pointer-events-auto">
+        <ResultPanel expander />
+      </Panel>
     </div>
   );
 
@@ -66,7 +68,8 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
       <Comparison flat={flat} viewer={viewer} />
       {wide ? (
         <>
-          {column}
+          {options}
+          {result}
           <ViewBar floating flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
         </>
       ) : (

@@ -51,7 +51,7 @@ test('an image dropped on a page nobody touched is encoded with no options', asy
   expect(encodes()).toEqual([{}]);
 });
 
-test('with a file, the image is the page, and the options float above the result at the right', async () => {
+test('with a file, the image is the page, the options float at the right and the result at the bottom left, on the view bar', async () => {
   const { screen, drop } = await renderPage();
   await drop();
 
@@ -67,12 +67,14 @@ test('with a file, the image is the page, and the options float above the result
   await expect.element(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-expanded', 'true');
   const options = panel(screen, 'Options');
   const result = panel(screen, 'Result');
-  expect(options.bottom).toBeLessThan(result.top);
-  expect(options.right).toBe(result.right);
-  expect(result.right).toBe(1200 - 12);
-  // the view bar is at the other side
+  expect(options.right).toBe(1200 - 12);
+  expect(result.left).toBe(12);
+  // the view bar is under the result, and the two keep apart
   const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]')?.getBoundingClientRect();
-  expect(bar?.left).toBe(12);
+  if (!bar) throw new Error('the page has no view bar');
+  expect(bar.left).toBe(12);
+  expect(result.bottom).toBeLessThan(bar.top);
+  expect(result.right).toBeLessThan(options.left);
 });
 
 test('the download button stays when the result is collapsed', async () => {
@@ -100,10 +102,8 @@ test('at 768 px the view bar and the panels keep apart', async () => {
 
   const bar = screen.getByLabelText('New image').element().closest('[data-slot=view-bar]')?.getBoundingClientRect();
   if (!bar) throw new Error('the page has no view bar');
-  for (const name of ['Options', 'Result']) {
-    const box = panel(screen, name);
-    expect(bar.right).toBeLessThan(box.left);
-  }
+  expect(bar.right).toBeLessThan(panel(screen, 'Options').left);
+  expect(panel(screen, 'Result').bottom).toBeLessThan(bar.top);
 });
 
 test('a collapsed panel keeps what was typed into it', async () => {
