@@ -1,10 +1,14 @@
 import { cn } from 'cn';
 import { useId } from 'react';
 
-/** The box the mark is drawn in, at a type size of 44: it scales with the heading's `em`. */
-const BOX = { width: 240, height: 96 };
+/**
+ * The box the mark is drawn in, at a type size of 44: it scales with the heading's `em`. The lines
+ * were drawn in a box of 240 by 96 and this one is a smaller window on them, centred on the name,
+ * so its edge cuts the bundles off closer in.
+ */
+const BOX = { x: 24, y: 8, width: 192, height: 80 };
 
-/** The rectangle the lines keep out of: 2 past the ink of the name sideways, and 2 above and below its z. */
+/** The rectangle the lines keep out of, in the lines' coordinates: 2 past the ink of the name sideways, and 2 above and below its z. */
 const CLEAR = { x: 62.5, y: 37, width: 115, height: 28 };
 
 /**
@@ -40,17 +44,17 @@ type WordmarkProps = {
 export function Wordmark({ className }: WordmarkProps) {
   const clear = useId();
   return (
-    <div className={cn('relative grid h-[2.1818em] w-[5.4545em] place-items-center', className)}>
+    <div className={cn('relative grid h-[1.8182em] w-[4.3636em] place-items-center', className)}>
       <svg
         data-slot="wordmark"
         aria-hidden="true"
-        viewBox={`0 0 ${BOX.width} ${BOX.height}`}
+        viewBox={`${BOX.x} ${BOX.y} ${BOX.width} ${BOX.height}`}
         className="absolute inset-0 size-full"
       >
         <clipPath id={clear}>
           <path
             clipRule="evenodd"
-            d={`M0 0H${BOX.width}V${BOX.height}H0Z M${CLEAR.x} ${CLEAR.y}h${CLEAR.width}v${CLEAR.height}h-${CLEAR.width}z`}
+            d={`M${BOX.x} ${BOX.y}h${BOX.width}v${BOX.height}h-${BOX.width}z M${CLEAR.x} ${CLEAR.y}h${CLEAR.width}v${CLEAR.height}h-${CLEAR.width}z`}
           />
         </clipPath>
         <g clipPath={`url(#${clear})`} className="fill-none stroke-foreground/35">

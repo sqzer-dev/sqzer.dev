@@ -22,20 +22,20 @@ test('the mark scales with the type, and its strokes stay one pixel', async () =
   // measured in Geist, not in the font shown while it loads
   await document.fonts.ready;
 
-  // 240 by 96 at a type size of 44: the heading's line box is one em
+  // 192 by 80 at a type size of 44: the heading's line box is one em
   const name = heading.getBoundingClientRect();
   const size = name.height;
   const box = mark.getBoundingClientRect();
-  expect(box.width).toBeCloseTo((240 / 44) * size, 0);
-  expect(box.height).toBeCloseTo((96 / 44) * size, 0);
+  expect(box.width).toBeCloseTo((192 / 44) * size, 0);
+  expect(box.height).toBeCloseTo((80 / 44) * size, 0);
   expect(lines.getBoundingClientRect()).toMatchObject({ width: box.width, height: box.height });
   for (const path of lines.querySelectorAll('g path')) {
     expect(getComputedStyle(path).vectorEffect).toBe('non-scaling-stroke');
   }
 
   // the name sits in the middle of the box, inside the rectangle the lines keep clear
-  const scale = box.width / 240;
-  expect(name.left - box.left).toBeGreaterThan(62.5 * scale);
-  expect(box.right - name.right).toBeGreaterThan(62.5 * scale);
+  const scale = box.width / 192;
+  expect(name.left - box.left).toBeGreaterThan(38.5 * scale);
+  expect(box.right - name.right).toBeGreaterThan(38.5 * scale);
   expect(Math.abs(name.left - box.left - (box.right - name.right))).toBeLessThan(1);
 });
