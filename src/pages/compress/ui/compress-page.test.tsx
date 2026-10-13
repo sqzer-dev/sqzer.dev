@@ -8,10 +8,10 @@ beforeEach(async () => {
   await page.viewport(1200, 800);
 });
 
-test('with no file, the page is the name at the top and one drop target with the button that opens the picker', async () => {
+test('with no file, the page is one drop target, with the wordmark and the button that opens the picker in it', async () => {
   const { screen } = await renderPage();
 
-  await expect.element(screen.getByRole('banner').getByRole('heading', { name: 'sqzer' })).toBeVisible();
+  await expect.element(screen.getByRole('main').getByRole('heading', { level: 1, name: 'sqzer' })).toBeVisible();
   await expect.element(screen.getByText('Drop an image, paste one, or choose a file.')).toBeVisible();
   await expect.element(screen.getByLabelText('Choose an image')).toHaveAttribute('type', 'file');
   await expect.element(screen.getByRole('contentinfo').getByText(/nothing is sent anywhere/u)).toBeVisible();
@@ -19,7 +19,7 @@ test('with no file, the page is the name at the top and one drop target with the
   await screen.getByRole('button', { name: "Don't trust us?" }).click();
   await expect.element(screen.getByText(/^This copy of the page carries no Content-Security-Policy/u)).toBeVisible();
   await expect.element(screen.getByText(/^To check, open the browser's developer tools/u)).toBeVisible();
-  // the target fills the page between the name and the footer
+  // the target fills the page above the footer
   const target = screen.getByRole('main').element().firstElementChild?.getBoundingClientRect();
   expect(target?.height).toBeGreaterThan(400);
   expect(target?.width).toBeGreaterThan(1000);
