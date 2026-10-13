@@ -159,9 +159,10 @@ test.describe('on a phone', () => {
       });
       return (await expander.boundingBox())?.y ?? Number.NaN;
     };
-    // the image keeps the screen: the expander shows the view bar and the chips, and no more
-    await expect.poll(top).toBeGreaterThan(780 - 130);
-    await expect(page.getByLabel('New image')).toBeInViewport();
+    // the image keeps the screen: the expander shows the size with the download and the view bar, and no more
+    await expect.poll(top).toBeGreaterThan(780 - 160);
+    await expect(page.getByRole('link', { name: 'Download pattern-rgb.avif' })).toBeInViewport();
+    await expect(page.getByText('New image')).toBeInViewport();
 
     const grip = await page.locator('[data-slot=drawer-swipe-handle]').boundingBox();
     if (!grip) throw new Error('the expander has no handle');
@@ -176,10 +177,14 @@ test.describe('on a phone', () => {
     await page.getByLabel('Width').fill('24');
     await expect(page.getByText('After: 24 × 16')).toBeVisible(SLOW);
 
-    // Escape does not close it: it lets the image go again
+    // Escape does not close it: it lets the image go again, scrolled back to its top
+    const sheet = page.locator('[data-slot=drawer-content] > div');
+    await sheet.evaluate((element) => element.scrollTo(0, 400));
+    await expect.poll(() => sheet.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await page.keyboard.press('Escape');
     await expect.poll(top).toBeGreaterThan(600);
     await expect(expander).toBeVisible();
+    await expect.poll(() => sheet.evaluate((element) => element.scrollTop)).toBe(0);
   });
 });
 

@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/ui/drawer';
 
-// How much of the expander shows while the image has the screen, the view bar and the chips, and
-// how far it is pulled up: a share of the screen, the rest of the sheet below its edge.
-const REST = '7rem';
+// How much of the expander shows while the image has the screen, the size with the download and
+// the view bar, and how far it is pulled up: a share of the screen, the rest of the sheet below its edge.
+const REST = '8.5rem';
 const TOP = 0.85;
 const SNAPS = [REST, TOP];
 
@@ -18,9 +18,9 @@ type BottomExpanderProps = {
  * The panels of a phone: one glass sheet at the bottom edge, pulled up over the image and let go
  * again (ADR-0001 D2). It never takes the image away from the reader: no backdrop, no focus trap.
  * And it never closes: what would close it, Escape or a swipe down, lets the image go again. At
- * rest it shows what is at its top and scrolls nothing; pulled up, it scrolls, with room at the end
- * for the share of the sheet that stays below the screen's edge and for the browser's own bar
- * there, which the page runs under.
+ * rest it shows what is at its top and scrolls nothing, and it is back at its top each time it
+ * comes to rest; pulled up, it scrolls, with room at the end for the share of the sheet that stays
+ * below the screen's edge and for the browser's own bar there, which the page runs under.
  */
 export function BottomExpander({ raise = false, children }: BottomExpanderProps) {
   // up from the start for an alert that is there already, as when the first image fails at once
@@ -31,6 +31,12 @@ export function BottomExpander({ raise = false, children }: BottomExpanderProps)
     setRaised(raise);
     if (raise) setSnap(TOP);
   }
+  const scroller = useRef<HTMLDivElement>(null);
+  // what shows at rest is the top of the sheet, wherever it was scrolled to
+  const rest = () => {
+    setSnap(REST);
+    scroller.current?.scrollTo({ top: 0 });
+  };
 
   return (
     <Drawer
@@ -43,19 +49,21 @@ export function BottomExpander({ raise = false, children }: BottomExpanderProps)
       // a swipe down that would close it: Base UI asks for no snap point first, and takes a refusal
       onSnapPointChange={(next, details) => {
         if (next === null) details.cancel();
-        setSnap(next ?? REST);
+        if (next === null || next === REST) rest();
+        else setSnap(next);
       }}
       // and Escape
       onOpenChange={(open, details) => {
         if (open) return;
         details.cancel();
-        setSnap(REST);
+        rest();
       }}
     >
       <DrawerContent className="mb-[calc(--spacing(2)+env(safe-area-inset-bottom))]">
         <DrawerTitle className="sr-only">Result and options</DrawerTitle>
         {/* a column that scrolls squeezes what it holds: nothing here gives up its height */}
         <div
+          ref={scroller}
           className={`flex flex-col gap-6 p-4 pt-2 pb-[calc(15dvh+--spacing(4))] *:shrink-0 ${snap === REST ? 'overflow-hidden' : 'overflow-y-auto'}`}
         >
           {children}

@@ -24,9 +24,9 @@ type WorkspaceProps = {
  * (ADR-0001 D2). It holds the form the controls are the fields of, so a change of layout keeps what
  * they say. On a wide screen the options float above the result in one column at the right,
  * under the output's corner label, and the view bar sits at the left. On a phone they are one
- * bottom expander: the view bar and the chips at its top, in sight at rest, the chart above the
- * options, and the rest of the result under them. The result panel comes with the result, or
- * with the failure, not before.
+ * bottom expander: the size with the download and the view bar at its top, in sight at rest, then
+ * the chart, the chips, the options, and the rest of the result under them. The result panel comes
+ * with the result, or with the failure, not before.
  */
 export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const wide = useMediaQuery('(min-width: 48rem)');
@@ -43,8 +43,9 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   // the column is the height of the screen: between its panels the pointer reaches the image. It is
   // made apart from the view bar, which changes with the zoom, so a zoom does not draw the panels again
   // The result keeps its height, up to two fifths of the column: the options above it are what scrolls.
+  // inside the screen's safe area, where the page runs under the browser's bars and the screen's edges
   const column = wide && (
-    <div className="pointer-events-none absolute top-12 right-3 bottom-3 flex flex-col justify-end gap-3">
+    <div className="pointer-events-none absolute top-[calc(--spacing(12)+env(safe-area-inset-top))] right-[calc(--spacing(3)+env(safe-area-inset-right))] bottom-[calc(--spacing(3)+env(safe-area-inset-bottom))] flex flex-col justify-end gap-3">
       <Panel title="Options" className="pointer-events-auto">
         {controls}
       </Panel>
@@ -71,11 +72,11 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
         </>
       ) : (
         <BottomExpander raise={failed}>
-          <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
-          <ResultChips />
-          <SearchChart />
-          {controls}
           <ResultHeadline chips={false} />
+          <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
+          <SearchChart />
+          <ResultChips />
+          {controls}
           <ResultPanel expander={false} chart={false} />
         </BottomExpander>
       )}
