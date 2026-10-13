@@ -5,6 +5,7 @@ export type {
   Decoded,
   EncodeOptions,
   Failure,
+  FailureKind,
   Output,
   Reply,
   Trial,

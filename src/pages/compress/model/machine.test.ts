@@ -171,10 +171,14 @@ test('a new limit on the pixels reads the image again under it, and the same lim
 test('an image the package cannot decode is drawn on the page', () => {
   const search = start();
   search.actor.send({ type: 'picked', image: picked('d.heic'), options: {} });
-  search.tell({ type: 'unreadable', message: 'no decoder for HEIC' });
+  search.tell({ type: 'unreadable', availableIn: undefined, message: 'no decoder for HEIC' });
 
   expect(search.workers[0]?.asked).toHaveLength(2);
-  expect(search.workers[0]?.asked[1]).toMatchObject({ type: 'read', onPage: true, unreadable: 'no decoder for HEIC' });
+  expect(search.workers[0]?.asked[1]).toMatchObject({
+    type: 'read',
+    onPage: true,
+    unreadable: { message: 'no decoder for HEIC', availableIn: undefined },
+  });
 });
 
 test('an image the browser cannot show is asked for once the worker holds it', () => {
@@ -193,17 +197,32 @@ test('a failure clears the result, and the next change of the controls searches 
   const search = encoding();
   search.tell(done);
   search.actor.send({ type: 'options', options: { quality: 101 } });
-  search.tell({ type: 'failed', message: 'invalid parameters.', broken: false });
+  search.tell({ type: 'failed', message: 'invalid parameters', stage: 'encode', broken: false });
 
   expect(search.state()).toEqual({ open: 'failed' });
-  expect(search.actor.getSnapshot().context).toMatchObject({ error: 'invalid parameters.', result: null });
+  expect(search.actor.getSnapshot().context).toMatchObject({
+    error: { message: 'invalid parameters', stage: 'encode' },
+    result: null,
+  });
   search.actor.send({ type: 'options', options: { quality: 80 } });
   expect(search.asked()).toEqual([['read', 'encode', 'encode', 'encode']]);
 });
 
+test('the alert of a failure is dismissed by the reader, and the next failure brings it back', () => {
+  const search = encoding();
+  search.tell({ type: 'failed', message: 'no', stage: 'encode', broken: false });
+  search.actor.send({ type: 'dismiss' });
+
+  expect(search.state()).toEqual({ open: 'failed' });
+  expect(search.actor.getSnapshot().context.error).toBeNull();
+  search.actor.send({ type: 'options', options: { quality: 80 } });
+  search.tell({ type: 'failed', message: 'again', stage: 'encode', broken: false });
+  expect(search.actor.getSnapshot().context.error).toMatchObject({ message: 'again' });
+});
+
 test('a worker that failed is replaced by the next search', () => {
   const search = start();
-  search.tell({ type: 'failed', message: 'The encoder could not load: offline.', broken: true });
+  search.tell({ type: 'failed', message: 'offline', stage: 'load', broken: true });
   search.actor.send({ type: 'picked', image: picked('a.jpg'), options: {} });
 
   expect(search.workers.map((worker) => worker.ended)).toEqual([true, false]);

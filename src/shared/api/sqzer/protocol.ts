@@ -5,6 +5,9 @@ import type { Codec, CodecOption, Options, Output as Encoded, SqzerError, Trial,
 
 export type { Codec, CodecOption, Trial, TrialProgress };
 
+/** Which failure the package threw: the `kind` of its `SqzerError`. */
+export type FailureKind = SqzerError['kind'];
+
 /** Bytes that crossed from the worker: transferred, so in a buffer of their own. */
 export type Bytes = Uint8Array<ArrayBuffer>;
 
@@ -38,7 +41,7 @@ export type Failure = {
   /** `start` and `load` come before any request and name no image, the rest name the request that failed. */
   stage: 'start' | 'load' | Request['type'];
   id?: number | undefined;
-  kind: SqzerError['kind'];
+  kind: FailureKind;
   message: string;
   availableIn?: string[] | undefined;
 };

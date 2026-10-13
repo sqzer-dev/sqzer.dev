@@ -31,7 +31,10 @@ export function ViewBar({ flat, onFlat, onPick, scale, onZoom, floating = false 
       data-slot="view-bar"
       className={cn(
         'flex items-center gap-1',
-        floating ? 'glass absolute bottom-3 left-3 rounded-lg p-1' : 'flex-wrap',
+        // inside the screen's safe area, where the page runs under the browser's bars and the screen's edges
+        floating
+          ? 'glass absolute bottom-[calc(--spacing(3)+env(safe-area-inset-bottom))] left-[calc(--spacing(3)+env(safe-area-inset-left))] rounded-lg p-1'
+          : 'flex-wrap',
       )}
     >
       <FilePicker variant="ghost" onPick={onPick}>

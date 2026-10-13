@@ -139,7 +139,7 @@ test('a cancelled search leaves the result before it on the chart, and a failure
 
   search.actor.send({ type: 'options', options: { target: 90 } });
   search.tell(decoded());
-  search.tell({ type: 'failed', message: 'no', broken: false });
+  search.tell({ type: 'failed', stage: 'encode', message: 'no', broken: false });
   expect(currentTrials(search.actor.getSnapshot())).toEqual([]);
   expect(currentTarget(search.actor.getSnapshot())).toBeNull();
 });

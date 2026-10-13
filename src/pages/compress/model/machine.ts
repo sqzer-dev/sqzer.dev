@@ -4,7 +4,7 @@ import type { Codec, Decoded, EncodeOptions, Trial, TrialProgress } from '@/shar
 
 import { boxed } from '../lib/options-of';
 import type { EncodeResult } from './encode-result';
-import { encoder, type EncoderCommand, type EncoderEvent } from './encoder';
+import { encoder, type EncoderCommand, type EncoderEvent, type Failure, type Unreadable } from './encoder';
 import type { Picked } from './picked';
 
 // How long the worker may take to finish what it is doing, once the controls
@@ -28,8 +28,8 @@ type Context = {
   options: EncodeOptions;
   /** What the running encode was asked: `options` may have moved on while the worker finishes it. */
   running: EncodeOptions;
-  /** The package's words for having no decoder for the image. The page draws it from then on. */
-  unreadable: string | null;
+  /** The package has no decoder for the image. The page draws it from then on. */
+  unreadable: Unreadable | null;
   /** The worker holds the image, decoded. */
   held: boolean;
   /** The width an image drawn on the page was last drawn at. */
@@ -51,7 +51,8 @@ type Context = {
   /** The newest `RUNS_KEPT` searches before that one, oldest first, each as far as it got: the subtle lines of the chart (ADR-0001 D4). They last as long as the tab. */
   runs: Trial[][];
   result: Searched | null;
-  error: string | null;
+  /** Why the newest search failed, while `failed` and until the reader dismisses it. */
+  error: Failure | null;
   /** The worker itself failed. The next search starts another. */
   broken: boolean;
 };
@@ -64,6 +65,8 @@ type SearchEvent =
   | { type: 'restart' }
   /** End the worker, start another and search no further: the result before stays (ADR-0005 D4). */
   | { type: 'cancel' }
+  /** The reader dismissed the alert of a failure (ADR-0001 D6). */
+  | { type: 'dismiss' }
   | EncoderEvent;
 
 /** Drawn by the page's own `<img>` instead of decoded in the worker. */
@@ -205,7 +208,10 @@ export const searchMachine = setup({
         unshowable: { guard: 'showable', actions: [assign({ unshowable: true }), 'askForPreview'] },
         failed: {
           target: '.failed',
-          actions: assign(({ event }) => ({ error: event.message, result: null, broken: event.broken })),
+          actions: assign(({ event }) => {
+            const { message, kind, availableIn, stage, broken } = event;
+            return { error: { message, kind, availableIn, stage }, result: null, broken };
+          }),
         },
       },
       states: {
@@ -245,7 +251,9 @@ export const searchMachine = setup({
                 unreadable: {
                   target: 'reading',
                   reenter: true,
-                  actions: assign(({ event }) => ({ unreadable: event.message })),
+                  actions: assign(({ event }) => ({
+                    unreadable: { message: event.message, availableIn: event.availableIn },
+                  })),
                 },
               },
             },
@@ -274,7 +282,9 @@ export const searchMachine = setup({
           },
         },
         result: {},
-        failed: {},
+        failed: {
+          on: { dismiss: { actions: assign({ error: null }) } },
+        },
         /** The reader cancelled the search: the image stays, and the result before it, if any. */
         cancelled: {},
       },

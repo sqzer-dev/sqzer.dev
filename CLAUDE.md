@@ -19,12 +19,14 @@ components.json             what `shadcn add` reads: the Base UI base, the Mira 
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
 src/pages/compress/ui/      the page and its parts: the empty state, the workspace with its comparison,
                             panels, bottom expander and view bar, the controls as a form with its
-                            fields, the target slider and the Advanced expander, the result with the
-                            chart and the trials, the failure
+                            fields, the target slider and the Advanced expander, the result as its
+                            headline with the chips, the chart and the trials, the details, the failure
+                            as an alert, the privacy note
 src/pages/compress/model/   the search machine, the worker actor, the picked image, the result,
                             what the controls say, the notices the toaster shows, the run the chart draws
 src/pages/compress/lib/     drawing on the page, codec lookups and which controls apply, the score's
-                            words, the summary, the controls as the package's options, the chart's arithmetic
+                            words, the result's words and its chips, the failure's sentence, the controls
+                            as the package's options, the chart's arithmetic
 src/shared/api/sqzer/       the worker, its client and the message types. Every call into `sqzer`
 src/shared/ui/              the components, one file each, copied in by `shadcn add`. No barrel
 src/shared/lib/             small helpers, named by their domain

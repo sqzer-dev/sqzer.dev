@@ -15,6 +15,10 @@ test('with no file, the page is the name at the top and one drop target with the
   await expect.element(screen.getByText('Drop an image, paste one, or choose a file.')).toBeVisible();
   await expect.element(screen.getByLabelText('Choose an image')).toHaveAttribute('type', 'file');
   await expect.element(screen.getByRole('contentinfo').getByText(/nothing is sent anywhere/u)).toBeVisible();
+  // the way to check the claim (ADR-0001 D7): the policy is the build's, and this copy has none to quote
+  await screen.getByRole('button', { name: "Don't trust us?" }).click();
+  await expect.element(screen.getByText(/^This copy of the page carries no Content-Security-Policy/u)).toBeVisible();
+  await expect.element(screen.getByText(/^To check, open the browser's developer tools/u)).toBeVisible();
   // the target fills the page between the name and the footer
   const target = screen.getByRole('main').element().firstElementChild?.getBoundingClientRect();
   expect(target?.height).toBeGreaterThan(400);
@@ -23,24 +27,6 @@ test('with no file, the page is the name at the top and one drop target with the
   await expect.element(screen.getByRole('combobox', { name: 'Format' })).not.toBeInTheDocument();
   // and so does what the encoder says in passing
   await expect.element(screen.getByText('Ready.')).toBeVisible();
-});
-
-test("the encoder's own failure is the one the empty state shows", async () => {
-  const { screen } = await renderPage('start');
-
-  await expect.element(screen.getByRole('main').getByRole('alert')).toHaveTextContent('the worker did not start');
-  await expect.element(screen.getByLabelText('Choose an image')).toBeVisible();
-});
-
-test("an image's failure is shown in the result panel, and never in the empty state", async () => {
-  const { screen } = await renderPage('read');
-  await screen.getByLabelText('Choose an image').upload(new File(['not an image'], 'photo.heic'));
-
-  const alert = screen.getByRole('alert');
-  await expect.element(alert).toHaveTextContent('no decoder for HEIC in this build');
-  expect(alert.element().closest('[data-size]')?.querySelector('h2')?.textContent).toBe('Result');
-  expect(screen.getByRole('alert').elements()).toHaveLength(1);
-  await expect.element(screen.getByText('Drop an image, paste one, or choose a file.')).not.toBeInTheDocument();
 });
 
 test('the drop target turns blue at its border while a file is dragged over the window', async () => {
@@ -99,8 +85,12 @@ test('the download button stays when the result is collapsed', async () => {
 
   await expect.element(result).toHaveAttribute('aria-expanded', 'false');
   // hidden, not unmounted: what was typed into a collapsed panel stays
-  await expect.element(screen.getByText(/pattern-rgb\.jpg -> /u)).not.toBeVisible();
+  await expect.poll(() => screen.container.querySelector('table')?.checkVisibility()).toBe(false);
+  // the size, the difference and the chips stay with the download (ADR-0001 D5)
   await expect.element(download).toBeVisible();
+  await expect.element(screen.getByText('673 B')).toBeVisible();
+  await expect.element(screen.getByText('the same size')).toBeVisible();
+  await expect.element(screen.getByRole('button', { name: /^reached: /u })).toBeVisible();
 });
 
 test('at 768 px the view bar and the panels keep apart', async () => {

@@ -1,11 +1,9 @@
-import { ChevronRightIcon } from 'lucide-react';
-
 import type { EncodeOptions } from '@/shared/api';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible';
 
 import type { Applicable } from '../lib/codec';
 import { DEFAULTS } from '../lib/defaults';
 import { useSearch } from '../model/context';
+import { Expander } from './expander';
 import { NumberField, SelectField, SwitchField, TextField } from './fields';
 import type { ControlsForm, FieldOf } from './form';
 import { choices, HELP } from './help';
@@ -199,14 +197,9 @@ function FitFields({ form, applies }: ResizeFieldsProps) {
  */
 export function ResizeFields({ form, applies }: ResizeFieldsProps) {
   return (
-    <Collapsible>
-      <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-xs/relaxed font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <ChevronRightIcon className="size-3.5 transition-transform group-data-panel-open:rotate-90" /> Resize
-      </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-4 pt-3">
-        <BoxFields form={form} />
-        <FitFields form={form} applies={applies} />
-      </CollapsibleContent>
-    </Collapsible>
+    <Expander title="Resize">
+      <BoxFields form={form} />
+      <FitFields form={form} applies={applies} />
+    </Expander>
   );
 }

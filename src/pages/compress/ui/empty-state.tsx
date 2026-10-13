@@ -43,7 +43,7 @@ export function EmptyState({ dragging, onPick }: EmptyStateProps) {
           </EmptyContent>
         </Empty>
       </main>
-      <footer className="text-center">
+      <footer>
         <About />
       </footer>
     </div>

@@ -1,12 +1,10 @@
-import { ChevronRightIcon } from 'lucide-react';
-
 import type { CodecOption, EncodeOptions } from '@/shared/api';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible';
 import { FieldLegend, FieldSet } from '@/shared/ui/field';
 
 import type { Applicable, CodecOptions } from '../lib/codec';
 import { DEFAULTS } from '../lib/defaults';
 import { kindOf } from '../lib/option-kind';
+import { Expander } from './expander';
 import { NumberField, RangeField, SelectField, SwitchField, TextField } from './fields';
 import type { ControlsForm, FieldOf } from './form';
 import { choices, HELP } from './help';
@@ -169,27 +167,22 @@ function CodecFields({ form, groups }: { form: ControlsForm; groups: CodecOption
  */
 export function AdvancedFields({ form, applies }: AdvancedFieldsProps) {
   return (
-    <Collapsible>
-      <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-xs/relaxed font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <ChevronRightIcon className="size-3.5 transition-transform group-data-panel-open:rotate-90" /> Advanced
-      </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-4 pt-3">
-        <EncodeFields form={form} applies={applies} />
-        <hr className="border-border" />
-        <form.Field name="maxPixels">
-          {(field) => (
-            <NumberField
-              field={field}
-              label="Max pixels"
-              min={1}
-              fallback={String(DEFAULTS.maxPixels)}
-              help={HELP.maxPixels}
-            />
-          )}
-        </form.Field>
-        {applies.codecOpts.length > 0 && <hr className="border-border" />}
-        <CodecFields form={form} groups={applies.codecOpts} />
-      </CollapsibleContent>
-    </Collapsible>
+    <Expander title="Advanced">
+      <EncodeFields form={form} applies={applies} />
+      <hr className="border-border" />
+      <form.Field name="maxPixels">
+        {(field) => (
+          <NumberField
+            field={field}
+            label="Max pixels"
+            min={1}
+            fallback={String(DEFAULTS.maxPixels)}
+            help={HELP.maxPixels}
+          />
+        )}
+      </form.Field>
+      {applies.codecOpts.length > 0 && <hr className="border-border" />}
+      <CodecFields form={form} groups={applies.codecOpts} />
+    </Expander>
   );
 }

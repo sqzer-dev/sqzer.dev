@@ -1,66 +1,53 @@
-import { DownloadIcon } from 'lucide-react';
-
-import { useObjectUrl } from '@/shared/lib/object-url';
-import { buttonVariants } from '@/shared/ui/button';
-
-import { summarize } from '../lib/summary';
 import { useSearch } from '../model/context';
+import { ResultDetails } from './result-details';
 import { SearchChart } from './search-chart';
 import { SearchFailure } from './search-failure';
 import { TrialList } from './trial-list';
 
-/** The file to save, once there is one. It stays in sight when the result panel is collapsed. */
-export function DownloadButton() {
-  const file = useSearch((snapshot) => snapshot.context.result?.file ?? null);
-  const download = useObjectUrl<HTMLAnchorElement>(file, 'href');
-
-  return (
-    // The `href` is an object URL, made and revoked with the element by `useObjectUrl`.
-    // oxlint-disable-next-line jsx-a11y/anchor-is-valid
-    <a
-      ref={download}
-      // taller under a finger than under a mouse, as the one thing a phone's reader taps
-      className={buttonVariants({
-        size: 'lg',
-        className:
-          'max-w-full pointer-coarse:h-11 pointer-coarse:px-4 pointer-coarse:text-sm pointer-coarse:[&_svg]:size-4',
-      })}
-      download={file?.name}
-      hidden={!file}
-    >
-      <DownloadIcon data-icon="inline-start" />
-      {/* a long name is cut, not the panel */}
-      <span className="truncate">{file && `Download ${file.name}`}</span>
-    </a>
-  );
-}
+export { ResultChips, ResultHeadline } from './result-headline';
+// the parts of the result the bottom expander lays out apart
+export { SearchChart } from './search-chart';
 
 /**
- * Whether there is a result panel to show: a result, the failure in its place (ADR-0001 D6), or a
- * search with a trial landed, which the chart and the list show as it runs (D4).
+ * Whether there is a result panel to show: a result, the failure in its place until it is dismissed
+ * (ADR-0001 D6), or a search with a trial landed, which the chart and the list show as it runs (D4).
  */
 export function useHasResult() {
   return useSearch(
     (snapshot) =>
       snapshot.context.result !== null ||
-      snapshot.matches({ open: 'failed' }) ||
+      (snapshot.matches({ open: 'failed' }) && snapshot.context.error !== null) ||
       (snapshot.matches({ open: 'searching' }) && snapshot.context.trials.length > 0),
   );
 }
 
-/** The search as it runs and the result it ends in: the chart and the trials, then what was made, as the command line would print it, or why nothing was. */
-export function ResultPanel() {
-  const image = useSearch((snapshot) => snapshot.context.image);
-  const result = useSearch((snapshot) => snapshot.context.result);
+/** Whether the image on the page failed to be read or encoded, and its alert is up in the result panel (ADR-0001 D6). */
+export function useImageFailed() {
+  return useSearch(
+    (snapshot) =>
+      snapshot.matches({ open: 'failed' }) && snapshot.context.error !== null && snapshot.context.image !== null,
+  );
+}
 
+type ResultPanelProps = {
+  /** The details behind an expander, on a wide screen; on a phone they follow on scroll (ADR-0001 D5). */
+  expander: boolean;
+  /** With the chart, or without, where it sits apart: above the options on a phone. */
+  chart?: boolean;
+};
+
+/**
+ * Under the headline (`ResultHeadline`): why nothing was made, if so (ADR-0001 D6), the search as
+ * it runs and the result it ends in, as the chart and the trials (D4), and everything else of the
+ * result (D5).
+ */
+export function ResultPanel({ expander, chart = true }: ResultPanelProps) {
   return (
     <div className="flex flex-col items-start gap-3">
       <SearchFailure of="image" />
-      <SearchChart />
+      {chart && <SearchChart />}
       <TrialList />
-      <pre className="font-mono text-xs/relaxed whitespace-pre-wrap empty:hidden">
-        {image && result && summarize({ name: image.name, size: image.bytes.byteLength }, result)}
-      </pre>
+      <ResultDetails expander={expander} />
     </div>
   );
 }
