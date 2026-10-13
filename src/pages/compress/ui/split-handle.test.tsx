@@ -9,6 +9,8 @@ test('a key moves the line by a whole percent from wherever a drag left it, and 
   const screen = await render(<SplitHandle value={50.3} onChange={onChange} />);
   const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
   handle.element().focus();
+  // Firefox gives the focus a moment after it is asked for; a key before that goes nowhere
+  await expect.element(handle).toHaveFocus();
 
   await userEvent.keyboard('{ArrowRight}');
   expect(onChange).toHaveBeenLastCalledWith(51.3);
