@@ -9,9 +9,18 @@ const wait = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+// Somewhere for a tab to go. From the last focusable element on the page, a tab leaves the document, and
+// Firefox then keeps the field the active element, as it does when the window goes: the field stays open
+const Elsewhere = () => <button type="button">Elsewhere</button>;
+
 test('a click opens the field with the percent, which takes a number on Enter or on leaving it', async () => {
   const onZoom = vi.fn<(scale: number) => void>();
-  const screen = await render(<ZoomField scale={1.25} onZoom={onZoom} />);
+  const screen = await render(
+    <>
+      <ZoomField scale={1.25} onZoom={onZoom} />
+      <Elsewhere />
+    </>,
+  );
   const preview = screen.getByRole('button', { name: 'Zoom 125 %' });
   await expect.element(preview).toBeVisible();
 
@@ -61,7 +70,7 @@ test('a click whose wait is left by the focus opens nothing', async () => {
   const screen = await render(
     <>
       <ZoomField scale={1} onZoom={() => {}} />
-      <button type="button">Elsewhere</button>
+      <Elsewhere />
     </>,
   );
   const preview = screen.getByRole('button', { name: 'Zoom 100 %' });
@@ -77,7 +86,12 @@ test('a click whose wait is left by the focus opens nothing', async () => {
 
 test('the window going leaves the field open with what was typed, for when the window comes back', async () => {
   const onZoom = vi.fn<(scale: number) => void>();
-  const screen = await render(<ZoomField scale={1} onZoom={onZoom} />);
+  const screen = await render(
+    <>
+      <ZoomField scale={1} onZoom={onZoom} />
+      <Elsewhere />
+    </>,
+  );
   await screen.getByRole('button', { name: 'Zoom 100 %' }).click();
   const zoom = screen.getByRole('textbox', { name: 'Zoom' });
   await expect.element(zoom).toHaveFocus();
