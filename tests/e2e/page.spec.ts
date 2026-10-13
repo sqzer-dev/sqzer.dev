@@ -159,8 +159,9 @@ test.describe('on a phone', () => {
       });
       return (await expander.boundingBox())?.y ?? Number.NaN;
     };
-    // the image keeps the screen: the expander shows its top edge and no more
-    await expect.poll(top).toBeGreaterThan(780 - 120);
+    // the image keeps the screen: the expander shows the view bar and the chips, and no more
+    await expect.poll(top).toBeGreaterThan(780 - 130);
+    await expect(page.getByLabel('New image')).toBeInViewport();
 
     const grip = await page.locator('[data-slot=drawer-swipe-handle]').boundingBox();
     if (!grip) throw new Error('the expander has no handle');

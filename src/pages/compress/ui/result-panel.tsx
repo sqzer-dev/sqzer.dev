@@ -4,7 +4,9 @@ import { SearchChart } from './search-chart';
 import { SearchFailure } from './search-failure';
 import { TrialList } from './trial-list';
 
-export { ResultHeadline } from './result-headline';
+export { ResultChips, ResultHeadline } from './result-headline';
+// the parts of the result the bottom expander lays out apart
+export { SearchChart } from './search-chart';
 
 /**
  * Whether there is a result panel to show: a result, the failure in its place until it is dismissed
@@ -30,6 +32,8 @@ export function useImageFailed() {
 type ResultPanelProps = {
   /** The details behind an expander, on a wide screen; on a phone they follow on scroll (ADR-0001 D5). */
   expander: boolean;
+  /** With the chart, or without, where it sits apart: above the options on a phone. */
+  chart?: boolean;
 };
 
 /**
@@ -37,11 +41,11 @@ type ResultPanelProps = {
  * it runs and the result it ends in, as the chart and the trials (D4), and everything else of the
  * result (D5).
  */
-export function ResultPanel({ expander }: ResultPanelProps) {
+export function ResultPanel({ expander, chart = true }: ResultPanelProps) {
   return (
     <div className="flex flex-col items-start gap-3">
       <SearchFailure of="image" />
-      <SearchChart />
+      {chart && <SearchChart />}
       <TrialList />
       <ResultDetails expander={expander} />
     </div>

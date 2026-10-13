@@ -12,7 +12,8 @@ export function CornerLabel({ side, name, size }: CornerLabelProps) {
   return (
     <span
       className={cn(
-        'glass absolute top-3 rounded-md px-1.5 py-0.5 font-mono text-xs whitespace-nowrap',
+        // under the browser's own bar at the top, where the page runs under it
+        'glass absolute top-[calc(--spacing(3)+env(safe-area-inset-top))] rounded-md px-1.5 py-0.5 font-mono text-xs whitespace-nowrap',
         side === 'before' ? 'left-3' : 'right-3',
       )}
     >

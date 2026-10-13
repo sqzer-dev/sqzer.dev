@@ -8,7 +8,7 @@ import { Comparison } from './comparison';
 import { ControlPanel } from './control-panel';
 import { useControlsForm, type ControlsNow } from './form';
 import { Panel } from './panel';
-import { ResultHeadline, ResultPanel, useHasResult, useImageFailed } from './result-panel';
+import { ResultChips, ResultHeadline, ResultPanel, SearchChart, useHasResult, useImageFailed } from './result-panel';
 import { ViewBar } from './view-bar';
 
 type WorkspaceProps = {
@@ -24,7 +24,9 @@ type WorkspaceProps = {
  * (ADR-0001 D2). It holds the form the controls are the fields of, so a change of layout keeps what
  * they say. On a wide screen the options float above the result in one column at the right,
  * under the output's corner label, and the view bar sits at the left. On a phone they are one
- * bottom expander. The result panel comes with the result, or with the failure, not before.
+ * bottom expander: the view bar and the chips at its top, in sight at rest, the chart above the
+ * options, and the rest of the result under them. The result panel comes with the result, or
+ * with the failure, not before.
  */
 export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
   const wide = useMediaQuery('(min-width: 48rem)');
@@ -69,10 +71,12 @@ export function Workspace({ now, onPick, dragging }: WorkspaceProps) {
         </>
       ) : (
         <BottomExpander raise={failed}>
-          <ResultHeadline />
-          <ResultPanel expander={false} />
           <ViewBar flat={flat} onFlat={setFlat} onPick={onPick} scale={scale} onZoom={viewer.zoom} />
+          <ResultChips />
+          <SearchChart />
           {controls}
+          <ResultHeadline chips={false} />
+          <ResultPanel expander={false} chart={false} />
         </BottomExpander>
       )}
     </main>
