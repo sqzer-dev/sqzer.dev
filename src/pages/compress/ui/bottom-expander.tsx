@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/ui/drawer';
 
@@ -10,12 +10,14 @@ const HANDLE_PX = 12;
 const PADDING_PX = 8;
 const REST_GUESS = '8rem';
 
-/** Where the sheet rests: around the element the ref is on, which is what is above the fold. */
+/**
+ * Where the sheet rests: around the element the ref is on, which is what is above the fold. The
+ * ref is a callback: the element is in the sheet's portal, which is not there yet when an effect
+ * of the mount would look for it.
+ */
 function useRest() {
   const [rest, setRest] = useState<string | number>(REST_GUESS);
-  const above = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const element = above.current;
+  const above = (element: HTMLDivElement | null) => {
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
       const height = entry?.contentRect.height ?? 0;
@@ -25,7 +27,7 @@ function useRest() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  };
   return { rest, above };
 }
 
