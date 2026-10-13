@@ -14,6 +14,7 @@ The page moves on its own cadence, apart from `sqzer`: the look, the controls, q
 
 ```
 index.html                  the entry Vite builds. The Content-Security-Policy is added at build
+public/                     the icon, copied to the root of the build as it is
 vite.config.ts              the build, and the one place the policy is written
 components.json             what `shadcn add` reads: the Base UI base, the Mira style, where components go
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
