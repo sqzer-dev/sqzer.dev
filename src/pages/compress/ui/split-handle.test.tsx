@@ -8,9 +8,15 @@ test('a key moves the line by a whole percent from wherever a drag left it, and 
   const onChange = vi.fn<(value: number) => void>();
   const screen = await render(<SplitHandle value={50.3} onChange={onChange} />);
   const handle = screen.getByRole('slider', { name: 'Before on the left, after on the right' });
-  handle.element().focus();
-  // Firefox gives the focus a moment after it is asked for; a key before that goes nowhere
+  // a press on the grip, not a scripted `focus()`: the Firefox of Playwright 1.64 drops one into a frame
+  // that has not had the pointer yet, and a key then goes nowhere. The slider itself is the range input
+  // under the grip, which takes the pointer. The press is a drag of no distance, which reports the value
+  // as it stands, so the calls start after it
+  const grip = handle.element().parentElement?.querySelector('span');
+  if (!grip) throw new Error('no grip');
+  await userEvent.click(grip);
   await expect.element(handle).toHaveFocus();
+  onChange.mockClear();
 
   await userEvent.keyboard('{ArrowRight}');
   expect(onChange).toHaveBeenLastCalledWith(51.3);
