@@ -9,6 +9,9 @@ import type { Trial } from '@/shared/api';
 
 import type { Point, Size } from './view';
 
+/** What the chart draws of a trial: its quality and its score, on the one scale. */
+type Plotted = Pick<Trial, 'quality' | 'score'>;
+
 export type Chart = {
   /** The rules, from 0 at the bottom up, one every twenty points. */
   rules: number[];
@@ -32,7 +35,7 @@ export const SIDE = 4;
 
 /** A number as an attribute says it: short, and the same in every browser. */
 const at = (n: number) => String(Math.round(n * 10) / 10);
-const scores = (trials: Trial[]) => trials.map((trial) => trial.score);
+const scores = (trials: Plotted[]) => trials.map((trial) => trial.score);
 
 /**
  * The slope a monotone cubic takes through an inner point: zero where the line turns, else the
@@ -108,7 +111,7 @@ function ends(ys: number[][]): Record<Label['label'], number[]> {
 }
 
 /** The chart of `current` over `previous`, drawn in a box of `size`. */
-export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
+export function chart(current: Plotted[], previous: Plotted[][], target: number | null, size: Size): Chart {
   const bottom = size.height - 1;
   // every run spans the width, its trials spread evenly along it
   const x = (index: number, of: number) => SIDE + (of > 1 ? index / (of - 1) : 0) * (size.width - 2 * SIDE);

@@ -49,6 +49,11 @@
       "scope": ["src/**"]
     },
     {
+      "path": "docs/adr/0008-sqzer-0.4.md",
+      "description": "The page on sqzer 0.4.0: the defaults are what `options()` lists, sent by the worker with `codecs()` as it loads, in place of `lib/defaults.ts`'s copy; the size of each trial in the trial list and the search toast, not on the chart; a result lossy at no quality, a palette of `png:colors`, says `lossy` and no target; the package's refusals of 0.4.0 stay its own; the notices of the crates in the module go into `licenses.txt`",
+      "scope": ["src/**", "vite.config.ts", "pnpm-workspace.yaml"]
+    },
+    {
       "path": "src/app/style.css",
       "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
       "scope": ["src/**"]

@@ -1,12 +1,11 @@
 import type { EncodeOptions } from '@/shared/api';
 
 import type { Applicable } from '../lib/codec';
-import { DEFAULTS } from '../lib/defaults';
 import { useSearch } from '../model/context';
 import { Expander } from './expander';
 import { NumberField, SelectField, SwitchField, TextField } from './fields';
 import type { ControlsForm, FieldOf } from './form';
-import { choices, HELP } from './help';
+import { choices, chosenFrom, HELP } from './help';
 import { RatioLink } from './ratio-link';
 
 /** The values an option takes, in the package's spelling, each with its label. Every value of the package's type, or `tsc` says which is missing. */
@@ -146,13 +145,32 @@ type ResizeFieldsProps = {
   applies: Applicable;
 };
 
+/** The padding of `contain`, typed, empty until then, with the package's word for its default where it would be. */
+function BackgroundField({ form }: Pick<ResizeFieldsProps, 'form'>) {
+  const fallback = useSearch((snapshot) => snapshot.context.defaults.background);
+  return (
+    <form.Field name="background">
+      {(field) => (
+        <TextField field={field} label="Background" placeholder={fallback ?? 'default'} help={HELP.background} />
+      )}
+    </form.Field>
+  );
+}
+
 /** How the image meets the box, and where and with what, then whether anything scales up, and the filter. */
 function FitFields({ form, applies }: ResizeFieldsProps) {
+  const defaults = useSearch((snapshot) => snapshot.context.defaults);
   return (
     <>
       <form.Field name="fit">
         {(field) => (
-          <SelectField field={field} label="Fit" options={choices(FIT)} fallback={DEFAULTS.fit} help={HELP.fit} />
+          <SelectField
+            field={field}
+            label="Fit"
+            options={choices(FIT)}
+            fallback={chosenFrom(FIT, defaults.fit)}
+            help={HELP.fit}
+          />
         )}
       </form.Field>
       {applies.position && (
@@ -162,17 +180,13 @@ function FitFields({ form, applies }: ResizeFieldsProps) {
               field={field}
               label="Position"
               options={choices(POSITION)}
-              fallback={DEFAULTS.position}
+              fallback={chosenFrom(POSITION, defaults.position)}
               help={HELP.position}
             />
           )}
         </form.Field>
       )}
-      {applies.background && (
-        <form.Field name="background">
-          {(field) => <TextField field={field} label="Background" placeholder="default" help={HELP.background} />}
-        </form.Field>
-      )}
+      {applies.background && <BackgroundField form={form} />}
       <form.Field name="enlarge">
         {(field) => <SwitchField field={field} label="Allow enlarging" help={HELP.enlarge} />}
       </form.Field>
@@ -182,7 +196,7 @@ function FitFields({ form, applies }: ResizeFieldsProps) {
             field={field}
             label="Filter"
             options={choices(FILTER)}
-            fallback={DEFAULTS.filter}
+            fallback={chosenFrom(FILTER, defaults.filter)}
             help={HELP.filter}
           />
         )}

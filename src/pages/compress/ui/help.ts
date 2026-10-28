@@ -22,3 +22,11 @@ export function choices<Value extends string>(record: Record<Value, string>) {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return (Object.entries(record) as [Value, string][]).map(([value, label]) => ({ value, label }));
 }
+
+/** The package's default as one of the choices, or nothing until it is known or where it is none of them. */
+export function chosenFrom<Value extends string>(
+  record: Record<Value, string>,
+  fallback: string | undefined,
+): Value | undefined {
+  return choices(record).find(({ value }) => value === fallback)?.value;
+}

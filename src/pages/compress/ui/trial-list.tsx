@@ -1,9 +1,10 @@
+import { bytes } from '../lib/result';
 import { useSearch } from '../model/context';
 import { currentTrials } from '../model/run';
 
 /**
- * The trials of the running or newest search, each with its number, its quality and its score
- * (ADR-0001 D4, ADR-0005 D4): the numbers the chart draws, for reading after the search and for a
+ * The trials of the running or newest search, each with its number, its quality, its score and
+ * the size it encoded to (ADR-0001 D4, ADR-0005 D4): the numbers the chart draws, for reading after the search and for a
  * screen reader, which the drawing is hidden from.
  */
 export function TrialList() {
@@ -21,8 +22,11 @@ export function TrialList() {
           <th scope="col" className="pr-4 text-left font-normal">
             quality
           </th>
-          <th scope="col" className="text-left font-normal">
+          <th scope="col" className="pr-4 text-left font-normal">
             score
+          </th>
+          <th scope="col" className="text-right font-normal">
+            size
           </th>
         </tr>
       </thead>
@@ -35,7 +39,8 @@ export function TrialList() {
               {index + 1}
             </th>
             <td className="pr-4">{trial.quality}</td>
-            <td>{trial.score.toFixed(1)}</td>
+            <td className="pr-4">{trial.score.toFixed(1)}</td>
+            <td className="text-right">{bytes(trial.size)}</td>
           </tr>
         ))}
       </tbody>

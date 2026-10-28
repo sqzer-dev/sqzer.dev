@@ -1,9 +1,18 @@
 // The messages between the page and the worker. The worker holds one image
 // at a time, and every message names it by `id`: a reply for an image that
 // was replaced since is dropped by whoever reads it.
-import type { Codec, CodecOption, Options, Output as Encoded, SqzerError, Trial, TrialProgress } from 'sqzer';
+import type {
+  Codec,
+  CodecOption,
+  OptionInfo,
+  Options,
+  Output as Encoded,
+  SqzerError,
+  Trial,
+  TrialProgress,
+} from 'sqzer';
 
-export type { Codec, CodecOption, Trial, TrialProgress };
+export type { Codec, CodecOption, OptionInfo, Trial, TrialProgress };
 
 /** Which failure the package threw: the `kind` of its `SqzerError`. */
 export type FailureKind = SqzerError['kind'];
@@ -47,7 +56,8 @@ export type Failure = {
 };
 
 export type Reply =
-  | { type: 'ready'; version: string; codecs: Codec[] }
+  /** What `codecs()` and `options()` list, each option with its default as the package spells it. */
+  | { type: 'ready'; version: string; codecs: Codec[]; options: OptionInfo[] }
   | { type: 'decoded'; id: number; image: Decoded }
   | { type: 'trial'; id: number; trial: TrialProgress }
   | { type: 'encoded'; id: number; result: Output }

@@ -40,9 +40,11 @@ test('a missing decoder or encoder names the build that has it', () => {
 
 test('an image over the limit is told the limit, in megapixels, and where to raise it', () => {
   const large = { message: 'image has 30000000 pixels, limit is 24000000', kind: 'TooLarge', stage: 'read' } as const;
-  expect(explain(large, about).sentence).toMatch(
+  expect(explain(large, { ...about, maxPixels: 24_000_000 }).sentence).toMatch(
     /^photo\.heic has more pixels than the limit of 24 megapixels\. Raise Max pixels under Advanced/u,
   );
+  // no number while neither the reader nor the package has said one
+  expect(explain(large, about).sentence).toMatch(/^photo\.heic has more pixels than the limit\. Raise/u);
   expect(explain(large, { ...about, maxPixels: 1 }).sentence).toContain('the limit of 1 pixel.');
   expect(explain(large, { ...about, maxPixels: 1500 }).sentence).toContain('the limit of 1500 pixels.');
   expect(explain(large, { ...about, maxPixels: 2_500_000 }).sentence).toContain('the limit of 2.5 megapixels.');

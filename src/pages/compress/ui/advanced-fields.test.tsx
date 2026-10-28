@@ -21,12 +21,13 @@ test('Advanced stays closed until opened, with sliders for ranges and the defaul
   await expect.element(screen.getByRole('radio', { name: 'Target score' })).toBeChecked();
 
   await screen.getByRole('button', { name: 'Advanced' }).click();
-  // the package states no default effort: the slider rests on a notch left of its range that says so
+  // the slider rests at the default effort `options()` gives, and steps from it
+  await expect.element(effort).toHaveValue('6');
   await expect.element(effort).toHaveAttribute('aria-valuetext', 'default');
-  await expect.element(screen.getByText("default: the package's")).toBeVisible();
+  await expect.element(screen.getByText('default: 6')).toBeVisible();
   await step('Effort');
-  await expect.element(effort).toHaveValue('0');
-  expect(said('effort')).toEqual({ effort: 0 });
+  await expect.element(effort).toHaveValue('7');
+  expect(said('effort')).toEqual({ effort: 7 });
   await screen.getByRole('switch', { name: 'Fast' }).click();
   expect(said('fast')).toEqual({ fast: true });
 

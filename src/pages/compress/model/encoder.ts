@@ -12,6 +12,7 @@ import {
 } from '@/shared/api';
 
 import { codecOf } from '../lib/codec';
+import { defaultsOf, type Defaults } from '../lib/defaults';
 import { draw } from '../lib/draw';
 import { rename, type EncodeResult } from './encode-result';
 import type { Picked } from './picked';
@@ -53,7 +54,8 @@ export type EncoderCommand =
 
 /** What the actor tells the machine. */
 export type EncoderEvent =
-  | { type: 'ready'; version: string; codecs: Codec[] }
+  /** What the package lists: its codecs, and its defaults from `options()`. */
+  | { type: 'ready'; version: string; codecs: Codec[]; defaults: Defaults }
   | ({ type: 'unreadable' } & Unreadable)
   /** `drawnWidth` is the width an image drawn on the page was drawn at, null for one the worker decoded. */
   | { type: 'decoded'; decoded: Decoded; drawnWidth: number | null }
@@ -111,8 +113,9 @@ class Session {
   #answer(reply: Reply) {
     const read = this.#read;
     if (reply.type === 'ready') {
-      this.#codecs = reply.codecs;
-      this.#tell(reply);
+      const { version, codecs, options } = reply;
+      this.#codecs = codecs;
+      this.#tell({ type: 'ready', version, codecs, defaults: defaultsOf(options) });
     } else if (reply.type === 'error' && (reply.stage === 'start' || reply.stage === 'load')) {
       this.#fail({ message: reply.message, kind: reply.kind, stage: reply.stage }, true);
     } else if (reply.id !== this.#id || !read) {

@@ -6,6 +6,7 @@ export type {
   EncodeOptions,
   Failure,
   FailureKind,
+  OptionInfo,
   Output,
   Reply,
   Trial,

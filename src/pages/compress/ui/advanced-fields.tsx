@@ -2,12 +2,13 @@ import type { CodecOption, EncodeOptions } from '@/shared/api';
 import { FieldLegend, FieldSet } from '@/shared/ui/field';
 
 import type { Applicable, CodecOptions } from '../lib/codec';
-import { DEFAULTS } from '../lib/defaults';
+import { restingAt } from '../lib/defaults';
 import { kindOf } from '../lib/option-kind';
+import { useSearch } from '../model/context';
 import { Expander } from './expander';
 import { NumberField, RangeField, SelectField, SwitchField, TextField } from './fields';
 import type { ControlsForm, FieldOf } from './form';
-import { choices, HELP } from './help';
+import { choices, chosenFrom, HELP } from './help';
 
 const SUBSAMPLING: Record<NonNullable<EncodeOptions['subsampling']>, string> = {
   auto: 'auto',
@@ -23,11 +24,19 @@ type AdvancedFieldsProps = {
 
 /** The encode: the effort, the subsampling, the search skipped, and what is kept of the input. */
 function EncodeFields({ form, applies }: AdvancedFieldsProps) {
+  const defaults = useSearch((snapshot) => snapshot.context.defaults);
   return (
     <>
       <form.Field name="effort">
         {(field) => (
-          <RangeField field={field} label="Effort" min={0} max={10} fallback="the package's" help={HELP.effort} />
+          <RangeField
+            field={field}
+            label="Effort"
+            min={0}
+            max={10}
+            fallback={restingAt(defaults.effort) ?? "the package's"}
+            help={HELP.effort}
+          />
         )}
       </form.Field>
       {applies.subsampling && (
@@ -37,7 +46,7 @@ function EncodeFields({ form, applies }: AdvancedFieldsProps) {
               field={field}
               label="Chroma subsampling"
               options={choices(SUBSAMPLING)}
-              fallback={DEFAULTS.subsampling}
+              fallback={chosenFrom(SUBSAMPLING, defaults.subsampling)}
               help={HELP.subsampling}
             />
           )}
@@ -95,7 +104,7 @@ function CodecRange({
       help={help}
       min={min}
       max={max}
-      fallback={/^-?\d+$/u.test(fallback) ? Number(fallback) : fallback}
+      fallback={restingAt(fallback)}
       field={{
         state: { value: number },
         handleBlur: field.handleBlur,
@@ -166,19 +175,14 @@ function CodecFields({ form, groups }: { form: ControlsForm; groups: CodecOption
  * that stays closed until opened (ADR-0001 D3). A control shows only where it applies.
  */
 export function AdvancedFields({ form, applies }: AdvancedFieldsProps) {
+  const defaults = useSearch((snapshot) => snapshot.context.defaults);
   return (
     <Expander title="Advanced">
       <EncodeFields form={form} applies={applies} />
       <hr className="border-border" />
       <form.Field name="maxPixels">
         {(field) => (
-          <NumberField
-            field={field}
-            label="Max pixels"
-            min={1}
-            fallback={String(DEFAULTS.maxPixels)}
-            help={HELP.maxPixels}
-          />
+          <NumberField field={field} label="Max pixels" min={1} fallback={defaults.maxPixels} help={HELP.maxPixels} />
         )}
       </form.Field>
       {applies.codecOpts.length > 0 && <hr className="border-border" />}

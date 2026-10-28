@@ -2,6 +2,7 @@ import { XIcon } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 
+import { restingAt } from '../lib/defaults';
 import { explain } from '../lib/failure';
 import { useSearch, useSearchRef } from '../model/context';
 
@@ -29,7 +30,11 @@ export function SearchFailure({ of }: SearchFailureProps) {
   });
   const name = useSearch((snapshot) => snapshot.context.image?.name ?? null);
   const format = useSearch((snapshot) => snapshot.context.options.format);
-  const maxPixels = useSearch((snapshot) => snapshot.context.options.maxPixels);
+  const maxPixels = useSearch((snapshot) => {
+    const { options, defaults } = snapshot.context;
+    const limit = options.maxPixels ?? restingAt(defaults.maxPixels);
+    return typeof limit === 'number' ? limit : undefined;
+  });
   const search = useSearchRef();
 
   if (failure === null) return null;

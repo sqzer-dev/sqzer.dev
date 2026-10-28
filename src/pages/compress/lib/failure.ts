@@ -1,7 +1,6 @@
 import type { FailureKind } from '@/shared/api';
 
 import type { Failure } from '../model/encoder';
-import { DEFAULTS } from './defaults';
 
 /** What the alert knows of the search that failed: the file, and what the controls said. */
 export type About = {
@@ -9,7 +8,7 @@ export type About = {
   name: string | null;
   /** The format asked for, as the package spells it, or undefined for the one it chooses. */
   format: string | undefined;
-  /** The limit on the pixels the reader set, or undefined for the package's own. */
+  /** The limit on the pixels the read ran under: the reader's, else the package's, or undefined while neither is known. */
   maxPixels: number | undefined;
 };
 
@@ -42,7 +41,7 @@ function sentenceOf(kind: FailureKind, { message, availableIn }: Failure, { name
     case 'EncoderUnavailable':
       return `This build cannot write ${format ?? 'that format'}. Choose another format.${elsewhere === null ? '' : ` The \`sqzer\` command line built with ${elsewhere} writes it.`}`;
     case 'TooLarge':
-      return `${file} has more pixels than the limit of ${pixels(maxPixels ?? DEFAULTS.maxPixels)}. Raise Max pixels under Advanced to read it; the tab may run out of memory far above the default.`;
+      return `${file} has more pixels than the limit${maxPixels === undefined ? '' : ` of ${pixels(maxPixels)}`}. Raise Max pixels under Advanced to read it; the tab may run out of memory far above the default.`;
     case 'InvalidInput':
       return `${file} is not a valid picture. Choose another file.`;
     case 'InvalidParams':

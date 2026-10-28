@@ -2,6 +2,7 @@ import type { UseToastManagerReturnValue } from '@base-ui/react/toast';
 import { useEffect } from 'react';
 import type { SnapshotFrom } from 'xstate';
 
+import { bytes } from '../lib/result';
 import { useSearchRef } from './context';
 import type { searchMachine } from './machine';
 
@@ -39,7 +40,7 @@ export function searchNotice(snapshot: Snapshot): Notice | null {
       type: 'loading',
       title: `Encoding ${image?.name}.`,
       ...(trial && {
-        description: `Trial ${trial.n} of at most ${trial.max}: quality ${trial.quality} scores ${trial.score.toFixed(1)}.`,
+        description: `Trial ${trial.n} of at most ${trial.max}: quality ${trial.quality} scores ${trial.score.toFixed(1)} at ${bytes(trial.size)}.`,
       }),
     };
   }
