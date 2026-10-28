@@ -21,7 +21,8 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
   expect(rows).toBeGreaterThan(1);
   const chart = page.locator('[data-slot=search-chart]');
   await expect(chart.locator('circle')).toHaveCount(rows - 1);
-  await expect(chart.locator('text')).toHaveText('target 70');
+  // the target's label, and the last size over the end of the size's line
+  await expect(chart.locator('text')).toHaveText(['target 70', /^\d+ B$/u]);
   // each side's size, in the corner of the screen over it
   await expect(page.getByText('Before: 48 × 32')).toBeVisible();
   await expect(page.getByText('After: 48 × 32')).toBeVisible();

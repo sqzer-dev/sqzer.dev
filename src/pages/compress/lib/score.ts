@@ -4,10 +4,13 @@
 /** The slider runs from `low` to identical. */
 export const TARGET = { min: 30, max: 100 };
 
+/** The score of the `web` preset, where the target slider rests until the package has said its default. */
+export const WEB = 70;
+
 /** The package's presets, marked on the track. `lossless` is no score. */
 export const PRESETS = [
   { name: 'thumbnail', score: 60 },
-  { name: 'web', score: 70 },
+  { name: 'web', score: WEB },
   { name: 'archive', score: 85 },
 ];
 

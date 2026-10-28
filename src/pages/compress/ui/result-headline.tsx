@@ -38,9 +38,10 @@ function DownloadButton({ file }: { file: File }) {
 export function ResultChips() {
   const result = useSearch((snapshot) => snapshot.context.result);
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
+  const defaults = useSearch((snapshot) => snapshot.context.defaults);
 
   if (result === null) return null;
-  return <Chips chips={chipsOf(result, codecs)} />;
+  return <Chips chips={chipsOf(result, codecs, defaults)} />;
 }
 
 type ResultHeadlineProps = {
@@ -58,6 +59,7 @@ export function ResultHeadline({ chips = true }: ResultHeadlineProps) {
   const before = useSearch((snapshot) => snapshot.context.image?.bytes.byteLength ?? null);
   const result = useSearch((snapshot) => snapshot.context.result);
   const codecs = useSearch((snapshot) => snapshot.context.codecs);
+  const defaults = useSearch((snapshot) => snapshot.context.defaults);
 
   if (result === null || before === null) return null;
   const { file } = result;
@@ -71,7 +73,7 @@ export function ResultHeadline({ chips = true }: ResultHeadlineProps) {
         </p>
         <DownloadButton file={file} />
       </div>
-      {chips && <Chips chips={chipsOf(result, codecs)} />}
+      {chips && <Chips chips={chipsOf(result, codecs, defaults)} />}
     </div>
   );
 }

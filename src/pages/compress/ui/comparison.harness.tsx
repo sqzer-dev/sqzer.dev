@@ -8,6 +8,7 @@ import type { Output } from '@/shared/api';
 import { SearchProvider, useSearchRef } from '../model/context';
 import type { EncoderCommand, EncoderEvent } from '../model/encoder';
 import { searchMachine } from '../model/machine';
+import { DEFAULTS } from '../model/machine.harness';
 import { useViewer, type Viewer } from '../model/viewer';
 import { Comparison } from './comparison';
 
@@ -109,7 +110,7 @@ export async function renderComparison(small = false) {
   const viewers: Viewer[] = [];
   const encoder = fromCallback<EncoderCommand>(({ sendBack, receive }) => {
     answer.to = sendBack;
-    sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
+    sendBack({ type: 'ready', version: '0.0.0', codecs: [], defaults: DEFAULTS });
     receive((command) => {
       const reply = answers[command.type];
       if (reply) sendBack(reply);

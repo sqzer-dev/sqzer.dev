@@ -1,6 +1,7 @@
 # ADR-0007: The controls are a form
 
 **Status:** Accepted   **Date:** 2026-10-08   **Deciders:** Vlad (sole maintainer)
+**Superseded by:** ADR-0008 D1 for where the defaults come from: `options()`, which the worker sends as it loads, in place of the copy in `lib/defaults.ts`. A control still shows the default until it is touched, and sends nothing
 **Scope:** What holds what the controls say, how it becomes the package's options, where the target slider stands before it is touched, and where the toaster sits now that the Options panel is tall. ADR-0001 D3 decided what the controls are; this record decides what they are built on, as ADR-0001 item 7 builds them. ADR-0002 D10 keeps short-lived UI state in `useState`; this record adds a third holder of state, for the controls alone. ADR-0005 put the toaster at the top right; D4 moves it to the top centre on a wide screen. ADR-0003 D4 made the page monochrome but for alerts and a drop target; D5 paints the target slider's track in four hues. D6 to D8 are the maintainer's design review of the controls, in three rounds: the kinds of control, the quality as cards, the resize as a section, the defaults shown, the values typed where they are shown, and the picture holding its size on the device across the browser's zoom. Nothing else in ADR-0001 to ADR-0006 changes.
 
 ---

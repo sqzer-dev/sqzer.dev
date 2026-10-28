@@ -199,8 +199,8 @@ importers:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
       sqzer:
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 0.4.0
+        version: 0.4.0
       xstate:
         specifier: 5.33.2
         version: 5.33.2
@@ -2869,8 +2869,8 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  sqzer@0.3.0:
-    resolution: {integrity: sha512-mffC/kcYk3Ayj5OJhV7Skg8Tnx5Qx1B2akJpVuPuNbedg7UlR65DgWorRwA0TjCR8RrsM01ZBiBgDiG17f/poQ==}
+  sqzer@0.4.0:
+    resolution: {integrity: sha512-cvBaZ4ItyEW+8v+gRHkeDmkPCxKjAtJGJOPmtRINv56FEHKWzFvlp2S0kNu+qgN/Gq3GcrFMyvvl5Po0tTwP9A==}
 
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
@@ -5613,7 +5613,7 @@ snapshots:
 
   source-map@0.6.1: {}
 
-  sqzer@0.3.0: {}
+  sqzer@0.4.0: {}
 
   statuses@2.0.2: {}
 

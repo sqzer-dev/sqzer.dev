@@ -1,7 +1,7 @@
 // The worker: every call into the `sqzer` package happens here, so a search
 // that takes seconds never blocks the page. One image is held at a time.
 // The messages are in `protocol.ts`.
-import init, { codecs, decodeAny, fromPixels, type SqzerError, type SqzerImage } from 'sqzer';
+import init, { codecs, decodeAny, fromPixels, options, type SqzerError, type SqzerImage } from 'sqzer';
 // The version comes from the package itself: the root `package.json` and the
 // lockfile are the only places it is written.
 import { version } from 'sqzer/package.json';
@@ -21,7 +21,7 @@ function own(bytes: Uint8Array): Bytes {
 
 async function load() {
   await init();
-  post({ type: 'ready', version, codecs: codecs() });
+  post({ type: 'ready', version, codecs: codecs(), options: options() });
 }
 
 // The listener below has to be there before the first message, so the load is not awaited here.

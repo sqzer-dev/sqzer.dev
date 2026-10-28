@@ -1,13 +1,17 @@
 // The chart of the search (ADR-0001 D4): the trials across in their order, each run spanning the
-// width, and one scale of 0 to
-// 100 up, which holds the score and the quality as two curves, each trial a point on the score's,
-// over plain horizontal rules every twenty points, with no ticks and no background. The target is
-// one labelled rule. The runs before stay behind as subtle lines, their score and their quality,
-// so the searches of a tab weave into one pattern. The chart comes
-// from the numbers and draws nothing that did not happen. Arithmetic only.
+// width, and one scale of 0 to 100 up, which holds the score and the quality as two curves, each
+// trial a point on the score's, over plain horizontal rules every twenty points, with no ticks and
+// no background. The target is one labelled rule. The current run's sizes are a third curve on the
+// same rules, each a share of the input's size, so the top rule is the input (ADR-0008 D2). The runs
+// before stay behind as subtle lines, their score and their quality, so the searches of a tab
+// weave into one pattern. The chart comes from the numbers and draws nothing that did not happen.
+// Arithmetic only.
 import type { Trial } from '@/shared/api';
 
 import type { Point, Size } from './view';
+
+/** What the chart draws of a trial of a run before: its quality and its score, on the one scale. */
+type Plotted = Pick<Trial, 'quality' | 'score'>;
 
 export type Chart = {
   /** The rules, from 0 at the bottom up, one every twenty points. */
@@ -22,6 +26,12 @@ export type Chart = {
   /** The running or newest search: its score as a path and its points, and its quality as a path. */
   score: { path: string; points: Point[] };
   quality: { path: string };
+  /**
+   * Its sizes as a path, each a share of the input's, a lone point where it has one trial, and the
+   * last size's height with where its number goes: at the end its point stands, the right one or
+   * the left one for a run of one trial, and over the line or under it, as `target` places its label.
+   */
+  bytes: { path: string; lone: Point | null; end: NonNullable<Chart['target']> | null };
 };
 
 const RULE_STEP = 20;
@@ -32,7 +42,7 @@ export const SIDE = 4;
 
 /** A number as an attribute says it: short, and the same in every browser. */
 const at = (n: number) => String(Math.round(n * 10) / 10);
-const scores = (trials: Trial[]) => trials.map((trial) => trial.score);
+const scores = (trials: Plotted[]) => trials.map((trial) => trial.score);
 
 /**
  * The slope a monotone cubic takes through an inner point: zero where the line turns, else the
@@ -102,13 +112,37 @@ function labelled(y: number, points: Record<Label['label'], number[]>, height: n
   return { y, ...best };
 }
 
+type Placed = NonNullable<Chart['target']>;
+
+/**
+ * Where the last size's number goes, at the ys of the size's line: over its last point, or under it
+ * where the line comes down into the point, so the number does not sit on the line, unless the
+ * point is at the bottom edge.
+ */
+function sizeEnd(ys: number[], height: number): Placed | null {
+  const last = ys.at(-1);
+  if (last === undefined) return null;
+  const before = ys.at(-2);
+  const side = before !== undefined && before < last && last + LABEL < height ? 'below' : 'above';
+  return { y: Number(at(last)), label: ys.length === 1 ? 'start' : 'end', side };
+}
+
+/** The middle of a label set at a line, 4 px over it, or with its baseline 11 px under it. */
+const middleOf = ({ y, side }: Placed) => (side === 'above' ? y - 4 - LABEL / 2 : y + 11 - LABEL / 2);
+
 /** The points of a run at each end of the chart, as the ys of its lines there. */
 function ends(ys: number[][]): Record<Label['label'], number[]> {
   return { start: ys[0] ?? [], end: ys.at(-1) ?? [] };
 }
 
-/** The chart of `current` over `previous`, drawn in a box of `size`. */
-export function chart(current: Trial[], previous: Trial[][], target: number | null, size: Size): Chart {
+/** The chart of `current` over `previous`, drawn in a box of `size`, the sizes a share of `input` bytes. */
+export function chart(
+  current: Trial[],
+  previous: Plotted[][],
+  target: number | null,
+  size: Size,
+  input: number,
+): Chart {
   const bottom = size.height - 1;
   // every run spans the width, its trials spread evenly along it
   const x = (index: number, of: number) => SIDE + (of > 1 ? index / (of - 1) : 0) * (size.width - 2 * SIDE);
@@ -116,6 +150,12 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
   const path = (values: number[]) => curve(values.map((value, index) => ({ x: x(index, values.length), y: y(value) })));
   const rules = [];
   for (let value = 0; value <= 100; value += RULE_STEP) rules.push(Math.round(y(value)) + 0.5);
+  // a size past the input's stops at the top rule, as a score past 100 would
+  const shares = current.map((trial) => (trial.size / input) * 100);
+  const sized = sizeEnd(
+    shares.map((share) => y(share)),
+    size.height,
+  );
   return {
     rules,
     target:
@@ -123,7 +163,13 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
         ? null
         : labelled(
             Math.round(y(target)) + 0.5,
-            ends(current.map((trial) => [y(trial.score), y(trial.quality)])),
+            // the size's line is kept clear of too, and its number at the last point
+            ends(
+              current.map((trial, index) => {
+                const ys = [y(trial.score), y(trial.quality), y(shares[index] ?? 0)];
+                return index === current.length - 1 && sized ? [...ys, middleOf(sized)] : ys;
+              }),
+            ),
             size.height,
           ),
     previous: previous.map((run) => ({
@@ -136,5 +182,10 @@ export function chart(current: Trial[], previous: Trial[][], target: number | nu
       points: current.map((trial, index) => ({ x: x(index, current.length), y: y(trial.score) })),
     },
     quality: { path: path(current.map((trial) => trial.quality)) },
+    bytes: {
+      path: path(shares),
+      lone: shares.length === 1 && sized ? { x: x(0, 1), y: sized.y } : null,
+      end: sized,
+    },
   };
 }

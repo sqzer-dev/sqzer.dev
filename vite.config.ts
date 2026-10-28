@@ -14,10 +14,11 @@ const charset = /<meta charset="utf-8"\s*\/?>/u;
 
 const LICENCES = 'licenses.txt';
 
-// What the page carries that Vite's list leaves out: `sqzer` is in the worker's bundle, and the rest
-// reaches the page as a stylesheet or a font. Each with the licence files of its package.
+// What the page carries that Vite's list leaves out: `sqzer` is in the worker's bundle, with the notices
+// of the crates compiled into its module, and the rest reaches the page as a stylesheet or a font. Each
+// with the licence files of its package.
 const UNLISTED = {
-  sqzer: ['LICENSE-MIT', 'LICENSE-APACHE'],
+  sqzer: ['LICENSE-MIT', 'LICENSE-APACHE', 'THIRD-PARTY-LICENSES.txt'],
   geist: ['LICENSE.txt'],
   '@radix-ui/colors': ['LICENSE'],
   tailwindcss: ['LICENSE'],

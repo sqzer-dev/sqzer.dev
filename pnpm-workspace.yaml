@@ -5,3 +5,7 @@ packageExtensions:
     peerDependenciesMeta:
       next:
         optional: true
+# pnpm holds back a release younger than a day. `sqzer` is this project's own package, bumped the day it
+# is published; pnpm wrote the exclusion at `pnpm install`, and it does nothing once the day has passed.
+minimumReleaseAgeExclude:
+  - sqzer@0.4.0

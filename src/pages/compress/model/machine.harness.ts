@@ -1,8 +1,9 @@
 // The machine in a test: over a worker that does nothing, whose part the test plays through `tell`.
-import { createActor, fromCallback, SimulatedClock } from 'xstate';
+import { createActor, fromCallback, SimulatedClock, type CallbackActorLogic } from 'xstate';
 
-import type { Output } from '@/shared/api';
+import type { OptionInfo, Output } from '@/shared/api';
 
+import { defaultsOf } from '../lib/defaults';
 import type { EncoderCommand, EncoderEvent } from './encoder';
 import { searchMachine } from './machine';
 import type { Picked } from './picked';
@@ -37,6 +38,31 @@ export function start() {
   };
 }
 
+/** Part of what `options()` lists at 0.4.0: the keys the page shows a default for, and one with none. */
+const OPTIONS: OptionInfo[] = [
+  { key: 'format', default: 'auto', help: 'output format' },
+  { key: 'target', default: '70', help: 'SSIMULACRA2 score to reach' },
+  { key: 'quality', help: 'encode at this quality, with no search' },
+  { key: 'lossless', default: 'false', help: 'lossless output' },
+  { key: 'effort', default: '6', help: '0 to 10. Higher is slower and smaller' },
+  { key: 'subsampling', default: 'auto', help: 'chroma subsampling' },
+  { key: 'fast', default: 'false', help: 'one encode at the seed quality' },
+  { key: 'width', help: 'target width in pixels' },
+  { key: 'fit', default: 'inside', help: 'how the image meets the box' },
+  { key: 'position', default: 'center', help: 'where cover crops and contain places the image' },
+  { key: 'background', default: 'auto', help: 'padding of contain' },
+  { key: 'scale', help: 'a factor instead of a box' },
+  { key: 'enlarge', default: 'false', help: 'allow scaling up' },
+  { key: 'filter', default: 'lanczos3', help: 'resampling filter' },
+  { key: 'maxPixels', default: '24000000', help: 'refuse an image above this many pixels' },
+];
+
+/** Those defaults, as the encoder hands them to the machine. */
+export const DEFAULTS = defaultsOf(OPTIONS);
+
+/** The machine over a stub worker a test of the page plays. */
+export const stubbed = (encoder: CallbackActorLogic<EncoderCommand>) => searchMachine.provide({ actors: { encoder } });
+
 export const picked = (name: string, vector = false): Picked => ({
   name,
   vector,
@@ -62,6 +88,7 @@ export const output: Output = {
   outputHeight: 32,
   backend: 'ravif',
   tier: 'portable',
+  quality: 62,
   lossless: false,
 };
 export const done: EncoderEvent = { type: 'done', result: { output, file: new File([], 'a.avif'), seconds: 1 } };

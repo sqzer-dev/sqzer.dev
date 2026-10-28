@@ -9,6 +9,7 @@ import { Toaster } from '@/shared/ui/toast';
 import { SearchProvider } from '../model/context';
 import type { EncoderCommand } from '../model/encoder';
 import { searchMachine } from '../model/machine';
+import { DEFAULTS } from '../model/machine.harness';
 import { CompressPage } from './compress-page';
 
 // A module whose export cannot be read stands in for a chunk that did not download: a factory that
@@ -22,7 +23,7 @@ vi.mock('./workspace', () => ({
 
 test('when the workspace does not download, the page says so and offers a reload, and nothing is thrown', async () => {
   const encoder = fromCallback<EncoderCommand>(({ sendBack }) => {
-    sendBack({ type: 'ready', version: '0.0.0', codecs: [] });
+    sendBack({ type: 'ready', version: '0.0.0', codecs: [], defaults: DEFAULTS });
   });
   // an error thrown past every boundary, or a rejection nobody caught, would land here
   const uncaught: unknown[] = [];

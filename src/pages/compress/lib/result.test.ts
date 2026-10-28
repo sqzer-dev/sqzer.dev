@@ -26,9 +26,9 @@ const output: Output = {
   capped: false,
   iterations: 3,
   trials: [
-    { quality: 55, score: 65 },
-    { quality: 65, score: 72 },
-    { quality: 62.5, score: 70.3 },
+    { quality: 55, score: 65, size: 16_800 },
+    { quality: 65, score: 72, size: 21_400 },
+    { quality: 62.5, score: 70.3, size: 19_300 },
   ],
 };
 
@@ -82,6 +82,20 @@ test('a fast result had no search: the target line says so, instead of a target 
   const details = detailsOf(source, { ...searched(), output: fast, asked: { fast: true } });
   expect(details.map((detail) => detail.term)).toEqual(['input', 'output', 'quality', 'target', 'time']);
   expect(details[3]?.said).toBe('70, no search: one encode at the seed quality');
+});
+
+test('a palette of `png:colors` is lossy at no quality, and the default target it reports is not told of', () => {
+  // as 0.4.0 returns it: no quality, no search, and the target an encode without one would have had
+  const palette: Output = { ...output, format: 'png', backend: 'oxipng' };
+  delete palette.quality;
+  delete palette.score;
+  delete palette.reached;
+  delete palette.capped;
+  delete palette.iterations;
+  delete palette.trials;
+  const details = detailsOf(source, { ...searched(), output: palette, asked: { format: 'png' } });
+  expect(details.map((detail) => detail.term)).toEqual(['input', 'output', 'quality', 'time']);
+  expect(details[2]?.said).toBe('lossy');
 });
 
 test('a lossless result has no quality, score or target to tell of, and an image drawn by the browser says so', () => {

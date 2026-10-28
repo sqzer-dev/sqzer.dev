@@ -141,8 +141,8 @@ export function TextField({ field, label, help, fallback, placeholder }: TextFie
 type SelectFieldProps<Value extends string> = FieldProps<Value | null> & {
   /** The values the package lists, in its spelling. */
   options: { value: Value; label: string }[];
-  /** The package's default, which the select opens on until one is chosen. */
-  fallback?: Value;
+  /** The package's default, which the select opens on until one is chosen. Left out while it is not known. */
+  fallback?: Value | undefined;
   /** What the select says with nothing chosen and no default. */
   placeholder?: string;
 };
@@ -216,7 +216,7 @@ type RangeFieldProps = FieldProps<number | null> & {
    * other word, `auto` say, gives the slider a notch left of its range that means the default.
    * Left out, the slider has no default and always says a number.
    */
-  fallback?: number | string;
+  fallback?: number | string | undefined;
   /** What a value looks like, next to its number. */
   words?: (value: number) => string;
 };

@@ -2,6 +2,7 @@ import { and, assertEvent, assign, cancel, enqueueActions, not, raise, setup, st
 
 import type { Codec, Decoded, EncodeOptions, Trial, TrialProgress } from '@/shared/api';
 
+import type { Defaults } from '../lib/defaults';
 import { boxed } from '../lib/options-of';
 import type { EncodeResult } from './encode-result';
 import { encoder, type EncoderCommand, type EncoderEvent, type Failure, type Unreadable } from './encoder';
@@ -22,6 +23,8 @@ type Context = {
   version: string | null;
   /** What `codecs()` lists. Empty until then. */
   codecs: Codec[];
+  /** The package's defaults, as `options()` lists them. Empty until then. */
+  defaults: Defaults;
   /** The file on the page. */
   image: Picked | null;
   /** What the controls said when the newest search was asked for. */
@@ -165,6 +168,7 @@ export const searchMachine = setup({
   context: {
     version: null,
     codecs: [],
+    defaults: {},
     image: null,
     options: {},
     running: {},
@@ -194,7 +198,7 @@ export const searchMachine = setup({
       on: {
         restart: { target: '.searching', reenter: true },
         cancel: { guard: 'searching', target: '.cancelled', reenter: true },
-        ready: { actions: assign(({ event }) => ({ version: event.version, codecs: event.codecs })) },
+        ready: { actions: assign(({ event: { version, codecs, defaults } }) => ({ version, codecs, defaults })) },
         previewed: { actions: assign(({ event }) => ({ preview: event.preview })) },
         // the worker is idle: it takes the new image, or the new options for the one it holds
         picked: [

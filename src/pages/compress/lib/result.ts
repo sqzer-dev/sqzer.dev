@@ -24,7 +24,8 @@ export type Detail = { term: string; said: string };
 /**
  * What the search did about the target, after the number of trials: reached, missed, or stopped at
  * the encoder's ceiling. With `fast` there was no search: one encode at the seed quality, and the
- * package says nothing of the target being reached.
+ * package says nothing of the target being reached. An encode at no quality, a palette of
+ * `png:colors`, reports the default target it did not use, and is not asked.
  */
 function searched({ reached, capped, iterations, trials }: Output) {
   if (reached === undefined) return 'no search: one encode at the seed quality';
@@ -48,10 +49,12 @@ export function detailsOf(source: { name: string; size: number }, { output, file
       said: `${source.name}, ${bytes(source.size)}, ${inputFormat ?? 'drawn by the browser'}, ${content}`,
     },
     { term: 'output', said: `${file.name}, ${bytes(file.size)}, ${format} by ${backend} (${tier})` },
-    { term: 'quality', said: lossless ? 'lossless' : String(quality ?? 'unstated') },
+    // an encode lossy at no quality, a palette of `png:colors`, says `lossy`, as the command line does
+    { term: 'quality', said: lossless ? 'lossless' : String(quality ?? 'lossy') },
   ];
   if (score !== undefined) details.push({ term: 'score', said: `${score.toFixed(1)}, ${words(score)}` });
-  if (target !== undefined && !lossless) details.push({ term: 'target', said: `${target}, ${searched(output)}` });
+  if (target !== undefined && !lossless && quality !== undefined)
+    details.push({ term: 'target', said: `${target}, ${searched(output)}` });
   details.push({ term: 'time', said: `${seconds.toFixed(1)} s` });
   return details;
 }

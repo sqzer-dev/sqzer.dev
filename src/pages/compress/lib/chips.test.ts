@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import type { Codec, EncodeOptions, Output } from '@/shared/api';
 
 import type { Searched } from '../model/machine';
+import { DEFAULTS } from '../model/machine.harness';
 import { chipsOf } from './chips';
 
 const output: Output = {
@@ -22,7 +23,7 @@ const output: Output = {
   target: 72,
   score: 72.5,
   reached: true,
-  trials: [{ quality: 60, score: 72.5 }],
+  trials: [{ quality: 60, score: 72.5, size: 1 }],
 };
 
 const codecs: Codec[] = [
@@ -57,16 +58,16 @@ const searched = (asked: EncodeOptions = {}, over: Partial<Output> = {}): Search
 const words = (chips: ReturnType<typeof chipsOf>) => chips.map((chip) => chip.word);
 
 test("a result of the package's defaults has one chip, for the target it reached", () => {
-  expect(chipsOf(searched(), codecs)).toEqual([
+  expect(chipsOf(searched(), codecs, DEFAULTS)).toEqual([
     { word: 'reached', meaning: 'reached: the target of 72 at a score of 72.5' },
   ]);
 });
 
 test('a target missed says so, and whether the encoder had no higher quality to try', () => {
-  expect(chipsOf(searched({}, { reached: false, score: 68.2 }), codecs)).toEqual([
+  expect(chipsOf(searched({}, { reached: false, score: 68.2 }), codecs, DEFAULTS)).toEqual([
     { word: 'missed', meaning: 'missed: the target of 72 at a score of 68.2' },
   ]);
-  expect(chipsOf(searched({}, { reached: false, capped: true, score: 68.2 }), codecs)[0]?.meaning).toBe(
+  expect(chipsOf(searched({}, { reached: false, capped: true, score: 68.2 }), codecs, DEFAULTS)[0]?.meaning).toBe(
     'missed: the target of 72 at a score of 68.2, the best quality the encoder has',
   );
 });
@@ -83,7 +84,11 @@ test('the booleans of the output come first, then what was kept, then every othe
     fit: 'cover',
     codecOpts: new Map([['jpeg:progressive', 'false']]),
   };
-  const chips = chipsOf(searched(asked, { lossless: true, animated: true, outputWidth: 24, outputHeight: 16 }), codecs);
+  const chips = chipsOf(
+    searched(asked, { lossless: true, animated: true, outputWidth: 24, outputHeight: 16 }),
+    codecs,
+    DEFAULTS,
+  );
   expect(words(chips)).toEqual([
     'lossless',
     'reached',
@@ -103,7 +108,7 @@ test('the booleans of the output come first, then what was kept, then every othe
     'animated: only the first frame was encoded',
     'metadata: EXIF and XMP kept',
     'icc: the ICC profile kept, not converted to sRGB',
-    'effort 9',
+    'effort 9, default 6',
     'fast: one encode at the seed quality, no search',
     'fit cover, default inside',
     'jpeg:progressive false, default true',
@@ -111,7 +116,7 @@ test('the booleans of the output come first, then what was kept, then every othe
 });
 
 test('the format, the quality and the box are said elsewhere, and get no chip', () => {
-  expect(chipsOf(searched({ format: 'jpeg', quality: 80, width: 48, height: 32 }), codecs)).toEqual([
+  expect(chipsOf(searched({ format: 'jpeg', quality: 80, width: 48, height: 32 }), codecs, DEFAULTS)).toEqual([
     { word: 'reached', meaning: 'reached: the target of 72 at a score of 72.5' },
   ]);
 });
@@ -122,14 +127,22 @@ test('a default chosen by hand is sent, and is no chip', () => {
     fit: 'inside',
     codecOpts: new Map([['jpeg:progressive', 'true']]),
   };
-  expect(words(chipsOf(searched(asked), codecs))).toEqual(['reached']);
+  expect(words(chipsOf(searched(asked), codecs, DEFAULTS))).toEqual(['reached']);
 });
 
-test('an option the page knows the default of says it, and one it does not says the value alone', () => {
-  const chips = chipsOf(searched({ maxPixels: 1000, background: 'white', enlarge: true }), codecs);
+test('an option says its default as `options()` lists it, and one with none says the value alone', () => {
+  const chips = chipsOf(
+    searched({ maxPixels: 1000, background: 'white', scale: 0.5, enlarge: true }),
+    codecs,
+    DEFAULTS,
+  );
   expect(chips.slice(1)).toEqual([
     { word: 'maxPixels', meaning: 'maxPixels 1000, default 24000000' },
-    { word: 'background', meaning: 'background white' },
+    { word: 'background', meaning: 'background white, default auto' },
+    { word: 'scale', meaning: 'scale 0.5' },
     { word: 'enlarge', meaning: 'enlarge: scaled up to the box' },
   ]);
+  // a switch set back to its default by hand is no chip, and before the worker has loaded no default is known
+  expect(words(chipsOf(searched({ enlarge: false }), codecs, DEFAULTS))).toEqual(['reached']);
+  expect(chipsOf(searched({ effort: 6 }), codecs, {}).at(-1)).toEqual({ word: 'effort', meaning: 'effort 6' });
 });

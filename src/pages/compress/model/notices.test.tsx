@@ -9,6 +9,7 @@ import { Toaster, useToastManager } from '@/shared/ui/toast';
 import { SearchProvider, useSearchRef } from './context';
 import type { EncoderCommand, EncoderEvent } from './encoder';
 import { searchMachine } from './machine';
+import { DEFAULTS } from './machine.harness';
 import { useNotices } from './notices';
 
 const output: Output = {
@@ -32,7 +33,7 @@ const decoded: EncoderEvent = {
   drawnWidth: null,
 };
 const done: EncoderEvent = { type: 'done', result: { output, file: new File([], 'out.jpg'), seconds: 1 } };
-const trial: EncoderEvent = { type: 'trial', trial: { n: 1, max: 6, quality: 62, score: 71.4 } };
+const trial: EncoderEvent = { type: 'trial', trial: { n: 1, max: 6, quality: 62, score: 71.4, size: 48_213 } };
 
 // Past the quiet 500 ms, and short of them.
 const SHOWN_MS = 650;
@@ -77,7 +78,7 @@ async function renderNotices() {
   return {
     screen,
     tell: (event: EncoderEvent) => answer.to?.(event),
-    ready: () => answer.to?.({ type: 'ready', version: '0.0.0', codecs: [] }),
+    ready: () => answer.to?.({ type: 'ready', version: '0.0.0', codecs: [], defaults: DEFAULTS }),
     // a click of the element itself, not of the pointer: a toast sliding in from past the top edge
     // crosses the button, and a pointer waits for it to pass, which the test's waits are not timed for
     pick: () => {
@@ -113,7 +114,7 @@ test('a search is one toast, shown after 500 ms with the newest trial, and done'
   await expect.element(screen.getByText('Encoding pattern-rgb.jpg.')).toBeVisible();
 
   tell(trial);
-  await expect.element(screen.getByText('Trial 1 of at most 6: quality 62 scores 71.4.')).toBeVisible();
+  await expect.element(screen.getByText('Trial 1 of at most 6: quality 62 scores 71.4 at 48.2 KB.')).toBeVisible();
 
   tell(done);
   await expect.element(screen.getByText('Done in 1.0 s.')).toBeVisible();

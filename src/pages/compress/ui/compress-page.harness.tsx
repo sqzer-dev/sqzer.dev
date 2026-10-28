@@ -9,7 +9,7 @@ import { TooltipProvider } from '@/shared/ui/tooltip';
 
 import { SearchProvider } from '../model/context';
 import type { EncoderCommand, EncoderEvent } from '../model/encoder';
-import { searchMachine } from '../model/machine';
+import { DEFAULTS, stubbed } from '../model/machine.harness';
 import { CompressPage } from './compress-page';
 
 const fixture = new URL('../../../../tests/fixtures/pattern-rgb.jpg', import.meta.url);
@@ -34,8 +34,8 @@ const output: Output = {
   score: 72.5,
   reached: true,
   trials: [
-    { quality: 55, score: 68.2 },
-    { quality: 60, score: 72.5 },
+    { quality: 55, score: 68.2, size: 31_200 },
+    { quality: 60, score: 72.5, size: 38_400 },
   ],
 };
 
@@ -73,7 +73,7 @@ export const wait = (ms: number) =>
 /** A worker that only says what it has: for the controls on their own. */
 export const readyEncoder = (codecs: Codec[]) =>
   fromCallback<EncoderCommand>(({ sendBack }) => {
-    sendBack({ type: 'ready', version: '0.0.0', codecs });
+    sendBack({ type: 'ready', version: '0.0.0', codecs, defaults: DEFAULTS });
   });
 
 // The failure of a read the stub worker gets wrong: the package's, naming the build that has the decoder.
@@ -100,7 +100,7 @@ export async function renderPage(fails: Fails = null) {
       sendBack({ type: 'failed', message: 'the worker did not start', stage: 'start', broken: true });
       return;
     }
-    sendBack({ type: 'ready', version: '0.0.0', codecs: CODECS });
+    sendBack({ type: 'ready', version: '0.0.0', codecs: CODECS, defaults: DEFAULTS });
     receive((command) => {
       asked.push(command);
       if (command.type === 'read' && fails === 'read') {
@@ -122,7 +122,7 @@ export async function renderPage(fails: Fails = null) {
   const screen = await render(
     <TooltipProvider>
       <Toaster>
-        <SearchProvider logic={searchMachine.provide({ actors: { encoder } })}>
+        <SearchProvider logic={stubbed(encoder)}>
           <CompressPage />
         </SearchProvider>
       </Toaster>

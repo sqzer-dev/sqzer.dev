@@ -3,8 +3,8 @@ import type { CSSProperties } from 'react';
 
 import { Slider } from '@/shared/ui/slider';
 
-import { DEFAULTS } from '../lib/defaults';
-import { BANDS, describe, PRESETS, share, TARGET, words } from '../lib/score';
+import { defaultTarget } from '../lib/defaults';
+import { BANDS, describe, PRESETS, share, TARGET, WEB, words } from '../lib/score';
 import { useSearch } from '../model/context';
 import { EditableValue } from './editable-value';
 import type { FieldOf } from './form';
@@ -19,6 +19,9 @@ type TargetSliderProps = {
 
 /** What the newest result says the package did without a target: the score it searched for, or lossless. */
 type Reported = number | 'lossless' | null;
+
+/** The score the package searches for when none is asked, as `options()` says it, or null until a worker has loaded. */
+const useFallback = () => useSearch((snapshot) => defaultTarget(snapshot.context.defaults));
 
 /**
  * The target the newest result reports, which is the package's default for that image, or that it
@@ -35,24 +38,23 @@ function useReported(): Reported {
   });
 }
 
-/** The words under the slider: what the chosen score looks like, or what the default is. */
-function wordsFor(chosen: number | null, reported: Reported) {
-  if (chosen === null) {
-    if (reported === 'lossless') return 'default: lossless for this image';
-    return `default: ${words(reported ?? DEFAULTS.target)}`;
-  }
-  return words(chosen);
+/** The words under the slider: what the chosen score looks like, or what the default is, once it is known. */
+function wordsFor(chosen: number | null, reported: Reported, fallback: number | null) {
+  if (chosen !== null) return words(chosen);
+  if (reported === 'lossless') return 'default: lossless for this image';
+  const score = reported ?? fallback;
+  return score === null ? 'default' : `default: ${words(score)}`;
 }
 
-/** The score the slider stands at: what was chosen, else what the result reports, else the package's documented default. */
-const standing = (chosen: number | null, reported: Reported) =>
-  chosen ?? (typeof reported === 'number' ? reported : DEFAULTS.target);
+/** The score the slider stands at: what was chosen, else what the result reports, else the package's default, else the `web` mark. */
+const standing = (chosen: number | null, reported: Reported, fallback: number | null) =>
+  chosen ?? (typeof reported === 'number' ? reported : (fallback ?? WEB));
 
 /** The target's number, at the title row, typed where it is shown. */
 export function TargetValue({ field, onMove }: Pick<TargetSliderProps, 'field' | 'onMove'>) {
   const chosen = field.state.value;
   const reported = useReported();
-  const shown = standing(chosen, reported);
+  const shown = standing(chosen, reported, useFallback());
   return (
     <EditableValue
       text={String(shown)}
@@ -154,14 +156,15 @@ function Forget({ onPress }: { onPress: () => void }) {
  * The target score (ADR-0001 D3): a slider from 30 to 100, with the words SSIMULACRA2 gives the
  * score next to it and the package's presets marked on the track. Until it is moved, it stands at
  * the target the newest result reports, which is the package's default for that image, or at the
- * package's documented default while there is none, and says so. Once moved, a button next to the
+ * package's default while there is none, and says so. Once moved, a button next to the
  * words takes it back to the default.
  */
 export function TargetSlider({ field, labelledBy, onMove }: TargetSliderProps) {
   const chosen = field.state.value;
   const reported = useReported();
-  const shown = standing(chosen, reported);
-  const said = wordsFor(chosen, reported);
+  const fallback = useFallback();
+  const shown = standing(chosen, reported, fallback);
+  const said = wordsFor(chosen, reported, fallback);
   const move = (score: number) => {
     onMove();
     field.handleChange(score);

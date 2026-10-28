@@ -1,15 +1,20 @@
 import { expect, test } from 'vitest';
 
-import { decoded, done, encoding, picked, start } from './machine.harness';
+import { decoded, done, encoding, DEFAULTS, picked, start } from './machine.harness';
 
-test('the worker loads before any image, and the controls get its codecs', () => {
+test('the worker loads before any image, and the controls get its codecs and its defaults', () => {
   const { actor, tell, workers, state } = start();
 
   expect(workers).toHaveLength(1);
-  tell({ type: 'ready', version: '0.3.0', codecs: [] });
+  expect(actor.getSnapshot().context.defaults).toEqual({});
+  tell({ type: 'ready', version: '0.4.0', codecs: [], defaults: DEFAULTS });
   actor.send({ type: 'options', options: { target: 50 } });
 
-  expect(actor.getSnapshot().context.version).toBe('0.3.0');
+  const { version, defaults } = actor.getSnapshot().context;
+  expect(version).toBe('0.4.0');
+  // spelled as the package spells them, and a key with no default is not there
+  expect(defaults).toMatchObject({ target: '70', effort: '6', fit: 'inside', maxPixels: '24000000' });
+  expect(defaults).not.toHaveProperty('width');
   expect(state()).toEqual({ open: 'empty' });
 });
 
@@ -42,7 +47,7 @@ test('the controls moving during a search end the worker once the patience runs 
 test('an encode that finishes within the patience keeps its worker, which encodes again', () => {
   const search = encoding();
   search.actor.send({ type: 'options', options: { target: 80 } });
-  search.tell({ type: 'trial', trial: { n: 1, max: 6, quality: 60, score: 70 } });
+  search.tell({ type: 'trial', trial: { n: 1, max: 6, quality: 60, score: 70, size: 4800 } });
   search.tell(done);
   search.clock.increment(1000);
 
