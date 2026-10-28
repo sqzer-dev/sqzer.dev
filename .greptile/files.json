@@ -54,6 +54,11 @@
       "scope": ["src/**", "vite.config.ts", "pnpm-workspace.yaml"]
     },
     {
+      "path": "docs/adr/0009-sample-images.md",
+      "description": "The sample images of the empty page: two photographs from Wikimedia Commons under CC BY 4.0 credited in `public/samples/CREDITS.txt`, which the build appends to `licenses.txt`, and a Julia set drawn for the page; served from `public/samples/` with small AVIF copies shown; floating around the middle of the drop target, which is a grid so none covers the middle; pressed, a sample is fetched and picked as a file",
+      "scope": ["src/pages/compress/**", "public/samples/**", "vite.config.ts", "tests/**"]
+    },
+    {
       "path": "src/app/style.css",
       "description": "The tokens every component is styled on: Radix Colors mapped onto shadcn's names, the Geist fonts, the `solid` variant and the `glass` utility with its fallbacks",
       "scope": ["src/**"]

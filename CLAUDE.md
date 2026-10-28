@@ -14,16 +14,17 @@ The page moves on its own cadence, apart from `sqzer`: the look, the controls, q
 
 ```
 index.html                  the entry Vite builds. The Content-Security-Policy is added at build
-public/                     the icon, copied to the root of the build as it is
+public/                     the icon, and in `samples/` the images to try with their credits (ADR-0009),
+                            copied to the root of the build as they are
 vite.config.ts              the build, and the one place the policy is written
 components.json             what `shadcn add` reads: the Base UI base, the Mira style, where components go
 src/app/                    the root and `style.css`: the tokens, the fonts, the `glass` utility
-src/pages/compress/ui/      the page and its parts: the empty state, the workspace with its comparison,
+src/pages/compress/ui/      the page and its parts: the empty state with its samples, the workspace with its comparison,
                             panels, bottom expander and view bar, the controls as a form with its
                             fields, the target slider and the Advanced expander, the result as its
                             headline with the chips, the chart and the trials, the details, the failure
                             as an alert, the privacy note
-src/pages/compress/model/   the search machine, the worker actor, the picked image, the result,
+src/pages/compress/model/   the search machine, the worker actor, the picked image, the samples, the result,
                             what the controls say, the notices the toaster shows, the run the chart draws
 src/pages/compress/lib/     drawing on the page, codec lookups and which controls apply, the score's
                             words, the result's words and its chips, the failure's sentence, the controls
@@ -61,7 +62,7 @@ Vitest tests sit next to what they test, as `*.test.ts` and `*.test.tsx`.
 - Never write a decoder, encoder, resampler or metric here. If the package lacks something, that is a change to `sqzer`.
 - Code sits in `src/pages/compress/` until a second place uses it, then it moves to the layer Feature-Sliced Design names for it (ADR-0004 D4). Imports go to lower layers, through a public `index.ts`.
 - The checks are strict on purpose. A lint rule is turned off only in `.oxlintrc.json`, with its reason next to it, and a `tsconfig` flag is not loosened to make a change pass.
-- Licence: MIT or Apache-2.0, and a new dependency states its licence in the pull request. The build writes `licenses.txt`; what reaches the page as a stylesheet or a font, and `sqzer` with the notices of the crates in its module, is listed by hand in `UNLISTED` in `vite.config.ts`. When the page switches to the AGPL build of `sqzer`, the repository becomes AGPL-3.0 (ADR-0011 D6). Do not import AGPL code before that switch is made deliberately.
+- Licence: MIT or Apache-2.0, and a new dependency states its licence in the pull request. The build writes `licenses.txt`; what reaches the page as a stylesheet or a font, and `sqzer` with the notices of the crates in its module, is listed by hand in `UNLISTED` in `vite.config.ts`, and the build appends the credits of the sample images from `public/samples/CREDITS.txt`. A sample is public domain, CC0 or CC BY, or drawn for the page; never share-alike (ADR-0009). When the page switches to the AGPL build of `sqzer`, the repository becomes AGPL-3.0 (ADR-0011 D6). Do not import AGPL code before that switch is made deliberately.
 
 ## Commands
 
