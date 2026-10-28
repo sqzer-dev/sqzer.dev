@@ -1,5 +1,5 @@
 import { cn } from 'cn';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { bytes } from '../lib/result';
 import { fetchSample, sampleUrl, SAMPLES, type Sample } from '../model/samples';
@@ -20,19 +20,23 @@ const PLACES: Record<Sample['key'], string> = {
 type SampleTileProps = {
   sample: Sample;
   onPick: (file: File) => void;
+  /** Starts the download of this sample, ending any other still under way: the newest press wins. */
+  start: () => AbortSignal;
 };
 
 /** One sample: its small copy, its name and its size. Pressed, the file is fetched and picked. */
-function SampleTile({ sample, onPick }: SampleTileProps) {
+function SampleTile({ sample, onPick, start }: SampleTileProps) {
   const [state, setState] = useState<'idle' | 'loading' | 'failed'>('idle');
   const { key, label, size, shown } = sample;
   const open = async () => {
     setState('loading');
+    const signal = start();
     try {
-      onPick(await fetchSample(sample));
+      onPick(await fetchSample(sample, signal));
       setState('idle');
     } catch {
-      setState('failed');
+      // a download ended by a newer press, or by the page moving on, failed nothing
+      setState(signal.aborted ? 'idle' : 'failed');
     }
   };
   return (
@@ -63,12 +67,33 @@ function SampleTile({ sample, onPick }: SampleTileProps) {
       <span className="text-xs text-muted-foreground">
         {label} <span className="font-mono">{bytes(size)}</span>
       </span>
-      {state === 'failed' && <span className="text-xs text-muted-foreground">It did not load. Try again.</span>}
+      {state === 'failed' && (
+        <span role="alert" className="text-xs text-muted-foreground">
+          It did not load. Try again.
+        </span>
+      )}
     </button>
   );
 }
 
-/** The images to try (ADR-0009), floating around the middle of the empty page, each opened as a picked file is. */
+/**
+ * The images to try (ADR-0009), floating around the middle of the empty page, each opened as a
+ * picked file is. One download at a time: a press ends the one before, and the page moving on to an
+ * image, picked, dropped or pasted, ends any still under way, so a late sample never replaces it.
+ */
 export function Samples({ onPick }: Pick<SampleTileProps, 'onPick'>) {
-  return SAMPLES.map((sample) => <SampleTile key={sample.key} sample={sample} onPick={onPick} />);
+  const pendingRef = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      pendingRef.current?.abort();
+    },
+    [],
+  );
+  const start = () => {
+    pendingRef.current?.abort();
+    const pending = new AbortController();
+    pendingRef.current = pending;
+    return pending.signal;
+  };
+  return SAMPLES.map((sample) => <SampleTile key={sample.key} sample={sample} onPick={onPick} start={start} />);
 }

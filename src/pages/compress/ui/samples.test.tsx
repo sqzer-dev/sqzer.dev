@@ -1,5 +1,6 @@
 // The images to try on the empty page (ADR-0009): what each tile says, that its small copy is there,
-// and that pressing it hands the page the file, as picking it would.
+// that pressing it hands the page the file, as picking it would, and that a late download never
+// replaces a newer choice.
 import { expect, test, vi } from 'vitest';
 import { render } from 'vitest-browser-react';
 
@@ -24,17 +25,68 @@ test('each sample is a button with its name and size, over its small copy at the
   expect(sizes).toEqual(SAMPLES.map(({ shown: { width, height } }) => ({ width, height })));
 });
 
-test('pressed, a sample is fetched and picked as a file of its name, type and stated size', async () => {
+test.each(SAMPLES)(
+  'pressed, $label is fetched and picked as a file of its name, type and stated size',
+  async (sample) => {
+    const onPick = vi.fn<(file: File) => void>();
+    const screen = await render(<Samples onPick={onPick} />);
+
+    await screen.getByRole('button', { name: new RegExp(`^${sample.label}`, 'u') }).click();
+    await expect.poll(() => onPick.mock.calls.length).toBe(1);
+    const [file] = onPick.mock.calls[0] ?? [];
+    // the size the tile states is the file's: a sample replaced without its size fails here
+    expect([file?.name, file?.type, file?.size]).toEqual([sample.file, sample.type, sample.size]);
+  },
+);
+
+/** The next download hangs until it is aborted; the signal it was given, to look at. */
+function hangNextDownload() {
+  const signals: AbortSignal[] = [];
+  const fetch = vi.spyOn(window, 'fetch').mockImplementationOnce(
+    (_, init) =>
+      new Promise((_resolve, reject) => {
+        const signal = init?.signal;
+        if (!signal) return;
+        signals.push(signal);
+        signal.addEventListener('abort', () => {
+          reject(new DOMException('aborted', 'AbortError'));
+        });
+      }),
+  );
+  return { signals, fetch };
+}
+
+test('a sample pressed while another downloads ends that download, and only the newer is picked', async () => {
   const onPick = vi.fn<(file: File) => void>();
+  const { signals, fetch } = hangNextDownload();
   const screen = await render(<Samples onPick={onPick} />);
 
-  for (const { key } of SAMPLES) screen.container.querySelector<HTMLButtonElement>(`[data-sample=${key}]`)?.click();
-  await expect.poll(() => onPick.mock.calls.length).toBe(SAMPLES.length);
+  await screen.getByRole('button', { name: /^Rocket fuel/u }).click();
+  await expect.poll(() => signals.length).toBe(1);
+  await screen.getByRole('button', { name: /^Aurora/u }).click();
 
-  // by name, as they land in whatever order: the size each tile states is its file's, so a sample
-  // replaced without its size fails here
-  const picked = Object.fromEntries(onPick.mock.calls.map(([file]) => [file.name, [file.type, file.size]]));
-  expect(picked).toEqual(Object.fromEntries(SAMPLES.map(({ file, type, size }) => [file, [type, size]])));
+  await expect.poll(() => onPick.mock.calls.length).toBe(1);
+  expect(onPick.mock.calls[0]?.[0].name).toBe('aurora.jpg');
+  expect(signals[0]?.aborted).toBe(true);
+  // the rocket's tile is ready again, and says nothing failed
+  await expect.element(screen.getByRole('button', { name: /^Rocket fuel/u })).toBeEnabled();
+  await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
+  fetch.mockRestore();
+});
+
+test('a download still under way when the page moves on to an image is ended, and picks nothing', async () => {
+  const onPick = vi.fn<(file: File) => void>();
+  const { signals, fetch } = hangNextDownload();
+  const screen = await render(<Samples onPick={onPick} />);
+
+  await screen.getByRole('button', { name: /^Rocket fuel/u }).click();
+  await expect.poll(() => signals.length).toBe(1);
+  // another image picked, dropped or pasted: the empty page, and the samples with it, go
+  await screen.unmount();
+
+  expect(signals[0]?.aborted).toBe(true);
+  expect(onPick).not.toHaveBeenCalled();
+  fetch.mockRestore();
 });
 
 test('a sample that does not load says so, picks nothing, and can be pressed again', async () => {
@@ -44,11 +96,12 @@ test('a sample that does not load says so, picks nothing, and can be pressed aga
   const aurora = screen.getByRole('button', { name: /^Aurora/u });
 
   await aurora.click();
-  await expect.element(screen.getByText('It did not load. Try again.')).toBeVisible();
+  // announced, as every failure is (ADR-0001 D6)
+  await expect.element(screen.getByRole('alert')).toHaveTextContent('It did not load. Try again.');
   expect(onPick).not.toHaveBeenCalled();
 
   await aurora.click();
   await expect.poll(() => onPick.mock.calls.length).toBe(1);
-  await expect.element(screen.getByText('It did not load. Try again.')).not.toBeInTheDocument();
+  await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
   fetch.mockRestore();
 });

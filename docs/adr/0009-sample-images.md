@@ -51,7 +51,9 @@ Each tile says its name and its size, `Aurora 562.3 KB`, under the picture, and 
 
 ### D3. Pressed, a sample is a picked file
 
-Pressing a sample fetches it and hands it to the page as a picked file, and the workspace opens on it with the comparison, which is the preview. The tile is busy while the file comes. If it does not come, the tile says so and can be pressed again; the page has nothing else to undo.
+Pressing a sample fetches it and hands it to the page as a picked file, and the workspace opens on it with the comparison, which is the preview. The tile is busy while the file comes. If it does not come, the tile says so as an alert, as every failure is (ADR-0001 D6), and can be pressed again; the page has nothing else to undo.
+
+One download runs at a time, and the newest choice wins: a press ends the download before it, and the page moving on to an image, picked, dropped or pasted, ends any still under way, so a late sample never replaces the image on the page.
 
 ---
 

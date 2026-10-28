@@ -46,9 +46,9 @@ export const SAMPLES: Sample[] = [
 /** Where a file of the samples is served. */
 export const sampleUrl = (file: string) => `${import.meta.env.BASE_URL}samples/${file}`;
 
-/** The sample as a file, as if it had been picked. */
-export async function fetchSample({ file, type }: Sample): Promise<File> {
-  const response = await fetch(sampleUrl(file));
+/** The sample as a file, as if it had been picked. Aborted by `signal`, it rejects and picks nothing. */
+export async function fetchSample({ file, type }: Sample, signal: AbortSignal): Promise<File> {
+  const response = await fetch(sampleUrl(file), { signal });
   if (!response.ok) throw new Error(`${file}: ${response.status} ${response.statusText}`);
   return new File([await response.blob()], file, { type });
 }
