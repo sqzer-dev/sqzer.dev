@@ -11,6 +11,7 @@ One file per decision, numbered, never edited after acceptance. A superseded rec
 0006-blue-for-a-drop.md   a second hue: `blue 9` on the border of a drop target while a file is dragged   Accepted
 0007-controls-as-a-form.md   the controls are a TanStack Form; `optionsOf` is the one place it becomes a call; the untouched target; the toaster at the top centre; the track in four colours; the controls after the review   Accepted
 0008-sqzer-0.4.md       the page on `sqzer` 0.4.0: the defaults from `options()`, the size of each trial, a result at no quality, the crates' notices   Accepted
+0009-sample-images.md   three images to try, floating around the middle of the empty page: two night-sky photographs under CC BY 4.0 and a Julia set of our own, each opened as a picked file   Accepted
 ```
 
 The decisions this page is built on were taken in [`sqzer-dev/sqzer`](https://github.com/sqzer-dev/sqzer) and stay there: [`docs/adr/0011-browser-build.md`](https://github.com/sqzer-dev/sqzer/blob/main/docs/adr/0011-browser-build.md), D3 for the package's API and D6 for this page: its own repository, the published package by exact version, nothing sent anywhere, the licence line it sits on. D6 also made the page plain HTML with the package from jsDelivr; ADR-0002 replaced both.
