@@ -18,11 +18,13 @@ function drawing(screen: Awaited<ReturnType<typeof renderPage>>['screen']) {
     points: svg.querySelectorAll('circle').length,
     score: svg.querySelector(':scope > [data-series=score]')?.getAttribute('d'),
     quality: svg.querySelector(':scope > [data-series=quality]')?.getAttribute('d'),
+    size: svg.querySelector(':scope > [data-series=size]')?.getAttribute('d'),
     runs: [...svg.querySelectorAll('[data-run]')].map((run) => ({
       score: run.querySelector('[data-series=score]')?.getAttribute('d'),
       quality: run.querySelector('[data-series=quality]')?.getAttribute('d'),
     })),
     label: svg.querySelector('text')?.textContent,
+    labels: [...svg.querySelectorAll('text')].map((text) => text.textContent),
   };
 }
 
@@ -44,6 +46,9 @@ test('the trials are a list with their quality, score and size, and a chart of t
   expect(drawn.score).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
   expect(drawn.quality).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
   expect(drawn.runs).toEqual([]);
+  // the sizes are a third line, the last one written over its end
+  expect(drawn.size).toMatch(/^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+$/u);
+  expect(drawn.labels).toEqual(['target 72', '38.4 KB']);
 });
 
 test('the search before stays behind the next as a subtle line', async () => {
