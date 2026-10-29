@@ -179,7 +179,7 @@ importers:
         version: 1.33.5(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@xstate/react':
         specifier: 6.1.0
-        version: 6.1.0(@types/react@19.3.0)(react@19.3.1)(xstate@5.33.2)
+        version: 6.1.0(@types/react@19.3.0)(react@19.3.1)(xstate@5.33.3)
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -202,8 +202,8 @@ importers:
         specifier: 0.4.0
         version: 0.4.0
       xstate:
-        specifier: 5.33.2
-        version: 5.33.2
+        specifier: 5.33.3
+        version: 5.33.3
     devDependencies:
       '@playwright/test':
         specifier: 1.64.1
@@ -3222,8 +3222,8 @@ packages:
     resolution: {integrity: sha512-c16PKLIRxBYpR3jSWsdS7SFp0COm5SOQdiFjY818dYFHJbMGuLBszpF07LBWmOS1uzrHa9VGdynsEgoeKy0oOQ==}
     engines: {node: '>=20'}
 
-  xstate@5.33.2:
-    resolution: {integrity: sha512-8tC7yXgeCvpT8gKEeEje6ikJJG1wpnoLiXe+HfECW8m10ubMd3QxKOwWA8KxPJVBcLwfdRoMKYxIBGYKmo37/A==}
+  xstate@5.33.3:
+    resolution: {integrity: sha512-AnDRjS/GyKHmbA1PyhVCYBqYsA7EGe3KGgeD0ht3NFsXzoz7leX/HQDFX9QlHFJ/ltLHPsgChJYwPzRvB/0b4g==}
 
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
@@ -4212,13 +4212,13 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@xstate/react@6.1.0(@types/react@19.3.0)(react@19.3.1)(xstate@5.33.2)':
+  '@xstate/react@6.1.0(@types/react@19.3.0)(react@19.3.1)(xstate@5.33.3)':
     dependencies:
       react: 19.3.1
       use-isomorphic-layout-effect: 1.2.1(@types/react@19.3.0)(react@19.3.1)
       use-sync-external-store: 1.7.0(react@19.3.1)
     optionalDependencies:
-      xstate: 5.33.2
+      xstate: 5.33.3
     transitivePeerDependencies:
       - '@types/react'
 
@@ -5865,7 +5865,7 @@ snapshots:
       is-wsl: 3.1.1
       powershell-utils: 0.2.1
 
-  xstate@5.33.2: {}
+  xstate@5.33.3: {}
 
   y18n@5.0.8: {}
 
