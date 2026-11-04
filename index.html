@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <!-- Safari on iOS paints its bars in the page's own `gray 1`, so the image runs edge to edge with no seam -->
+    <!-- Chrome on Android paints its bar in the page's own `gray 1`. Safari 26 ignores the tag: see the backdrop below -->
     <meta name="theme-color" content="#fcfcfc" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)" />
     <title>sqzer</title>
@@ -17,6 +17,10 @@
     <script type="module" src="/src/app/main.tsx"></script>
   </head>
   <body>
+    <!-- Safari 26 paints its status bar and tab bar in the background colour of a fixed element on the window's
+         edge, and leaves them translucent over the page otherwise: the page's `gray 1`, behind everything, so the
+         bars are the page's colour and the image runs edge to edge with no seam -->
+    <div class="pointer-events-none fixed inset-0 -z-10 bg-background" aria-hidden="true"></div>
     <div id="root"></div>
   </body>
 </html>
