@@ -98,6 +98,10 @@
   --glass: var(--white-a11);
   --glass-edge: var(--gray-a6);
   --overlay: var(--black-a10);
+
+  /* The browser's own bar on the bottom edge, which the page runs under: nothing on a desktop, the home
+     indicator and Safari's tab bar on an iPhone. One name for it, so a test can set it. */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (prefers-color-scheme: dark) {

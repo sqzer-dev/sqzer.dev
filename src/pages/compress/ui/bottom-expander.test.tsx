@@ -3,7 +3,7 @@
 import { expect, test } from 'vitest';
 import { page } from 'vitest/browser';
 
-import { renderPage } from './compress-page.harness';
+import { renderPage, SETTLED_MS, wait } from './compress-page.harness';
 
 /** The bottom edge of the view bar's controls and of the download, against the screen's. */
 function edges(screen: Awaited<ReturnType<typeof renderPage>>['screen']) {
@@ -33,4 +33,38 @@ test('at rest the size, the download and every view control are on the screen, o
   expect(bar?.height).toBeGreaterThan(40);
   for (const bottom of controls) expect(bottom).toBeLessThan(780);
   expect(download).toBeLessThan(780);
+});
+
+/** Where the sheet's top edge is on the screen. */
+const top = () => document.querySelector('[data-slot=drawer-popup]')?.getBoundingClientRect().top ?? Number.NaN;
+
+test("over a browser's bar the fold rests above it, and nothing below the fold shows through it", async () => {
+  await page.viewport(390, 780);
+  const { screen, drop } = await renderPage();
+  await drop();
+  // at rest, and still
+  await expect.poll(() => edges(screen).download).toBeLessThan(780);
+  await wait(SETTLED_MS);
+  const rest = top();
+
+  // the bar is `--safe-area-bottom`, `env(safe-area-inset-bottom)` on a phone: the sheet reads it from
+  // the stylesheet, so the test says it there, and tells the sheet the window changed as a phone would
+  const root = document.documentElement;
+  try {
+    root.style.setProperty('--safe-area-bottom', '34px');
+    window.dispatchEvent(new Event('resize'));
+    // the sheet rises by the bar
+    await expect.poll(top).toBeLessThan(rest - 30);
+    await wait(SETTLED_MS);
+    const { controls, download } = edges(screen);
+    for (const bottom of controls) expect(bottom).toBeLessThan(780 - 34);
+    expect(download).toBeLessThan(780 - 34);
+    // the first thing under the fold starts past the screen's edge: the bar shows the sheet alone
+    const sheet = screen.getByText('New image').element().closest('[data-slot=drawer-content]');
+    const below = sheet?.querySelector(':scope > div')?.children[1];
+    if (!below) throw new Error('nothing below the fold');
+    expect(below.getBoundingClientRect().top).toBeGreaterThanOrEqual(780);
+  } finally {
+    root.style.removeProperty('--safe-area-bottom');
+  }
 });
