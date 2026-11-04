@@ -17,10 +17,17 @@
     <script type="module" src="/src/app/main.tsx"></script>
   </head>
   <body>
-    <!-- Safari 26 paints its status bar and tab bar in the background colour of a fixed element on the window's
-         edge, and leaves them translucent over the page otherwise: the page's `gray 1`, behind everything, so the
-         bars are the page's colour and the image runs edge to edge with no seam -->
+    <!-- Safari 26 paints its status bar and tab bar in the background colour of the first fixed element it hits
+         in the middle of the window's edge, and leaves them translucent over the page otherwise. The page's
+         `gray 1` behind everything is what it finds where nothing else is fixed, and the strip on the top edge
+         is what it finds there whatever the page shows: the width of the window, 16 px tall, all of it padding
+         with the background clipped to the content, so it paints nothing, and over everything, since Safari
+         takes the first element at the point. The bottom expander has its own strip, in the sheet's colour. -->
     <div class="pointer-events-none fixed inset-0 -z-10 bg-background" aria-hidden="true"></div>
+    <div
+      class="pointer-events-none fixed inset-x-0 top-0 z-[60] box-content h-0 bg-background bg-clip-content pb-4"
+      aria-hidden="true"
+    ></div>
     <div id="root"></div>
   </body>
 </html>
