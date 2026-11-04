@@ -1,0 +1,14 @@
+## The sample images on the empty page (ADR-0009)
+
+aurora.jpg, aurora.shown.avif
+  "Zorza polarna, Lucim-01" by Aneta p, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+  https://commons.wikimedia.org/wiki/File:Zorza_polarna,_Lucim-01.jpg
+  Resized to 2560 x 1707 and re-encoded by sqzer.
+
+zhuque-2e.jpg, zhuque-2e.shown.avif
+  "Zhuque-2E propellant dump over Wisconsin" by Brainandforce, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+  https://commons.wikimedia.org/wiki/File:Zhuque-2E_propellant_dump_over_Wisconsin.jpg
+  Re-encoded by sqzer at its own size, without its metadata. The small copy is resized.
+
+julia.png, julia.shown.avif
+  A Julia set, c = -0.8 + 0.156i, drawn for this page. MIT OR Apache-2.0, as the page.

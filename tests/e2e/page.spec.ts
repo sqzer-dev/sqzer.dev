@@ -38,6 +38,16 @@ test('a JPEG goes through the page with the defaults', async ({ page }) => {
   expect(size).toEqual([48, 32]);
 });
 
+test("a sample on the empty page goes through as a picked file does, from the page's own origin", async ({ page }) => {
+  await open(page);
+  // the Julia set: a graphic with transparency, which the package writes as lossless WebP
+  await page.getByRole('button', { name: /^Julia set/u }).click();
+
+  await expect(page.getByRole('link', { name: 'Download julia.webp' })).toBeVisible(SLOW);
+  await expect(page.getByRole('button', { name: /^lossless:/u })).toBeVisible();
+  await expect(page.getByText('Before: 1194 × 688')).toBeVisible();
+});
+
 test('the footer names the version of `sqzer` the worker loaded', async ({ page }) => {
   await open(page);
   await expect(page.getByRole('contentinfo')).toContainText(/sqzer on npm \d+\.\d+\.\d+,/u);
@@ -59,6 +69,10 @@ test('the footer links the licences of what the page carries, the package in the
   expect(text).toContain('SIL Open Font License');
   expect(text).toMatch(/^## @radix-ui\/colors - \d/mu);
   expect(text).toMatch(/^## sqzer - \d+\.\d+\.\d+ \(MIT OR Apache-2\.0\)$/mu);
+  // the crates in its module, and the credits the sample photographs ask for
+  expect(text).toContain('rav1e');
+  expect(text).toContain('"Zorza polarna, Lucim-01" by Aneta p, CC BY 4.0');
+  expect(text).toContain('"Zhuque-2E propellant dump over Wisconsin" by Brainandforce, CC BY 4.0');
 });
 
 test('the workspace is a chunk of its own, fetched once the empty state is up', async ({ page }) => {
