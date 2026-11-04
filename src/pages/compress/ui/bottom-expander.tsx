@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/ui/drawer';
 
@@ -18,9 +19,11 @@ const SHEET = 'mx-0 mb-0 rounded-b-none border-x-0! border-b-0!';
 // screen's bottom edge, and the sheet, being glass, gives it none, so it keeps the page's. This strip
 // lies over the sheet's bottom edge, the width of the screen and 16 px tall, all of it padding with
 // the background clipped to the content, so it paints nothing anywhere, and carries the sheet's
-// tint over the page as one colour for Safari to read. The bar then matches the sheet.
+// tint over the page as one colour for Safari to read, or the sheet's solid colour where the glass
+// is solid. The bar then matches the sheet. It is put on `<body>`, over the drawer's own portal: the
+// workspace is fixed, so a stacking context, and nothing inside it can be over the drawer.
 const EDGE =
-  'pointer-events-none fixed inset-x-0 bottom-0 z-[60] box-content h-0 bg-(--glass-flat) bg-clip-content pb-4';
+  'pointer-events-none fixed inset-x-0 bottom-0 z-[60] box-content h-0 bg-(--glass-flat) bg-clip-content pb-4 solid:bg-card forced-colors:bg-[Canvas]';
 // What is above the fold. Under it at rest are the padding and the bar: the gap to the rest grows
 // past `gap-6` by what the bar is over `gap-6` less that padding, so nothing below the fold peeks.
 const FOLD = 'flex flex-col gap-6 pb-[max(0px,calc(var(--safe-area-bottom)---spacing(4)))] *:shrink-0';
@@ -106,7 +109,7 @@ export function BottomExpander({ raise = false, fold, children }: BottomExpander
 
   return (
     <>
-      <div aria-hidden="true" data-slot="sheet-edge" className={EDGE} />
+      {createPortal(<div aria-hidden="true" data-slot="sheet-edge" className={EDGE} />, document.body)}
       <Drawer
         open
         modal={false}
