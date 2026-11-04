@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/ui/drawer';
 
@@ -14,6 +15,15 @@ const REST_GUESS = '8rem';
 // On the screen's edges, with no border or corner where they meet: the sheet is the bottom of the
 // screen. `glass` sets its border after these in the stylesheet, so the two are important.
 const SHEET = 'mx-0 mb-0 rounded-b-none border-x-0! border-b-0!';
+// Safari 26 paints its tab bar in the colour of the first fixed element it hits in the middle of the
+// screen's bottom edge, and the sheet, being glass, gives it none, so it keeps the page's. This strip
+// lies over the sheet's bottom edge, the width of the screen and 16 px tall, all of it padding with
+// the background clipped to the content, so it paints nothing anywhere, and carries the sheet's
+// tint over the page as one colour for Safari to read, or the sheet's solid colour where the glass
+// is solid. The bar then matches the sheet. It is put on `<body>`, over the drawer's own portal: the
+// workspace is fixed, so a stacking context, and nothing inside it can be over the drawer.
+const EDGE =
+  'pointer-events-none fixed inset-x-0 bottom-0 z-[60] box-content h-0 bg-(--glass-flat) bg-clip-content pb-4 solid:bg-card forced-colors:bg-[Canvas]';
 // What is above the fold. Under it at rest are the padding and the bar: the gap to the rest grows
 // past `gap-6` by what the bar is over `gap-6` less that padding, so nothing below the fold peeks.
 const FOLD = 'flex flex-col gap-6 pb-[max(0px,calc(var(--safe-area-bottom)---spacing(4)))] *:shrink-0';
@@ -55,6 +65,19 @@ function useRest() {
   return { rest, above };
 }
 
+/** Where the sheet is: at rest, or pulled to the top, which the turn of `raise` does as well. */
+function useSnap(raise: boolean) {
+  // up from the start for an alert that is there already, as when the first image fails at once
+  const [snap, setSnap] = useState<'rest' | 'top'>(raise ? 'top' : 'rest');
+  // the turn of `raise` is what pulls it up: not every render while it holds
+  const [raised, setRaised] = useState(raise);
+  if (raise !== raised) {
+    setRaised(raise);
+    if (raise) setSnap('top');
+  }
+  return [snap, setSnap] as const;
+}
+
 type BottomExpanderProps = {
   /** Pulled up as this turns true: for an alert that has to be seen (ADR-0001 D6). */
   raise?: boolean;
@@ -74,14 +97,7 @@ type BottomExpanderProps = {
  * stays below the screen's edge and for the bar.
  */
 export function BottomExpander({ raise = false, fold, children }: BottomExpanderProps) {
-  // up from the start for an alert that is there already, as when the first image fails at once
-  const [snap, setSnap] = useState<'rest' | 'top'>(raise ? 'top' : 'rest');
-  // the turn of `raise` is what pulls it up: not every render while it holds
-  const [raised, setRaised] = useState(raise);
-  if (raise !== raised) {
-    setRaised(raise);
-    if (raise) setSnap('top');
-  }
+  const [snap, setSnap] = useSnap(raise);
   // where the sheet rests: around what is above the fold, which changes with the result
   const { rest, above } = useRest();
   const scroller = useRef<HTMLDivElement>(null);
@@ -92,39 +108,42 @@ export function BottomExpander({ raise = false, fold, children }: BottomExpander
   };
 
   return (
-    <Drawer
-      open
-      modal={false}
-      disablePointerDismissal
-      showSwipeHandle
-      snapPoints={[rest, TOP]}
-      snapPoint={snap === 'rest' ? rest : TOP}
-      // a swipe down that would close it: Base UI asks for no snap point first, and takes a refusal
-      onSnapPointChange={(next, details) => {
-        if (next === null) details.cancel();
-        if (next === TOP) setSnap('top');
-        else toRest();
-      }}
-      // and Escape
-      onOpenChange={(open, details) => {
-        if (open) return;
-        details.cancel();
-        toRest();
-      }}
-    >
-      <DrawerContent className={SHEET}>
-        <DrawerTitle className="sr-only">Result and options</DrawerTitle>
-        {/* a column that scrolls squeezes what it holds: nothing here gives up its height */}
-        <div
-          ref={scroller}
-          className={`flex flex-col gap-6 p-4 pt-2 pb-[calc(15dvh+--spacing(4)+var(--safe-area-bottom))] *:shrink-0 ${snap === 'rest' ? 'overflow-hidden' : 'overflow-y-auto'}`}
-        >
-          <div ref={above} className={FOLD}>
-            {fold}
+    <>
+      {createPortal(<div aria-hidden="true" data-slot="sheet-edge" className={EDGE} />, document.body)}
+      <Drawer
+        open
+        modal={false}
+        disablePointerDismissal
+        showSwipeHandle
+        snapPoints={[rest, TOP]}
+        snapPoint={snap === 'rest' ? rest : TOP}
+        // a swipe down that would close it: Base UI asks for no snap point first, and takes a refusal
+        onSnapPointChange={(next, details) => {
+          if (next === null) details.cancel();
+          if (next === TOP) setSnap('top');
+          else toRest();
+        }}
+        // and Escape
+        onOpenChange={(open, details) => {
+          if (open) return;
+          details.cancel();
+          toRest();
+        }}
+      >
+        <DrawerContent className={SHEET}>
+          <DrawerTitle className="sr-only">Result and options</DrawerTitle>
+          {/* a column that scrolls squeezes what it holds: nothing here gives up its height */}
+          <div
+            ref={scroller}
+            className={`flex flex-col gap-6 p-4 pt-2 pb-[calc(15dvh+--spacing(4)+var(--safe-area-bottom))] *:shrink-0 ${snap === 'rest' ? 'overflow-hidden' : 'overflow-y-auto'}`}
+          >
+            <div ref={above} className={FOLD}>
+              {fold}
+            </div>
+            {children}
           </div>
-          {children}
-        </div>
-      </DrawerContent>
-    </Drawer>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }

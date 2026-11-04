@@ -1,7 +1,7 @@
 // The bottom expander at rest, on the page over its stub worker: what is above the fold stays on the
 // screen, at the height the sheet measures, as the result lands and as the screen narrows.
 import { expect, test } from 'vitest';
-import { page } from 'vitest/browser';
+import { commands, page } from 'vitest/browser';
 
 import { renderPage, SETTLED_MS, wait } from './compress-page.harness';
 
@@ -66,5 +66,67 @@ test("over a browser's bar the fold rests above it, and nothing below the fold s
     expect(below.getBoundingClientRect().top).toBeGreaterThanOrEqual(780);
   } finally {
     root.style.removeProperty('--safe-area-bottom');
+  }
+});
+
+/** The alpha of a colour as the browser writes it: `rgb()`, `rgba()` or `color()`. */
+function alphaOf(colour: string) {
+  const slash = /\/\s*([\d.]+)\s*\)$/u.exec(colour);
+  if (slash?.[1] !== undefined) return Number(slash[1]);
+  const comma = /^rgba\(.*,\s*([\d.]+)\)$/u.exec(colour);
+  return comma?.[1] === undefined ? 1 : Number(comma[1]);
+}
+
+/** The strip Safari reads the sheet's colour from, and the sheet. */
+function edgeAndSheet() {
+  const edge = document.querySelector('[data-slot=sheet-edge]');
+  const sheet = document.querySelector('[data-slot=drawer-popup]');
+  if (!edge || !sheet) throw new Error('the sheet has no edge');
+  return { edge, sheet };
+}
+
+test("the sheet's edge for Safari's bar: on the bottom edge, the width of the screen, over the sheet, in one opaque colour, painting nothing", async () => {
+  await page.viewport(390, 780);
+  const { drop } = await renderPage();
+  await drop();
+  const { edge, sheet } = edgeAndSheet();
+  const rect = edge.getBoundingClientRect();
+  const style = getComputedStyle(edge);
+  expect(rect.bottom).toBe(780);
+  expect(rect.width).toBe(390);
+  // Safari passes over a box of 10 px or less
+  expect(rect.height).toBeGreaterThan(10);
+  // nothing painted: the background stops at a content box with no height
+  expect(style.backgroundClip).toBe('content-box');
+  expect(style.height).toBe('0px');
+  // what Safari hits in the middle of the bottom edge is the strip, over the sheet. Its first hit test
+  // ignores `pointer-events`; the browser's does not, so the test lifts that for the question
+  expect(sheet.contains(edge)).toBe(false);
+  if (!(edge instanceof HTMLElement)) throw new Error('the edge is no element');
+  edge.style.pointerEvents = 'auto';
+  expect(document.elementFromPoint(195, 776)).toBe(edge);
+  edge.style.pointerEvents = '';
+  // the colour Safari reads: opaque, and not the page's own
+  expect(alphaOf(style.backgroundColor)).toBe(1);
+  expect(style.backgroundColor).not.toBe(getComputedStyle(document.body).backgroundColor);
+});
+
+test("the sheet's edge takes the sheet's own colour where the glass is solid, by choice or in forced colours", async () => {
+  await page.viewport(390, 780);
+  const { drop } = await renderPage();
+  await drop();
+  const { edge, sheet } = edgeAndSheet();
+  const same = () => getComputedStyle(edge).backgroundColor === getComputedStyle(sheet).backgroundColor;
+  expect(same()).toBe(false);
+  try {
+    document.documentElement.dataset['panels'] = 'solid';
+    await expect.poll(same).toBe(true);
+    expect(alphaOf(getComputedStyle(edge).backgroundColor)).toBe(1);
+    document.documentElement.dataset['panels'] = 'glass';
+    await commands.emulateMedia({ forcedColors: 'active' });
+    await expect.poll(same).toBe(true);
+  } finally {
+    document.documentElement.dataset['panels'] = 'glass';
+    await commands.emulateMedia({ forcedColors: null });
   }
 });
