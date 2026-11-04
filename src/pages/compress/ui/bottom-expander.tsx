@@ -16,16 +16,14 @@ const REST_GUESS = '8rem';
 const SHEET = 'mx-0 mb-0 rounded-b-none border-x-0! border-b-0!';
 // What is above the fold. Under it at rest are the padding and the bar: the gap to the rest grows
 // past `gap-6` by what the bar is over `gap-6` less that padding, so nothing below the fold peeks.
-const FOLD =
-  'flex flex-col gap-6 pb-[max(0px,calc(env(safe-area-inset-bottom)---spacing(4)))] *:shrink-0 [--inset:env(safe-area-inset-bottom)]';
+const FOLD = 'flex flex-col gap-6 pb-[max(0px,calc(var(--safe-area-bottom)---spacing(4)))] *:shrink-0';
 
 /**
- * The browser's own bar at the bottom edge, in px, which the sheet runs under: `--inset` on the
- * element is `env(safe-area-inset-bottom)`, which a snap point cannot say itself. Nothing on a
- * desktop, the home indicator and Safari's tab bar on an iPhone.
+ * The browser's own bar at the bottom edge, in px, which the sheet runs under: `--safe-area-bottom`
+ * of `style.css`, as the element sees it, since a snap point cannot say `env()` itself.
  */
 function barBelow(element: Element) {
-  const inset = getComputedStyle(element).getPropertyValue('--inset').trim();
+  const inset = getComputedStyle(element).getPropertyValue('--safe-area-bottom').trim();
   return (inset.endsWith('px') && Number(inset.slice(0, -2))) || 0;
 }
 
@@ -119,7 +117,7 @@ export function BottomExpander({ raise = false, fold, children }: BottomExpander
         {/* a column that scrolls squeezes what it holds: nothing here gives up its height */}
         <div
           ref={scroller}
-          className={`flex flex-col gap-6 p-4 pt-2 pb-[calc(15dvh+--spacing(4)+env(safe-area-inset-bottom))] *:shrink-0 ${snap === 'rest' ? 'overflow-hidden' : 'overflow-y-auto'}`}
+          className={`flex flex-col gap-6 p-4 pt-2 pb-[calc(15dvh+--spacing(4)+var(--safe-area-bottom))] *:shrink-0 ${snap === 'rest' ? 'overflow-hidden' : 'overflow-y-auto'}`}
         >
           <div ref={above} className={FOLD}>
             {fold}
