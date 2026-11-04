@@ -97,6 +97,10 @@
   /* The tint is the lowest step of the scale that passes `glass.test.tsx`, not one chosen by eye. */
   --glass: var(--white-a11);
   --glass-edge: var(--gray-a6);
+  /* The same tint over the page's own colour, as one opaque colour: what Safari 26 paints its tab bar in
+     under the bottom expander, which is glass and so gives it no colour of its own (`bottom-expander.tsx`).
+     The share is `--glass`'s alpha; change both together. */
+  --glass-flat: color-mix(in srgb, white 90%, var(--background));
   --overlay: var(--black-a10);
 
   /* The browser's own bar on the bottom edge, which the page runs under: nothing on a desktop, the home
@@ -107,6 +111,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --glass: var(--black-a11);
+    --glass-flat: color-mix(in srgb, black 90%, var(--background));
     --score-lightness: 0.74;
   }
 }

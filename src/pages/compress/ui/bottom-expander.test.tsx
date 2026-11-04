@@ -68,3 +68,23 @@ test("over a browser's bar the fold rests above it, and nothing below the fold s
     root.style.removeProperty('--safe-area-bottom');
   }
 });
+
+test("the sheet's edge for Safari's bar: on the bottom edge, the width of the screen, in one opaque colour, painting nothing", async () => {
+  await page.viewport(390, 780);
+  const { drop } = await renderPage();
+  await drop();
+  const edge = document.querySelector('[data-slot=sheet-edge]');
+  if (!edge) throw new Error('the sheet has no edge');
+  const rect = edge.getBoundingClientRect();
+  const style = getComputedStyle(edge);
+  expect(rect.bottom).toBe(780);
+  expect(rect.width).toBe(390);
+  // Safari passes over a box of 10 px or less
+  expect(rect.height).toBeGreaterThan(10);
+  // nothing painted: the background stops at a content box with no height
+  expect(style.backgroundClip).toBe('content-box');
+  expect(style.height).toBe('0px');
+  // the colour Safari reads: opaque, and not the page's own
+  expect(style.backgroundColor).not.toMatch(/rgba\(.*, 0\)$/u);
+  expect(style.backgroundColor).not.toBe(getComputedStyle(document.body).backgroundColor);
+});
