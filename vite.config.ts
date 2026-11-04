@@ -13,6 +13,8 @@ const csp =
 const charset = /<meta charset="utf-8"\s*\/?>/u;
 
 const LICENCES = 'licenses.txt';
+// The credits of the sample images on the empty page, which two of them need (ADR-0009).
+const SAMPLE_CREDITS = 'public/samples/CREDITS.txt';
 
 // What the page carries that Vite's list leaves out: `sqzer` is in the worker's bundle, with the notices
 // of the crates compiled into its module, and the rest reaches the page as a stylesheet or a font. Each
@@ -57,7 +59,8 @@ function unlistedLicences(): Plugin {
     writeBundle({ dir = 'dist' }) {
       const file = join(dir, LICENCES);
       const entries = Object.entries(UNLISTED).map(([name, files]) => entry(name, files));
-      writeFileSync(file, `${readFileSync(file, 'utf8').trimEnd()}\n\n${entries.join('\n')}`);
+      const credits = readFileSync(join(root, SAMPLE_CREDITS), 'utf8').trim();
+      writeFileSync(file, `${readFileSync(file, 'utf8').trimEnd()}\n\n${entries.join('\n')}\n${credits}\n`);
     },
   };
 }
